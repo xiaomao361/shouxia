@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon A1 - 正面软口袋</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <ellipse cx="512" cy="784" rx="270" ry="58" fill="#CBE4EA" opacity=".52"/>
+
+  <g transform="rotate(-3 512 330)">
+    <rect x="352" y="196" width="320" height="276" rx="74" fill="#F1A17D"/>
+    <path d="M512 196V472" fill="none" stroke="#FFFDFC" stroke-width="26" stroke-linecap="round" opacity=".94"/>
+    <circle cx="512" cy="196" r="16" fill="#FFFDFC"/>
+  </g>
+
+  <path d="M222 493C222 453 254 421 294 421H730C770 421 802 453 802 493V633C802 755 704 854 582 854H442C320 854 222 755 222 633V493Z"
+        fill="#FFFDFC"/>
+  <rect x="272" y="467" width="480" height="54" rx="27" fill="#B8DCE2"/>
+  <rect x="294" y="482" width="436" height="33" rx="16.5" fill="#EAF5F6"/>
+</svg>

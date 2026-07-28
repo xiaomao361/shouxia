@@ -19,19 +19,57 @@ struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
     var isArchived: Bool {
         archivedAt != nil
     }
+
+    var normalizedLocation: String? {
+        guard let location else { return nil }
+        let normalized = location
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return normalized.isEmpty ? nil : normalized
+    }
+
+    func sharesPickupLocation(with other: PickupRecord) -> Bool {
+        guard let normalizedLocation else { return false }
+        return normalizedLocation == other.normalizedLocation
+    }
 }
 
 enum PickupSource: String, Codable, Sendable {
     case paste
-    case notificationAutomation
+    case smsAutomation
+    case imageRecognition
 
     var displayName: String {
         switch self {
         case .paste:
             "剪贴板"
-        case .notificationAutomation:
-            "通知自动化"
+        case .smsAutomation:
+            "短信自动化"
+        case .imageRecognition:
+            "图片识别"
         }
+    }
+
+    init(from decoder: Decoder) throws {
+        let rawValue = try decoder.singleValueContainer().decode(String.self)
+        if rawValue == "notificationAutomation" {
+            self = .smsAutomation
+            return
+        }
+        guard let source = Self(rawValue: rawValue) else {
+            throw DecodingError.dataCorrupted(
+                .init(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unknown pickup source: \(rawValue)"
+                )
+            )
+        }
+        self = source
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 

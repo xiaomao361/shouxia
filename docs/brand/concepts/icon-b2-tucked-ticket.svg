@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon B2 - 绑带下的取件卡</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <circle cx="474" cy="503" r="332" fill="#EAF5F2" opacity=".76"/>
+  <ellipse cx="487" cy="803" rx="270" ry="58" fill="#CBE4EA" opacity=".54"/>
+
+  <rect x="176" y="260" width="576" height="548" rx="112" fill="#F1A17D"/>
+  <rect x="436" y="260" width="48" height="548" rx="24" fill="#FFFDFC" opacity=".94"/>
+  <rect x="176" y="488" width="576" height="48" rx="24" fill="#9FCFC2"/>
+
+  <rect x="522" y="456" width="314" height="310" rx="66" fill="#FFFDFC"/>
+  <rect x="584" y="532" width="52" height="52" rx="16" fill="#9FCFC2"/>
+  <rect x="650" y="532" width="52" height="52" rx="16" fill="#B8DCE2"/>
+  <rect x="716" y="532" width="52" height="52" rx="16" fill="#9FCFC2"/>
+  <rect x="579" y="624" width="200" height="22" rx="11" fill="#DDEFF6"/>
+  <rect x="613" y="672" width="132" height="18" rx="9" fill="#DDEFF6"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon A3 - 轻轻落入口袋</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <ellipse cx="520" cy="805" rx="276" ry="58" fill="#CBE4EA" opacity=".50"/>
+
+  <g transform="rotate(10 580 398)">
+    <rect x="431" y="265" width="298" height="266" rx="70" fill="#F1A17D"/>
+    <path d="M580 265V531" fill="none" stroke="#FFFDFC" stroke-width="25" stroke-linecap="round" opacity=".94"/>
+    <circle cx="580" cy="265" r="15" fill="#FFFDFC"/>
+  </g>
+
+  <circle cx="410" cy="407" r="22" fill="#9FCFC2"/>
+  <circle cx="383" cy="447" r="14" fill="#9FCFC2" opacity=".72"/>
+  <circle cx="368" cy="480" r="9" fill="#9FCFC2" opacity=".50"/>
+
+  <path d="M206 530C206 493 233 462 270 455C422 426 627 444 790 502C818 512 836 538 836 568V648C836 774 734 876 608 876H434C308 876 206 774 206 648V530Z"
+        fill="#FFFDFC"/>
+  <path d="M263 480C410 444 642 461 797 514L785 553C630 501 410 485 270 519Z" fill="#FFFDFC"/>
+  <path d="M270 504C410 470 628 486 781 538L773 564C624 516 414 500 277 532Z" fill="#B8DCE2"/>
+</svg>

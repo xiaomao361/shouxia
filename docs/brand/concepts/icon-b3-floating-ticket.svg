@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon B3 - 包裹与轻盈取件卡</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <ellipse cx="459" cy="805" rx="272" ry="56" fill="#CBE4EA" opacity=".56"/>
+
+  <rect x="136" y="416" width="536" height="438" rx="106" fill="#F1A17D"/>
+  <rect x="380" y="416" width="46" height="438" rx="23" fill="#FFFDFC" opacity=".94"/>
+
+  <circle cx="718" cy="590" r="23" fill="#9FCFC2" opacity=".54"/>
+  <circle cx="685" cy="625" r="14" fill="#9FCFC2" opacity=".34"/>
+
+  <rect x="514" y="190" width="370" height="350" rx="76" fill="#FFFDFC"/>
+  <rect x="584" y="282" width="58" height="58" rx="18" fill="#9FCFC2"/>
+  <rect x="657" y="282" width="58" height="58" rx="18" fill="#B8DCE2"/>
+  <rect x="730" y="282" width="58" height="58" rx="18" fill="#9FCFC2"/>
+  <rect x="572" y="388" width="254" height="24" rx="12" fill="#DDEFF6"/>
+  <rect x="608" y="438" width="182" height="20" rx="10" fill="#DDEFF6"/>
+</svg>

@@ -1,29 +1,29 @@
 import AppIntents
 
-struct AddPickupInfoIntent: AppIntent {
-    static let title: LocalizedStringResource = "添加取件信息"
-    static let description = IntentDescription("把短信或购物平台通知中的取件码添加到收下。")
+struct SavePickupMessageIntent: AppIntent {
+    static let title: LocalizedStringResource = "保存取件短信"
+    static let description = IntentDescription("供“信息”个人自动化调用：接收取件短信，解析后保存到收下。")
     static let openAppWhenRun = false
 
     @Parameter(
-        title: "通知内容",
-        description: "包含取件码和地点的完整通知文字",
+        title: "短信内容",
+        description: "“信息”自动化提供的完整取件短信",
         inputConnectionBehavior: .connectToPreviousIntentResult
     )
     var text: String
 
     static var parameterSummary: some ParameterSummary {
-        Summary("添加 \(\.$text) 到收下")
+        Summary("保存取件短信 \(\.$text)")
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         do {
-            let result = try await PickupRepository.shared.importText(text, source: .notificationAutomation)
+            let result = try await PickupRepository.shared.importText(text, source: .smsAutomation)
             switch result {
             case let .added(record):
                 return .result(dialog: "已收好取件码 \(record.code)")
             case .duplicate:
-                return .result(dialog: "这条取件通知已经收过了")
+                return .result(dialog: "这条取件短信已经收过了")
             }
         } catch let error as PickupImportError {
             return .result(dialog: IntentDialog(stringLiteral: error.localizedDescription))
@@ -36,13 +36,13 @@ struct AddPickupInfoIntent: AppIntent {
 struct ShouxiaShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
-            intent: AddPickupInfoIntent(),
+            intent: SavePickupMessageIntent(),
             phrases: [
-                "用 \(.applicationName) 添加取件信息",
-                "添加取件信息到 \(.applicationName)",
+                "用 \(.applicationName) 保存取件短信",
+                "保存取件短信到 \(.applicationName)",
             ],
-            shortTitle: "添加取件信息",
-            systemImageName: "shippingbox.and.arrow.backward"
+            shortTitle: "保存取件短信",
+            systemImageName: "message.badge"
         )
     }
 }

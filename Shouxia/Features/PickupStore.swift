@@ -57,6 +57,48 @@ final class PickupStore {
         }
     }
 
+    func importImageCandidates(_ candidates: [ImagePickupCandidate]) async {
+        guard !candidates.isEmpty else { return }
+
+        do {
+            var addedCodes: [String] = []
+            var duplicateCount = 0
+
+            for candidate in candidates {
+                let result = try await repository.importText(
+                    candidate.sanitizedImportText,
+                    source: .imageRecognition
+                )
+                switch result {
+                case let .added(record):
+                    addedCodes.append(record.code)
+                case .duplicate:
+                    duplicateCount += 1
+                }
+            }
+
+            records = try await repository.records()
+            switch (addedCodes.count, duplicateCount) {
+            case (1, _):
+                notice = .success("已从图片收好取件码 \(addedCodes[0])")
+            case let (count, _) where count > 1:
+                notice = .success("已从图片收好 \(count) 个取件码")
+            case (0, _):
+                notice = .neutral("这些取件码已经收过了")
+            default:
+                notice = .error("没有收好，再试一次")
+            }
+        } catch let error as PickupImportError {
+            notice = .error(error.localizedDescription)
+        } catch {
+            notice = .error("图片里的取件码没有收好")
+        }
+    }
+
+    func showNotice(_ notice: Notice) {
+        self.notice = notice
+    }
+
     func beginCompletion(_ record: PickupRecord) {
         var completed = record
         completed.completedAt = Date()

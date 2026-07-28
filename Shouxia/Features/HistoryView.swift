@@ -13,7 +13,7 @@ struct HistoryView: View {
                     Text("在主页面收下包裹后，这里会保留录入与收下时间。")
                 }
                 .foregroundStyle(ShouxiaPalette.mutedInk)
-                .background(ShouxiaPalette.canvas)
+                .background(ShouxiaBackground())
             } else {
                 List {
                     ForEach(historySections) { section in
@@ -29,7 +29,7 @@ struct HistoryView: View {
                                         } label: {
                                             Label("设为待取", systemImage: "arrow.uturn.backward")
                                         }
-                                        .tint(ShouxiaPalette.evergreen)
+                                        .tint(ShouxiaPalette.mutedInk)
                                     }
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                         Button {
@@ -37,7 +37,7 @@ struct HistoryView: View {
                                         } label: {
                                             Label("归档", systemImage: "archivebox")
                                         }
-                                        .tint(ShouxiaPalette.ochre)
+                                        .tint(ShouxiaPalette.apricot)
                                     }
                             }
                         }
@@ -45,9 +45,10 @@ struct HistoryView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(ShouxiaPalette.canvas)
+                .background(ShouxiaBackground())
             }
         }
+        .fontDesign(.rounded)
         .navigationTitle("收下记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -107,7 +108,7 @@ private struct ArchiveView: View {
                     Text("从收下记录归档的内容会出现在这里。")
                 }
                 .foregroundStyle(ShouxiaPalette.mutedInk)
-                .background(ShouxiaPalette.canvas)
+                .background(ShouxiaBackground())
             } else {
                 List(store.archivedRecords) { record in
                     RecordRow(record: record, showsArchivedAt: true)
@@ -120,7 +121,7 @@ private struct ArchiveView: View {
                             } label: {
                                 Label("恢复", systemImage: "arrow.uturn.backward")
                             }
-                            .tint(ShouxiaPalette.evergreen)
+                            .tint(ShouxiaPalette.mutedInk)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -132,9 +133,10 @@ private struct ArchiveView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(ShouxiaPalette.canvas)
+                .background(ShouxiaBackground())
             }
         }
+        .fontDesign(.rounded)
         .navigationTitle("归档")
         .navigationBarTitleDisplayMode(.inline)
         .alert(
@@ -162,18 +164,18 @@ private struct RecordRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label(record.location ?? "地点待确认", systemImage: "mappin.and.ellipse")
+                Text(record.location ?? "地点待确认")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(ShouxiaPalette.mutedInk)
+                    .foregroundStyle(ShouxiaPalette.ink)
                     .lineLimit(1)
                 Spacer()
                 if let platform = record.platform {
                     Text(platform)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(ShouxiaPalette.evergreen)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(ShouxiaPalette.mutedInk)
                         .padding(.horizontal, 9)
                         .padding(.vertical, 5)
-                        .background(ShouxiaPalette.evergreen.opacity(0.09), in: Capsule())
+                        .background(ShouxiaPalette.skyWash, in: Capsule())
                 }
             }
 
@@ -196,25 +198,25 @@ private struct RecordRow: View {
             .font(.caption)
             .foregroundStyle(ShouxiaPalette.softInk)
         }
-        .padding(16)
+        .padding(.vertical, 16)
+        .padding(.leading, 36)
+        .padding(.trailing, 16)
         .background(
-            LinearGradient(
-                colors: [ShouxiaPalette.paper, ShouxiaPalette.warmPaper],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
+            ShouxiaPalette.paper,
             in: RoundedRectangle(cornerRadius: 20, style: .continuous)
         )
-        .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 3)
+        .overlay(alignment: .topLeading) {
+            Circle()
                 .fill(ShouxiaPalette.accent(for: record))
-                .frame(width: 4)
-                .padding(.vertical, 14)
+                .frame(width: 7, height: 7)
+                .padding(.leading, 16)
+                .padding(.top, 20)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(ShouxiaPalette.line, lineWidth: 1)
         }
+        .shadow(color: ShouxiaPalette.ink.opacity(0.045), radius: 10, y: 5)
         .accessibilityElement(children: .combine)
     }
 

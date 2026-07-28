@@ -2,6 +2,35 @@ import XCTest
 @testable import Shouxia
 
 final class PickupRepositoryTests: XCTestCase {
+    func testPickupLocationMatchingTrimsWhitespaceAndRejectsMissingLocation() {
+        let first = makeRecord(location: " 北门驿站 ")
+        let sameLocation = makeRecord(location: "北门驿站")
+        let otherLocation = makeRecord(location: "南门驿站")
+        let missingLocation = makeRecord(location: nil)
+
+        XCTAssertTrue(first.sharesPickupLocation(with: sameLocation))
+        XCTAssertFalse(first.sharesPickupLocation(with: otherLocation))
+        XCTAssertFalse(first.sharesPickupLocation(with: missingLocation))
+        XCTAssertFalse(missingLocation.sharesPickupLocation(with: missingLocation))
+    }
+
+    func testLegacyNotificationAutomationSourceMigratesToSMSAutomation() throws {
+        let legacy = Data(#""notificationAutomation""#.utf8)
+        let source = try JSONDecoder().decode(PickupSource.self, from: legacy)
+        XCTAssertEqual(source, .smsAutomation)
+
+        let encoded = try JSONEncoder().encode(source)
+        XCTAssertEqual(String(decoding: encoded, as: UTF8.self), #""smsAutomation""#)
+    }
+
+    func testImageRecognitionSourceRoundTrips() throws {
+        let encoded = try JSONEncoder().encode(PickupSource.imageRecognition)
+        let decoded = try JSONDecoder().decode(PickupSource.self, from: encoded)
+
+        XCTAssertEqual(decoded, .imageRecognition)
+        XCTAssertEqual(decoded.displayName, "图片识别")
+    }
+
     func testImportDeduplicatesAndSupportsCompletionUndo() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let fileURL = directory.appendingPathComponent("pickups.json")
@@ -9,7 +38,7 @@ final class PickupRepositoryTests: XCTestCase {
         let text = "【丰巢】快件已存入1号柜，取件码829146，请及时领取。"
 
         let first = try await repository.importText(text, source: .paste)
-        let second = try await repository.importText(text, source: .notificationAutomation)
+        let second = try await repository.importText(text, source: .smsAutomation)
 
         guard case let .added(record) = first else {
             return XCTFail("First import should add a record")
@@ -69,5 +98,20 @@ final class PickupRepositoryTests: XCTestCase {
         let remainingRecords = try await repository.records()
         XCTAssertFalse(deleted)
         XCTAssertEqual(remainingRecords.count, 1)
+    }
+
+    private func makeRecord(location: String?) -> PickupRecord {
+        PickupRecord(
+            id: UUID(),
+            rawText: "取件码 123456",
+            code: "123456",
+            location: location,
+            platform: nil,
+            createdAt: Date(),
+            source: .paste,
+            fingerprint: UUID().uuidString,
+            completedAt: nil,
+            archivedAt: nil
+        )
     }
 }

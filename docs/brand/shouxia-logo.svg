@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" fill="none">
+  <title>收下横向 Logo</title>
+  <rect x="8" y="8" width="184" height="184" rx="54" fill="#DDEFF6"/>
+
+  <rect x="39" y="52" width="104" height="99" rx="20" fill="#F1A17D"/>
+  <rect x="86" y="52" width="9" height="99" rx="4.5" fill="#FFFDFC" opacity=".94"/>
+  <rect x="39" y="93" width="104" height="9" rx="4.5" fill="#9FCFC2"/>
+
+  <rect x="102" y="87" width="57" height="56" rx="12" fill="#FFFDFC"/>
+  <rect x="113" y="101" width="9" height="9" rx="3" fill="#9FCFC2"/>
+  <rect x="126" y="101" width="9" height="9" rx="3" fill="#B8DCE2"/>
+  <rect x="139" y="101" width="9" height="9" rx="3" fill="#9FCFC2"/>
+  <rect x="112" y="119" width="37" height="4" rx="2" fill="#DDEFF6"/>
+  <rect x="119" y="130" width="23" height="3" rx="1.5" fill="#DDEFF6"/>
+
+  <text x="232" y="96" fill="#263746" font-family="Noto Sans SC, PingFang SC, sans-serif" font-size="58" font-weight="700">收下</text>
+  <text x="234" y="139" fill="#657985" font-family="Noto Sans SC, PingFang SC, sans-serif" font-size="24">轻轻带回家</text>
+</svg>

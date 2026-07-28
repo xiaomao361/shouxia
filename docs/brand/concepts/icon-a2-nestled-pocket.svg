@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon A2 - 包裹安稳入袋</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <circle cx="512" cy="528" r="318" fill="#E9F5F4" opacity=".82"/>
+
+  <g transform="rotate(4 512 455)">
+    <rect x="350" y="240" width="324" height="292" rx="78" fill="#F1A17D"/>
+    <path d="M512 240V532" fill="none" stroke="#FFFDFC" stroke-width="26" stroke-linecap="round" opacity=".94"/>
+    <circle cx="512" cy="240" r="16" fill="#FFFDFC"/>
+  </g>
+
+  <path d="M229 455C229 419 258 390 294 390H730C766 390 795 419 795 455V650C795 769 699 865 580 865H444C325 865 229 769 229 650V455Z"
+        fill="#9FCFC2"/>
+  <rect x="266" y="419" width="492" height="50" rx="25" fill="#FFFDFC"/>
+  <rect x="290" y="447" width="444" height="24" rx="12" fill="#7FBCAF"/>
+</svg>

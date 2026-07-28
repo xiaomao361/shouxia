@@ -3,6 +3,7 @@ import XCTest
 
 final class PickupParserTests: XCTestCase {
     private let parser = PickupParser()
+    private let imageExtractor = ImagePickupExtractor()
 
     func testParsesCainiaoNotification() throws {
         let result = try parser.parse("【菜鸟驿站】您的包裹已到北门菜鸟驿站，取件码3-2-4012，请凭码取件。")
@@ -67,5 +68,105 @@ final class PickupParserTests: XCTestCase {
         let second = try parser.parse("取件码123456，已到北门菜鸟驿站")
 
         XCTAssertEqual(first.fingerprint, second.fingerprint)
+    }
+
+    func testImageExtractorPrefersLabelledPickupCodeAndSanitizesPrivateText() throws {
+        let lines = [
+            imageLine("中通快递 76543210987654"),
+            imageLine("待取件 今天 11:20"),
+            imageLine("幸福家园北门驿站"),
+            imageLine("幸福家园8号楼2单元106"),
+            imageLine("取件码：12-4-6789"),
+            imageLine("快件已由快递员 13912345678 送达代收点"),
+        ]
+
+        let candidates = try imageExtractor.candidates(from: lines)
+
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertEqual(candidates[0].code, "12-4-6789")
+        XCTAssertEqual(candidates[0].location, "幸福家园北门驿站")
+        XCTAssertEqual(candidates[0].platform, "中通")
+        XCTAssertTrue(candidates[0].isHighConfidence)
+        XCTAssertFalse(candidates[0].sanitizedImportText.contains("76543210987654"))
+        XCTAssertFalse(candidates[0].sanitizedImportText.contains("13912345678"))
+        XCTAssertFalse(candidates[0].sanitizedImportText.contains("2单元106"))
+    }
+
+    func testImageExtractorReturnsMultipleLabelledCodesForReview() throws {
+        let lines = [
+            imageLine("北门菜鸟驿站"),
+            imageLine("取件码 3-2-4012"),
+            imageLine("北门菜鸟驿站"),
+            imageLine("取件码 8-5-2031"),
+        ]
+
+        let candidates = try imageExtractor.candidates(from: lines)
+
+        XCTAssertEqual(candidates.map(\.code), ["3-2-4012", "8-5-2031"])
+        XCTAssertTrue(candidates.allSatisfy(\.isHighConfidence))
+    }
+
+    func testImageExtractorMarksUnlabelledHyphenCodeForConfirmation() throws {
+        let candidates = try imageExtractor.candidates(
+            from: [imageLine("请到北门驿站领取 7-3-0912")]
+        )
+
+        XCTAssertEqual(candidates.map(\.code), ["7-3-0912"])
+        XCTAssertFalse(candidates[0].isHighConfidence)
+    }
+
+    func testImageExtractorRejectsTrackingAndPhoneNumbersWithoutPickupCode() {
+        let lines = [
+            imageLine("中通快递 运单号 76543210987654"),
+            imageLine("物流电话 13912345678"),
+        ]
+
+        XCTAssertThrowsError(try imageExtractor.candidates(from: lines)) { error in
+            XCTAssertEqual(
+                error as? ImagePickupRecognitionError,
+                .noPickupCode
+            )
+        }
+    }
+
+    func testRealImageOCRFixtureWhenProvided() async throws {
+        guard let fixturePath = ProcessInfo.processInfo.environment[
+            "SHOUXIA_OCR_FIXTURE"
+        ] else {
+            throw XCTSkip("Set SHOUXIA_OCR_FIXTURE to run a real-image OCR check")
+        }
+
+        let data = try Data(contentsOf: URL(fileURLWithPath: fixturePath))
+        let lines = try await ImageTextRecognizer().recognize(in: data)
+        let candidates = try imageExtractor.candidates(from: lines)
+
+        let code = try XCTUnwrap(candidates.first?.code)
+        XCTAssertNotNil(
+            code.range(
+                of: #"^\d{1,3}-\d{1,3}-\d{3,4}$"#,
+                options: .regularExpression
+            )
+        )
+        XCTAssertEqual(candidates.first?.platform, "中通")
+        XCTAssertTrue(candidates.first?.isHighConfidence ?? false)
+        let sanitizedText = try XCTUnwrap(candidates.first?.sanitizedImportText)
+        XCTAssertNil(
+            sanitizedText.range(
+                of: #"\b\d{11,}\b"#,
+                options: .regularExpression
+            )
+        )
+    }
+
+    private func imageLine(
+        _ text: String,
+        confidence: Float = 0.92
+    ) -> RecognizedTextLine {
+        RecognizedTextLine(
+            text: text,
+            confidence: confidence,
+            minX: 0,
+            midY: 0
+        )
     }
 }

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>收下 App Icon B1 - 包裹正面取件标签</title>
+  <rect width="1024" height="1024" fill="#DDEFF6"/>
+  <ellipse cx="512" cy="805" rx="286" ry="58" fill="#CBE4EA" opacity=".58"/>
+
+  <path d="M220 390C220 329 269 280 330 280H694C755 280 804 329 804 390V693C804 754 755 803 694 803H330C269 803 220 754 220 693V390Z"
+        fill="#F1A17D"/>
+  <path d="M512 280V803H330C269 803 220 754 220 693V390C220 329 269 280 330 280H512Z"
+        fill="#F6AE8D"/>
+  <rect x="494" y="280" width="36" height="523" rx="18" fill="#FFFDFC" opacity=".92"/>
+
+  <rect x="305" y="472" width="414" height="218" rx="52" fill="#FFFDFC"/>
+  <rect x="354" y="544" width="70" height="70" rx="20" fill="#9FCFC2"/>
+  <rect x="436" y="544" width="70" height="70" rx="20" fill="#B8DCE2"/>
+  <rect x="518" y="544" width="70" height="70" rx="20" fill="#9FCFC2"/>
+  <rect x="600" y="544" width="70" height="70" rx="20" fill="#B8DCE2"/>
+  <rect x="369" y="637" width="286" height="18" rx="9" fill="#DDEFF6"/>
+</svg>

@@ -67,7 +67,10 @@ struct PickupParser: Sendable {
     }
 
     private func detectPlatform(in text: String) -> String? {
-        let platforms = ["菜鸟", "丰巢", "京东", "淘宝", "天猫", "拼多多", "顺丰", "邮政"]
+        let platforms = [
+            "菜鸟", "丰巢", "京东", "淘宝", "天猫", "拼多多",
+            "顺丰", "邮政", "中通", "圆通", "申通", "韵达", "极兔", "德邦",
+        ]
         return platforms.first(where: text.contains)
     }
 
