@@ -4,6 +4,12 @@
 
 App Icon 以“杏桃包裹 + 云白取件卡”为核心图形，直接表达 App 管理的是附着于包裹的取件信息；Logo 与 App 内空状态复用同一套几何语言。
 
+## 公开页面
+
+- [收下主页](https://xiaomao361.github.io/shouxia/)
+- [隐私政策](https://xiaomao361.github.io/shouxia/privacy/)
+- [获取支持](https://xiaomao361.github.io/shouxia/support/)
+
 ## 设计
 
 - [Figma：收下 · App Design v2](https://www.figma.com/design/fjQN8yRyNkYPqMUcL9I6B2)
@@ -28,6 +34,7 @@ App Icon 以“杏桃包裹 + 云白取件卡”为核心图形，直接表达 A
 - [产品 Seed](docs/PRODUCT_SEED.md)
 - [开发与验证](docs/DEVELOPMENT.md)
 - [App Store 1.0 上架资料](docs/app-store/RELEASE_CHECKLIST.md)
+- [App Store 截图](docs/app-store/screenshots/final)
 
 ## 下一步
 

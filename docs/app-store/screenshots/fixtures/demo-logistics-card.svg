@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1170" height="1560" viewBox="0 0 1170 1560">
+  <rect width="1170" height="1560" fill="#f3f7f5"/>
+  <rect x="72" y="88" width="1026" height="1384" rx="54" fill="#fffdf8" stroke="#d8e5df" stroke-width="4"/>
+  <circle cx="162" cy="184" r="46" fill="#f5b18b"/>
+  <path d="M136 169h52v36h-52z" fill="#fffdf8"/>
+  <path d="M136 169l26-19 26 19" fill="none" stroke="#fffdf8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="234" y="174" font-family="PingFang SC, sans-serif" font-size="42" font-weight="600" fill="#253a35">春风驿站</text>
+  <text x="234" y="226" font-family="PingFang SC, sans-serif" font-size="28" fill="#70827d">包裹已经到啦，请及时领取</text>
+  <line x1="126" y1="294" x2="1044" y2="294" stroke="#e4ece8" stroke-width="3"/>
+  <text x="126" y="400" font-family="PingFang SC, sans-serif" font-size="32" fill="#70827d">取件地点</text>
+  <text x="126" y="468" font-family="PingFang SC, sans-serif" font-size="44" font-weight="600" fill="#253a35">春风驿站</text>
+  <text x="126" y="612" font-family="PingFang SC, sans-serif" font-size="32" fill="#70827d">取件码</text>
+  <rect x="126" y="654" width="918" height="286" rx="38" fill="#e8f4f0"/>
+  <text x="585" y="834" text-anchor="middle" font-family="SF Pro Rounded, PingFang SC, sans-serif" font-size="112" font-weight="700" letter-spacing="8" fill="#253a35">2-8-0716</text>
+  <text x="126" y="1052" font-family="PingFang SC, sans-serif" font-size="30" fill="#70827d">请向工作人员出示取件码</text>
+  <rect x="126" y="1140" width="918" height="154" rx="32" fill="#f9ece4"/>
+  <text x="585" y="1234" text-anchor="middle" font-family="PingFang SC, sans-serif" font-size="34" font-weight="600" fill="#704d3d">演示图片 · 不含真实个人信息</text>
+</svg>

@@ -488,6 +488,11 @@ struct InboxView: View {
 
     private func persistAndDismissUndo(_ record: PickupRecord) async {
         await store.persistCompletion(record)
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-keep-undo-visible") {
+            return
+        }
+#endif
         try? await Task.sleep(for: .seconds(5))
         withAnimation(.easeOut(duration: 0.2)) {
             store.dismissUndo(for: record.id)

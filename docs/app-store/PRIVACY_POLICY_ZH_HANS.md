@@ -62,4 +62,7 @@
 
 ## 联系我们
 
-隐私或支持联系方式：`[提交前填写公开联系邮箱或支持页面 URL]`
+隐私或支持联系方式：
+
+- 邮箱：[zhouwei@linux.com](mailto:zhouwei@linux.com)
+- 支持页面：[https://xiaomao361.github.io/shouxia/support/](https://xiaomao361.github.io/shouxia/support/)

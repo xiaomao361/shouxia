@@ -12,6 +12,7 @@
 - 版本：`1.0.0`
 - 构建号：`1`
 - 价格：免费
+- 首发销售地区：中国大陆
 - 发布方式：建议首次审核通过后手动发布
 - 内容版权：不包含或访问需要额外授权的第三方内容
 - 自定义许可协议：不需要，使用 Apple 标准许可协议
@@ -59,12 +60,12 @@ App 名称仍需在 App Store Connect 创建记录时确认可用性。SKU 创�
 
 ## 版权
 
-`2026 [提交前填写开发者法定姓名或公司名称]`
+`2026 周维`
 
 ## URL
 
-- 隐私政策 URL：`[提交前发布 docs/app-store/PRIVACY_POLICY_ZH_HANS.md 并填写公开 HTTPS URL]`
-- 支持 URL：`[提交前发布 docs/app-store/SUPPORT_ZH_HANS.md 并填写公开 HTTPS URL]`
+- 隐私政策 URL：`https://xiaomao361.github.io/shouxia/privacy/`
+- 支持 URL：`https://xiaomao361.github.io/shouxia/support/`
 - 营销 URL：可留空
 
 ## App 隐私
@@ -89,7 +90,15 @@ App 名称仍需在 App Store Connect 创建记录时确认可用性。SKU 创�
 - 定位共享：无
 - App 内购买：无
 
-预期获得最低年龄分级，最终结果以 App Store Connect 问卷计算为准。
+预期获得 `4+` 最低年龄分级，最终结果以 App Store Connect 问卷计算为准。
+“Made for Kids”选择“不适用”；收下可以供所有年龄使用，但不是专门面向儿童的 Kids Category App。
+
+## 销售地区与中国大陆合规
+
+- 首发销售地区：中国大陆
+- 当前判断：收下是本地工具，不属于游戏、新闻、宗教、图书期刊或其他需要专项许可的内容类别
+- 待会员生效后验证：以 App Store Connect 对当前 App 记录显示的中国大陆合规字段为准
+- 在 App Store Connect 实际允许保存前，不把“无需 ICP 备案”视为已经验证
 
 ## 截图叙事
 
@@ -102,3 +111,5 @@ App 名称仍需在 App Store Connect 创建记录时确认可用性。SKU 创�
 5. `取完向右一滑`：展示完成反馈与撤销入口。
 
 截图不得包含真实手机号、真实取件码、真实地址或第三方账号信息。使用专门编写的演示数据。
+
+已生成的 6.9 英寸规格截图位于 `docs/app-store/screenshots/final/`。
