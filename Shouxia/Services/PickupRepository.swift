@@ -48,6 +48,44 @@ actor PickupRepository {
         return .added(record)
     }
 
+    func importHandoffPackage(_ package: PickupHandoffPackage) throws -> PickupHandoffImportSummary {
+        let package = try package.validated()
+        var records = try loadRecords()
+        var addedCount = 0
+        var duplicateCount = 0
+
+        for item in package.items {
+            if records.contains(where: { $0.fingerprint == item.importFingerprint }) {
+                duplicateCount += 1
+                continue
+            }
+
+            records.append(
+                PickupRecord(
+                    id: UUID(),
+                    rawText: item.sanitizedImportText,
+                    code: item.code.uppercased(),
+                    location: item.location,
+                    platform: item.platform,
+                    createdAt: Date(),
+                    source: .handoff,
+                    fingerprint: item.importFingerprint,
+                    completedAt: nil,
+                    archivedAt: nil
+                )
+            )
+            addedCount += 1
+        }
+
+        if addedCount > 0 {
+            try save(records)
+        }
+        return PickupHandoffImportSummary(
+            addedCount: addedCount,
+            duplicateCount: duplicateCount
+        )
+    }
+
     func complete(id: UUID) throws -> PickupRecord? {
         var records = try loadRecords()
         guard let index = records.firstIndex(where: { $0.id == id }) else {

@@ -2,12 +2,12 @@ import AppIntents
 
 struct SavePickupMessageIntent: AppIntent {
     static let title: LocalizedStringResource = "保存取件短信"
-    static let description = IntentDescription("供“信息”个人自动化调用：接收取件短信，解析后保存到收下。")
+    static let description = IntentDescription("接收普通快捷指令传来的完整取件短信，解析后保存到收下。")
     static let openAppWhenRun = false
 
     @Parameter(
         title: "短信内容",
-        description: "“信息”自动化提供的完整取件短信",
+        description: "“收下自动收码”快捷指令提供的完整取件短信",
         inputConnectionBehavior: .connectToPreviousIntentResult
     )
     var text: String

@@ -31,6 +31,56 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertEqual(decoded.displayName, "图片识别")
     }
 
+    func testHandoffSourceRoundTrips() throws {
+        let encoded = try JSONEncoder().encode(PickupSource.handoff)
+        let decoded = try JSONDecoder().decode(PickupSource.self, from: encoded)
+
+        XCTAssertEqual(decoded, .handoff)
+        XCTAssertEqual(decoded.displayName, "他人托取")
+    }
+
+    func testHandoffPackageContainsOnlyMinimumPickupFieldsAndDecodes() throws {
+        let record = makeRecord(location: "北门驿站")
+        let package = PickupHandoffPackage(records: [record], now: Date(timeIntervalSince1970: 1_700_000_000))
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("test.shouxia")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(package).write(to: url)
+
+        let decoded = try PickupHandoffPackage.decode(contentsOf: url)
+
+        XCTAssertEqual(decoded, package)
+        XCTAssertEqual(decoded.items.first?.code, record.code)
+        XCTAssertEqual(decoded.items.first?.location, record.location)
+        let payload = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertFalse(payload.contains(record.rawText))
+        XCTAssertFalse(payload.contains("rawText"))
+        XCTAssertFalse(payload.contains("fingerprint"))
+    }
+
+    func testHandoffImportAddsItemsAndDeduplicatesSamePackage() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let records = [
+            makeRecord(code: "3-2-4012", location: "北门驿站"),
+            makeRecord(code: "829146", location: "1号柜"),
+        ]
+        let package = PickupHandoffPackage(records: records)
+
+        let first = try await repository.importHandoffPackage(package)
+        let second = try await repository.importHandoffPackage(package)
+        let imported = try await repository.records()
+
+        XCTAssertEqual(first, PickupHandoffImportSummary(addedCount: 2, duplicateCount: 0))
+        XCTAssertEqual(second, PickupHandoffImportSummary(addedCount: 0, duplicateCount: 2))
+        XCTAssertEqual(imported.map(\.source), [.handoff, .handoff])
+        XCTAssertEqual(Set(imported.map(\.code)), Set(["3-2-4012", "829146"]))
+    }
+
     func testImportDeduplicatesAndSupportsCompletionUndo() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let fileURL = directory.appendingPathComponent("pickups.json")
@@ -100,11 +150,14 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertEqual(remainingRecords.count, 1)
     }
 
-    private func makeRecord(location: String?) -> PickupRecord {
+    private func makeRecord(
+        code: String = "123456",
+        location: String?
+    ) -> PickupRecord {
         PickupRecord(
             id: UUID(),
-            rawText: "取件码 123456",
-            code: "123456",
+            rawText: "取件码 \(code)",
+            code: code,
             location: location,
             platform: nil,
             createdAt: Date(),

@@ -95,6 +95,27 @@ final class PickupStore {
         }
     }
 
+    func importHandoffPackage(_ package: PickupHandoffPackage) async -> Bool {
+        do {
+            let summary = try await repository.importHandoffPackage(package)
+            records = try await repository.records()
+            switch (summary.addedCount, summary.duplicateCount) {
+            case let (added, _) where added > 0:
+                notice = .success("已收好对方托取的 \(added) 件包裹")
+            case (0, _):
+                notice = .neutral("这份交接包里的取件信息已经收过了")
+            default:
+                notice = .error("交接包没有导入成功")
+            }
+            return true
+        } catch let error as PickupHandoffError {
+            notice = .error(error.localizedDescription)
+        } catch {
+            notice = .error("交接包没有导入成功，请重新打开")
+        }
+        return false
+    }
+
     func showNotice(_ notice: Notice) {
         self.notice = notice
     }

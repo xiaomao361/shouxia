@@ -21,6 +21,7 @@
 		A1000000000000000000000C /* ShouxiaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* ShouxiaTheme.swift */; };
 		A1000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* PrivacyInfo.xcprivacy */; };
 		A1000000000000000000000E /* ImagePickupRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* ImagePickupRecognizer.swift */; };
+		A1000000000000000000000F /* PickupHandoffPackage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* PickupHandoffPackage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,8 @@
 		A2000000000000000000000E /* ShouxiaTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaTheme.swift; sourceTree = "<group>"; };
 		A2000000000000000000000F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A20000000000000000000010 /* ImagePickupRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePickupRecognizer.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* PickupHandoffPackage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupHandoffPackage.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000002 /* PickupRecord.swift */,
+				A20000000000000000000011 /* PickupHandoffPackage.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -158,6 +162,7 @@
 		A7000000000000000000000A /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				A20000000000000000000012 /* Info.plist */,
 				A20000000000000000000008 /* Assets.xcassets */,
 				A2000000000000000000000F /* PrivacyInfo.xcprivacy */,
 			);
@@ -275,6 +280,7 @@
 				A1000000000000000000000B /* HistoryView.swift in Sources */,
 				A1000000000000000000000C /* ShouxiaTheme.swift in Sources */,
 				A1000000000000000000000E /* ImagePickupRecognizer.swift in Sources */,
+				A1000000000000000000000F /* PickupHandoffPackage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -345,17 +351,18 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Shouxia/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "收下";
 				INFOPLIST_KEY_CFBundleName = "收下";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
@@ -371,17 +378,18 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Shouxia/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "收下";
 				INFOPLIST_KEY_CFBundleName = "收下";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
