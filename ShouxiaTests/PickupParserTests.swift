@@ -4,6 +4,7 @@ import XCTest
 final class PickupParserTests: XCTestCase {
     private let parser = PickupParser()
     private let imageExtractor = ImagePickupExtractor()
+    private let imageBatchMerger = ImagePickupBatchMerger()
 
     func testParsesCainiaoNotification() throws {
         let result = try parser.parse("【菜鸟驿站】您的包裹已到北门菜鸟驿站，取件码3-2-4012，请凭码取件。")
@@ -106,6 +107,36 @@ final class PickupParserTests: XCTestCase {
         XCTAssertTrue(candidates.allSatisfy(\.isHighConfidence))
     }
 
+    func testImageBatchMergerDeduplicatesByCodeAndKeepsRicherCandidate() {
+        let first = ImagePickupCandidate(
+            code: "3-2-8309",
+            location: nil,
+            platform: nil,
+            confidence: 0.91,
+            isLabelled: true
+        )
+        let overlapping = ImagePickupCandidate(
+            code: "3-2-8309",
+            location: "北门驿站",
+            platform: "淘宝",
+            confidence: 0.82,
+            isLabelled: true
+        )
+        let other = ImagePickupCandidate(
+            code: "11-2-1755",
+            location: nil,
+            platform: "淘宝",
+            confidence: 0.88,
+            isLabelled: true
+        )
+
+        let merged = imageBatchMerger.merge([[first, other], [overlapping]])
+
+        XCTAssertEqual(merged.map(\.code), ["3-2-8309", "11-2-1755"])
+        XCTAssertEqual(merged.first?.location, "北门驿站")
+        XCTAssertEqual(merged.first?.platform, "淘宝")
+    }
+
     func testImageExtractorMarksUnlabelledHyphenCodeForConfirmation() throws {
         let candidates = try imageExtractor.candidates(
             from: [imageLine("请到北门驿站领取 7-3-0912")]
@@ -156,6 +187,33 @@ final class PickupParserTests: XCTestCase {
                 options: .regularExpression
             )
         )
+    }
+
+    func testRealOverlappingImageBatchWhenProvided() async throws {
+        guard let fixtureList = ProcessInfo.processInfo.environment[
+            "SHOUXIA_OCR_BATCH_FIXTURES"
+        ],
+        let expectedList = ProcessInfo.processInfo.environment[
+            "SHOUXIA_OCR_BATCH_EXPECTED_CODES"
+        ] else {
+            throw XCTSkip(
+                "Set SHOUXIA_OCR_BATCH_FIXTURES and SHOUXIA_OCR_BATCH_EXPECTED_CODES to run a real batch OCR check"
+            )
+        }
+
+        let fixturePaths = fixtureList.split(separator: "|").map(String.init)
+        let expectedCodes = Set(expectedList.split(separator: ",").map(String.init))
+        var groups: [[ImagePickupCandidate]] = []
+
+        for path in fixturePaths {
+            let data = try Data(contentsOf: URL(fileURLWithPath: path))
+            let lines = try await ImageTextRecognizer().recognize(in: data)
+            groups.append(try imageExtractor.candidates(from: lines))
+        }
+
+        let merged = imageBatchMerger.merge(groups)
+        XCTAssertEqual(Set(merged.map(\.code)), expectedCodes)
+        XCTAssertEqual(merged.count, expectedCodes.count)
     }
 
     private func imageLine(

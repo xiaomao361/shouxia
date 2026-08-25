@@ -23,7 +23,12 @@ actor PickupRepository {
         try loadRecords()
     }
 
-    func importText(_ text: String, source: PickupSource) throws -> PickupImportResult {
+    func importText(
+        _ text: String,
+        source: PickupSource,
+        importBatchID: UUID? = nil,
+        defaultLocation: String? = nil
+    ) throws -> PickupImportResult {
         let parsed = try parser.parse(text)
         var records = try loadRecords()
 
@@ -31,15 +36,32 @@ actor PickupRepository {
             return .duplicate(existing)
         }
 
+        let normalizedDefaultLocation = defaultLocation?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallbackLocation: String? = normalizedDefaultLocation.flatMap { location in
+            guard !location.isEmpty, location.count <= 80 else { return nil }
+            return location
+        }
+        let location = parsed.location ?? fallbackLocation
+        let locationSource: PickupLocationSource? = if parsed.location != nil {
+            .recognized
+        } else if fallbackLocation != nil {
+            .commonDefault
+        } else {
+            nil
+        }
+
         let record = PickupRecord(
             id: UUID(),
             rawText: parsed.rawText,
             code: parsed.code,
-            location: parsed.location,
+            location: location,
             platform: parsed.platform,
             createdAt: Date(),
             source: source,
             fingerprint: parsed.fingerprint,
+            importBatchID: importBatchID,
+            locationSource: locationSource,
             completedAt: nil,
             archivedAt: nil
         )
@@ -70,6 +92,7 @@ actor PickupRepository {
                     createdAt: Date(),
                     source: .handoff,
                     fingerprint: item.importFingerprint,
+                    importBatchID: package.id,
                     completedAt: nil,
                     archivedAt: nil
                 )
@@ -107,6 +130,44 @@ actor PickupRepository {
         let restored = records[index]
         try save(records)
         return restored
+    }
+
+    func update(id: UUID, code: String, location: String?) throws -> PickupRecord? {
+        let normalizedCode = code
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard !normalizedCode.isEmpty else {
+            throw PickupRecordEditError.emptyCode
+        }
+        guard normalizedCode.count <= 40,
+              normalizedCode.range(
+                  of: #"^[A-Z0-9]+(?:-[A-Z0-9]+){0,4}$"#,
+                  options: .regularExpression
+              ) != nil
+        else {
+            throw PickupRecordEditError.invalidCode
+        }
+
+        let normalizedLocation = location?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedLocation.map({ $0.count <= 80 }) ?? true else {
+            throw PickupRecordEditError.locationTooLong
+        }
+
+        var records = try loadRecords()
+        guard let index = records.firstIndex(where: { $0.id == id }) else {
+            return nil
+        }
+        records[index].code = normalizedCode
+        records[index].location = normalizedLocation?.isEmpty == false
+            ? normalizedLocation
+            : nil
+        records[index].locationSource = records[index].location == nil
+            ? nil
+            : .userEdited
+        let updated = records[index]
+        try save(records)
+        return updated
     }
 
     func archive(id: UUID) throws -> PickupRecord? {

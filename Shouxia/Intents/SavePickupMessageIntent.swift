@@ -1,4 +1,5 @@
 import AppIntents
+import Foundation
 
 struct SavePickupMessageIntent: AppIntent {
     static let title: LocalizedStringResource = "保存取件短信"
@@ -18,7 +19,13 @@ struct SavePickupMessageIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         do {
-            let result = try await PickupRepository.shared.importText(text, source: .smsAutomation)
+            let result = try await PickupRepository.shared.importText(
+                text,
+                source: .smsAutomation,
+                defaultLocation: UserDefaults.standard.string(
+                    forKey: "commonPickupLocation"
+                )
+            )
             switch result {
             case let .added(record):
                 return .result(dialog: "已收好取件码 \(record.code)")

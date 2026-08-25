@@ -77,6 +77,8 @@ private struct InboxMoodCopy: Equatable {
 private struct ImageImportReview: Identifiable {
     let id = UUID()
     let candidates: [ImagePickupCandidate]
+    let imageCount: Int
+    let failedImageCount: Int
 }
 
 struct InboxView: View {
@@ -84,61 +86,97 @@ struct InboxView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
     @AppStorage("automationSetupAutoHideHandled") private var automationSetupAutoHideHandled = false
+    @AppStorage("automaticClipboardImportEnabled") private var automaticClipboardImportEnabled = false
+    @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
+    @AppStorage("lastProcessedPasteboardChangeCount") private var lastProcessedPasteboardChangeCount = -1
     @State private var store = PickupStore()
     @State private var presentedSheet: PresentedSheet?
     @State private var selectedPickup: PickupRecord?
     @State private var completingID: UUID?
     @State private var moodCopy = InboxMoodCopy.random(for: 0)
-    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var isRecognizingImage = false
+    @State private var isCheckingClipboard = false
 
     private let imageTextRecognizer = ImageTextRecognizer()
     private let imagePickupExtractor = ImagePickupExtractor()
+    private let imagePickupBatchMerger = ImagePickupBatchMerger()
 
     var body: some View {
         NavigationStack {
             ZStack {
                 ShouxiaBackground()
 
-                ScrollView {
-                    LazyVStack(spacing: 14) {
-                        intro
+                List {
+                    intro
+                        .listRowInsets(
+                            EdgeInsets(top: 0, leading: 18, bottom: 7, trailing: 18)
+                        )
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
 
-                        if ProcessInfo.processInfo.arguments.contains("-screenshot-mode")
-                            || !automationSetupCardHidden {
-                            automationSetupCard
-                        }
-
-                        if store.pendingRecords.isEmpty {
-                            emptyState
-                        } else {
-                            ForEach(store.pendingRecords) { record in
-                                PickupCard(
-                                    record: record,
-                                    isCompleting: completingID == record.id,
-                                    reduceMotion: reduceMotion,
-                                    onOpen: {
-                                        selectedPickup = record
-                                    },
-                                    onComplete: { complete(record) }
-                                )
-                                .transition(
-                                    reduceMotion
-                                        ? .opacity
-                                        : .asymmetric(
-                                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                                            removal: .opacity.combined(with: .scale(scale: 0.82))
-                                        )
-                                )
-                            }
-
-                            completionHint
-                        }
+                    if ProcessInfo.processInfo.arguments.contains("-screenshot-mode")
+                        || !automationSetupCardHidden {
+                        automationSetupCard
+                            .listRowInsets(
+                                EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 120)
+
+                    if store.pendingRecords.isEmpty {
+                        emptyState
+                            .listRowInsets(
+                                EdgeInsets(top: 7, leading: 18, bottom: 120, trailing: 18)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(store.pendingRecords) { record in
+                            PickupCard(
+                                record: record,
+                                isCompleting: completingID == record.id,
+                                onOpen: {
+                                    selectedPickup = record
+                                },
+                                onComplete: { complete(record) }
+                            )
+                            .listRowInsets(
+                                EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                Button {
+                                    complete(record)
+                                } label: {
+                                    Label("收下", systemImage: "shippingbox.fill")
+                                }
+                                .tint(ShouxiaPalette.breezePressed)
+                            }
+                            .transition(
+                                reduceMotion
+                                    ? .opacity
+                                    : .asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                                        removal: .opacity.combined(with: .scale(scale: 0.82))
+                                    )
+                            )
+                        }
+
+                        completionHint
+                            .listRowInsets(
+                                EdgeInsets(top: 7, leading: 18, bottom: 120, trailing: 18)
+                            )
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
+                .environment(\.defaultMinListRowHeight, 1)
             }
             .navigationTitle("收下")
             .navigationBarTitleDisplayMode(.inline)
@@ -197,21 +235,24 @@ struct InboxView: View {
             }
             .fullScreenCover(item: $selectedPickup) { record in
                 PickupModeView(
+                    store: store,
                     records: pickupModeRecords(startingAt: record),
-                    initialRecordID: record.id
+                    initialRecordID: record.id,
+                    onComplete: completeFromPickupMode
                 )
             }
             .task {
                 await store.load()
                 hideAutomationSetupAfterSMSImport()
+                await importClipboardIfNeeded()
             }
             .onChange(of: store.pendingRecords.count) { _, count in
                 moodCopy = InboxMoodCopy.random(for: count, excluding: moodCopy)
             }
-            .onChange(of: selectedPhoto) { _, item in
-                guard let item else { return }
+            .onChange(of: selectedPhotos) { _, items in
+                guard !items.isEmpty else { return }
                 Task {
-                    await recognizeImage(from: item)
+                    await recognizeImages(from: items)
                 }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -219,6 +260,7 @@ struct InboxView: View {
                 Task {
                     await store.load()
                     hideAutomationSetupAfterSMSImport()
+                    await importClipboardIfNeeded()
                 }
             }
             .onOpenURL { url in
@@ -264,7 +306,7 @@ struct InboxView: View {
 
                 Text(moodCopy.subtitle)
                 .font(.subheadline)
-                .foregroundStyle(ShouxiaPalette.mutedInk)
+                .foregroundStyle(ShouxiaPalette.supportingInk)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -280,21 +322,25 @@ struct InboxView: View {
         return VStack(alignment: .leading, spacing: 10) {
             Text("他人托你取的")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(ShouxiaPalette.mutedInk)
+                .foregroundStyle(ShouxiaPalette.supportingInk)
 
             HStack(spacing: 10) {
-                Button {
-                    let text = UIPasteboard.general.string ?? ""
-                    Task { await store.importText(text, source: .paste) }
-                } label: {
-                    Text("粘贴取件信息")
+                PasteButton(payloadType: String.self) { strings in
+                    Task {
+                        await store.importText(
+                            strings.joined(separator: "\n"),
+                            source: .paste,
+                            defaultLocation: normalizedCommonPickupLocation
+                        )
+                    }
                 }
                 .buttonStyle(ShouxiaPrimaryButtonStyle())
                 .accessibilityLabel("读取剪贴板并添加别人发来的取件信息")
                 .accessibilityHint("请先从聊天或其他 App 复制对方发来的完整取件文字")
 
                 PhotosPicker(
-                    selection: $selectedPhoto,
+                    selection: $selectedPhotos,
+                    maxSelectionCount: 5,
                     matching: .images,
                     photoLibrary: .shared()
                 ) {
@@ -304,14 +350,14 @@ struct InboxView: View {
                                 .controlSize(.small)
                                 .accessibilityLabel("正在识别图片")
                         } else {
-                            Label("识别取件截图", systemImage: "photo")
+                            Label("识别取件截图", systemImage: "photo.on.rectangle")
                         }
                     }
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(ShouxiaSecondaryButtonStyle())
                 .disabled(recognizingImage)
-                .accessibilityHint("从相册选择他人发来的取件截图")
+                .accessibilityHint("从相册一次选择最多五张取件截图")
             }
         }
     }
@@ -506,10 +552,17 @@ struct InboxView: View {
     }
 
     private func pickupModeRecords(startingAt record: PickupRecord) -> [PickupRecord] {
-        let recordsAtSameLocation = store.pendingRecords.filter {
-            $0.id == record.id || $0.sharesPickupLocation(with: record)
+        let relatedRecords = store.pendingRecords.filter {
+            $0.id == record.id || $0.sharesPickupGroup(with: record)
         }
-        return recordsAtSameLocation.isEmpty ? [record] : recordsAtSameLocation
+        return relatedRecords.isEmpty ? [record] : relatedRecords
+    }
+
+    private func completeFromPickupMode(_ record: PickupRecord) {
+        withAnimation(reduceMotion ? .easeOut(duration: 0.16) : ShouxiaMotion.settle) {
+            store.beginCompletion(record)
+        }
+        persistCompletion(record)
     }
 
     private func hideAutomationSetupAfterSMSImport() {
@@ -537,35 +590,85 @@ struct InboxView: View {
     }
 
     @MainActor
-    private func recognizeImage(from item: PhotosPickerItem) async {
+    private func recognizeImages(from items: [PhotosPickerItem]) async {
         isRecognizingImage = true
         defer {
             isRecognizingImage = false
-            selectedPhoto = nil
+            selectedPhotos = []
         }
 
-        do {
-            guard let data = try await item.loadTransferable(type: Data.self) else {
-                throw ImagePickupRecognitionError.unreadableImage
-            }
-            let lines = try await imageTextRecognizer.recognize(in: data)
-            try Task.checkCancellation()
-            let candidates = try imagePickupExtractor.candidates(from: lines)
+        var candidateGroups: [[ImagePickupCandidate]] = []
+        var failedImageCount = 0
+        var lastRecognitionError: ImagePickupRecognitionError?
 
-            if candidates.count == 1, candidates[0].isHighConfidence {
-                await store.importImageCandidates(candidates)
-            } else {
-                presentedSheet = .imageReview(
-                    ImageImportReview(candidates: candidates)
+        for item in items {
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self) else {
+                    throw ImagePickupRecognitionError.unreadableImage
+                }
+                let lines = try await imageTextRecognizer.recognize(in: data)
+                try Task.checkCancellation()
+                candidateGroups.append(try imagePickupExtractor.candidates(from: lines))
+            } catch is CancellationError {
+                return
+            } catch let error as ImagePickupRecognitionError {
+                failedImageCount += 1
+                lastRecognitionError = error
+            } catch {
+                failedImageCount += 1
+            }
+        }
+
+        let candidates = imagePickupBatchMerger.merge(candidateGroups)
+        guard !candidates.isEmpty else {
+            store.showNotice(
+                .error(
+                    lastRecognitionError?.localizedDescription
+                        ?? "图片没有识别成功，请换一张再试"
                 )
-            }
-        } catch is CancellationError {
+            )
             return
-        } catch let error as ImagePickupRecognitionError {
-            store.showNotice(.error(error.localizedDescription))
-        } catch {
-            store.showNotice(.error("图片没有识别成功，请换一张再试"))
         }
+
+        if items.count == 1, candidates.count == 1, candidates[0].isHighConfidence {
+            await store.importImageCandidates(
+                candidates,
+                defaultLocation: normalizedCommonPickupLocation
+            )
+        } else {
+            presentedSheet = .imageReview(
+                ImageImportReview(
+                    candidates: candidates,
+                    imageCount: items.count,
+                    failedImageCount: failedImageCount
+                )
+            )
+        }
+    }
+
+    @MainActor
+    private func importClipboardIfNeeded() async {
+        guard automaticClipboardImportEnabled, !isCheckingClipboard else { return }
+
+        let pasteboard = UIPasteboard.general
+        let changeCount = pasteboard.changeCount
+        guard changeCount != lastProcessedPasteboardChangeCount else { return }
+
+        isCheckingClipboard = true
+        lastProcessedPasteboardChangeCount = changeCount
+        defer { isCheckingClipboard = false }
+
+        guard let text = pasteboard.string else { return }
+        await store.importClipboardAutomatically(
+            text,
+            defaultLocation: normalizedCommonPickupLocation
+        )
+    }
+
+    private var normalizedCommonPickupLocation: String? {
+        let normalized = commonPickupLocation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.isEmpty ? nil : normalized
     }
 
     private func persistCompletion(_ record: PickupRecord) {
@@ -711,7 +814,6 @@ private struct PickupHandoffComposeView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
     }
 
     private func toggle(_ record: PickupRecord) {
@@ -857,6 +959,7 @@ private struct HandoffSelectionRow: View {
 
 private struct ImageImportReviewView: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
 
     let review: ImageImportReview
     let store: PickupStore
@@ -913,10 +1016,24 @@ private struct ImageImportReviewView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
 
+                        if let normalizedCommonPickupLocation {
+                            Label(
+                                "地点未识别时，将使用常用取件点“\(normalizedCommonPickupLocation)”",
+                                systemImage: "house"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(ShouxiaPalette.mutedInk)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                        }
+
                         Button {
                             Task {
                                 isSaving = true
-                                await store.importImageCandidates(selectedCandidates)
+                                await store.importImageCandidates(
+                                    selectedCandidates,
+                                    defaultLocation: normalizedCommonPickupLocation
+                                )
                                 dismiss()
                             }
                         } label: {
@@ -956,14 +1073,26 @@ private struct ImageImportReviewView: View {
 
     private var title: String {
         review.candidates.count > 1
-            ? "找到了 \(review.candidates.count) 个可能的取件码"
+            ? "找到了 \(review.candidates.count) 个不重复的取件码"
             : "请确认这个取件码"
     }
 
     private var detail: String {
-        review.candidates.count > 1
-            ? "勾选这张图片里真正需要收下的取件码。"
+        if review.imageCount > 1 {
+            let failedDetail = review.failedImageCount > 0
+                ? "，其中 \(review.failedImageCount) 张没有识别成功"
+                : ""
+            return "已合并 \(review.imageCount) 张图片并按取件码去重\(failedDetail)。请选择真正需要收下的取件码。"
+        }
+        return review.candidates.count > 1
+            ? "请选择这张图片里真正需要收下的取件码。"
             : "图片里没有足够明确的标签，请核对后再添加。"
+    }
+
+    private var normalizedCommonPickupLocation: String? {
+        let normalized = commonPickupLocation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.isEmpty ? nil : normalized
     }
 
     private func toggle(_ candidate: ImagePickupCandidate) {
@@ -1035,6 +1164,8 @@ private struct ImageCandidateRow: View {
 private struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
+    @AppStorage("automaticClipboardImportEnabled") private var automaticClipboardImportEnabled = false
+    @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
 
     private var versionText: String {
         let version = Bundle.main.object(
@@ -1066,6 +1197,44 @@ private struct AboutView: View {
                                 .foregroundStyle(ShouxiaPalette.softInk)
                         }
 
+                        NavigationLink {
+                            ImportPreferencesView()
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: "shippingbox.and.arrow.backward")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(ShouxiaPalette.ink)
+                                    .frame(width: 42, height: 42)
+                                    .background(ShouxiaPalette.warmPaper, in: Circle())
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("导入设置")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(ShouxiaPalette.ink)
+                                    Text(importPreferencesSummary)
+                                        .font(.caption)
+                                        .foregroundStyle(ShouxiaPalette.mutedInk)
+                                        .lineLimit(2)
+                                }
+
+                                Spacer(minLength: 8)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(ShouxiaPalette.softInk)
+                            }
+                            .padding(14)
+                            .background(
+                                ShouxiaPalette.paper.opacity(0.94),
+                                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                    .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("设置常用取件点和打开时剪贴板识别")
+
                         VStack(alignment: .leading, spacing: 0) {
                             PrivacyRow(
                                 icon: "iphone",
@@ -1075,8 +1244,12 @@ private struct AboutView: View {
                             PrivacyDivider()
                             PrivacyRow(
                                 icon: "doc.on.clipboard",
-                                title: "由你主动粘贴",
-                                detail: "只有点击“粘贴取件信息”后，收下才会读取当前剪贴板内容。"
+                                title: automaticClipboardImportEnabled
+                                    ? "剪贴板自动识别由你开启"
+                                    : "由你主动粘贴",
+                                detail: automaticClipboardImportEnabled
+                                    ? "打开收下时只检查发生变化的剪贴板内容；识别和筛选都在本机完成，无关文字不会保存。iOS 可能询问是否允许粘贴。"
+                                    : "只有点击系统粘贴按钮后，收下才会读取当前剪贴板内容。"
                             )
                             PrivacyDivider()
                             PrivacyRow(
@@ -1151,6 +1324,94 @@ private struct AboutView: View {
         }
         .tint(ShouxiaPalette.mutedInk)
         .fontDesign(.rounded)
+    }
+
+    private var importPreferencesSummary: String {
+        let location = commonPickupLocation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        switch (location.isEmpty, automaticClipboardImportEnabled) {
+        case (false, true):
+            return "常用地点：\(location) · 自动识别剪贴板"
+        case (false, false):
+            return "常用地点：\(location)"
+        case (true, true):
+            return "已开启自动识别剪贴板"
+        case (true, false):
+            return "设置常用取件点和剪贴板识别"
+        }
+    }
+}
+
+private struct ImportPreferencesView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("automaticClipboardImportEnabled") private var storedAutomaticClipboardImportEnabled = false
+    @AppStorage("commonPickupLocation") private var storedCommonPickupLocation = ""
+
+    @State private var automaticClipboardImportEnabled: Bool
+    @State private var commonPickupLocation: String
+    @State private var validationMessage: String?
+
+    init() {
+        let defaults = UserDefaults.standard
+        _automaticClipboardImportEnabled = State(
+            initialValue: defaults.bool(forKey: "automaticClipboardImportEnabled")
+        )
+        _commonPickupLocation = State(
+            initialValue: defaults.string(forKey: "commonPickupLocation") ?? ""
+        )
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("例如 小区北门驿站", text: $commonPickupLocation)
+                    .textInputAutocapitalization(.never)
+                    .accessibilityLabel("常用取件点")
+
+                if let validationMessage {
+                    Label(validationMessage, systemImage: "exclamationmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(ShouxiaPalette.apricot)
+                        .accessibilityLabel("保存失败，\(validationMessage)")
+                }
+            } header: {
+                Text("常用取件点")
+            } footer: {
+                Text("图片或文字没有识别出地点时，用它补全新导入的包裹。修改后不会改变旧记录。")
+            }
+
+            Section {
+                Toggle(
+                    "打开时识别剪贴板",
+                    isOn: $automaticClipboardImportEnabled
+                )
+            } footer: {
+                Text("默认关闭。开启后，收下只在进入前台且剪贴板发生变化时读取一次；无关文字不会保存。首次使用时 iOS 可能询问是否允许粘贴。")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(ShouxiaBackground())
+        .navigationTitle("导入设置")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("保存") { save() }
+            }
+        }
+    }
+
+    private func save() {
+        let normalizedLocation = commonPickupLocation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedLocation.count <= 80 else {
+            validationMessage = "常用取件点请控制在 80 个字符以内"
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            return
+        }
+
+        storedCommonPickupLocation = normalizedLocation
+        storedAutomaticClipboardImportEnabled = automaticClipboardImportEnabled
+        dismiss()
     }
 }
 
@@ -1460,103 +1721,40 @@ private struct AutomationSetupDivider: View {
 }
 
 private struct PickupCard: View {
-    private enum DragDirection {
-        case horizontal
-        case vertical
-    }
-
     let record: PickupRecord
     let isCompleting: Bool
-    let reduceMotion: Bool
     let onOpen: () -> Void
     let onComplete: () -> Void
 
-    @State private var dragOffset: CGFloat = 0
-    @State private var crossedThreshold = false
-    @State private var dragDirection: DragDirection?
-
-    private let completionThreshold: CGFloat = 108
-
-    private var dragProgress: CGFloat {
-        min(dragOffset / completionThreshold, 1)
-    }
-
     var body: some View {
-        ZStack(alignment: .leading) {
-            swipeTrack
+        Button(action: onOpen) {
             card
-                .offset(
-                    x: isCompleting ? 132 : dragOffset,
-                    y: isCompleting ? 52 : 0
-                )
-                .scaleEffect(
-                    isCompleting
-                        ? 0.78
-                        : 1 - (dragProgress * 0.018)
-                )
-                .rotationEffect(
-                    .degrees(
-                        isCompleting
-                            ? 4
-                            : Double(dragProgress * 2.4)
-                    )
-                )
-                .opacity(isCompleting ? 0 : 1)
-                .simultaneousGesture(dragGesture)
-                .onTapGesture(perform: onOpen)
         }
-        .sensoryFeedback(
-            .impact(weight: .medium, intensity: 0.72),
-            trigger: crossedThreshold
-        ) { oldValue, newValue in
-            !oldValue && newValue
-        }
+        .buttonStyle(.plain)
+        .offset(y: isCompleting ? 10 : 0)
+        .scaleEffect(isCompleting ? 0.98 : 1)
+        .opacity(isCompleting ? 0 : 1)
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
         .accessibilityHint("轻点用大字查看取件码，向右滑动可以收下")
-        .accessibilityAction {
-            onOpen()
-        }
         .accessibilityAction(named: "收下", onComplete)
-    }
-
-    private var swipeTrack: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(ShouxiaPalette.paper.opacity(0.44))
-                Image(systemName: crossedThreshold ? "checkmark" : "shippingbox.fill")
-                    .font(.subheadline.weight(.bold))
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .frame(width: 38, height: 38)
-            Text(crossedThreshold ? "松手就好" : "向右滑")
-                .font(.subheadline.weight(.semibold))
-            Spacer()
-        }
-        .foregroundStyle(ShouxiaPalette.ink)
-        .padding(.leading, 16)
-        .frame(maxWidth: .infinity, minHeight: 148)
-        .background(
-            LinearGradient(
-                colors: crossedThreshold
-                    ? [ShouxiaPalette.breezePressed, ShouxiaPalette.breeze]
-                    : [ShouxiaPalette.breeze, ShouxiaPalette.skyWash],
-                startPoint: .leading,
-                endPoint: .trailing
-            ),
-            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-        )
-        .animation(ShouxiaMotion.threshold, value: crossedThreshold)
     }
 
     private var card: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
-                Text(record.location ?? "地点待确认")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(ShouxiaPalette.ink)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(record.locationDisplayName)
+                        .font(.subheadline.weight(.semibold))
+                        .fontDesign(.rounded)
+                        .foregroundStyle(ShouxiaPalette.ink)
+                        .lineLimit(1)
+
+                    if record.locationSource == .commonDefault {
+                        Label("常用取件点", systemImage: "house")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(ShouxiaPalette.mutedInk)
+                    }
+                }
 
                 Spacer(minLength: 8)
 
@@ -1590,7 +1788,7 @@ private struct PickupCard: View {
                 Label("大字查看", systemImage: "rectangle.expand.vertical")
             }
             .font(.caption)
-            .foregroundStyle(ShouxiaPalette.softInk)
+            .foregroundStyle(ShouxiaPalette.supportingInk)
         }
         .padding(.vertical, 19)
         .padding(.leading, 39)
@@ -1612,45 +1810,10 @@ private struct PickupCard: View {
                 .stroke(ShouxiaPalette.line, lineWidth: 1)
         }
         .shadow(
-            color: isCompleting
-                ? ShouxiaPalette.celebrationGlow
-                : ShouxiaPalette.ink.opacity(0.07 + (dragProgress * 0.02)),
-            radius: isCompleting ? 28 : 18 - (dragProgress * 6),
-            y: isCompleting ? 10 : 9 - (dragProgress * 4)
+            color: ShouxiaPalette.ink.opacity(isCompleting ? 0.02 : 0.07),
+            radius: isCompleting ? 10 : 18,
+            y: isCompleting ? 4 : 9
         )
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 14)
-            .onChanged { value in
-                guard !isCompleting else { return }
-
-                if dragDirection == nil {
-                    dragDirection = abs(value.translation.width) > abs(value.translation.height)
-                        ? .horizontal
-                        : .vertical
-                }
-
-                guard dragDirection == .horizontal else { return }
-
-                let nextOffset = min(max(value.translation.width, 0), 148)
-                dragOffset = nextOffset
-                crossedThreshold = nextOffset >= completionThreshold
-            }
-            .onEnded { _ in
-                if dragDirection == .horizontal, crossedThreshold {
-                    onComplete()
-                }
-                withAnimation(
-                    reduceMotion
-                        ? .easeOut(duration: 0.14)
-                        : ShouxiaMotion.threshold
-                ) {
-                    dragOffset = 0
-                    crossedThreshold = false
-                }
-                dragDirection = nil
-            }
     }
 }
 
@@ -1658,12 +1821,32 @@ private struct PickupModeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
 
-    let records: [PickupRecord]
+    let store: PickupStore
+    let onComplete: (PickupRecord) -> Void
+    let groupRecordIDs: [UUID]
     @State private var selectedRecordID: UUID
+    @State private var editingRecord: PickupRecord?
 
-    init(records: [PickupRecord], initialRecordID: UUID) {
-        self.records = records
+    init(
+        store: PickupStore,
+        records: [PickupRecord],
+        initialRecordID: UUID,
+        onComplete: @escaping (PickupRecord) -> Void
+    ) {
+        self.store = store
+        self.onComplete = onComplete
+        groupRecordIDs = records.map(\.id)
         _selectedRecordID = State(initialValue: initialRecordID)
+    }
+
+    private var records: [PickupRecord] {
+        groupRecordIDs.compactMap { id in
+            store.pendingRecords.first { $0.id == id }
+        }
+    }
+
+    private var selectedRecord: PickupRecord? {
+        records.first { $0.id == selectedRecordID } ?? records.first
     }
 
     private var selectedIndex: Int {
@@ -1679,7 +1862,10 @@ private struct PickupModeView: View {
 
                 TabView(selection: $selectedRecordID) {
                     ForEach(records) { record in
-                        PickupCodePage(record: record)
+                        PickupCodePage(
+                            record: record,
+                            onEdit: { editingRecord = record }
+                        )
                             .tag(record.id)
                             .padding(.horizontal, 20)
                     }
@@ -1690,27 +1876,49 @@ private struct PickupModeView: View {
                     value: selectedRecordID
                 )
 
-                pageFooter
+                bottomControls
             }
             .padding(.bottom, 18)
         }
-        .fontDesign(.rounded)
         .tint(ShouxiaPalette.ink)
+        .sheet(item: $editingRecord) { record in
+            PickupRecordEditView(record: record, store: store)
+                .presentationDetents([.medium])
+        }
     }
 
     private var topBar: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("取件现场")
+                Text("取件台")
                     .font(.title3.weight(.semibold))
+                    .fontDesign(.rounded)
                     .foregroundStyle(ShouxiaPalette.ink)
 
-                Text(records.count > 1 ? "同一地点有 \(records.count) 个包裹" : "把取件码给工作人员看")
+                Text(groupDescription)
                     .font(.caption)
-                    .foregroundStyle(ShouxiaPalette.mutedInk)
+                    .foregroundStyle(ShouxiaPalette.supportingInk)
             }
 
             Spacer()
+
+            if let selectedRecord {
+                Button {
+                    editingRecord = selectedRecord
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(ShouxiaPalette.ink)
+                        .frame(width: 44, height: 44)
+                        .background(ShouxiaPalette.paper.opacity(0.94), in: Circle())
+                        .overlay {
+                            Circle()
+                                .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
+                        }
+                }
+                .accessibilityLabel("更正取件信息")
+                .accessibilityHint("修改当前包裹的取件码或地点")
+            }
 
             Button {
                 dismiss()
@@ -1731,7 +1939,64 @@ private struct PickupModeView: View {
         .padding(.top, 12)
     }
 
-    private var pageFooter: some View {
+    private var bottomControls: some View {
+        VStack(spacing: 12) {
+            pageStatus
+
+            Button {
+                completeSelectedRecord()
+            } label: {
+                Label("已取到，收下", systemImage: "shippingbox.fill")
+            }
+            .buttonStyle(ShouxiaPrimaryButtonStyle())
+            .disabled(selectedRecord == nil)
+            .accessibilityHint(
+                records.count > 1
+                    ? "完成当前包裹并显示这一组的下一件"
+                    : "完成当前包裹并返回待取列表"
+            )
+
+            completionFeedback
+        }
+        .padding(.horizontal, 20)
+    }
+
+    @ViewBuilder
+    private var completionFeedback: some View {
+        if let lastCompleted = store.lastCompleted {
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(ShouxiaPalette.breezePressed)
+                Text("已收下 \(lastCompleted.code)")
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Button("撤销") {
+                    undoLastCompletion(lastCompleted)
+                }
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(ShouxiaPalette.ink)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .background(ShouxiaPalette.paper, in: Capsule())
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 44)
+            .foregroundStyle(ShouxiaPalette.paper)
+            .background(
+                ShouxiaPalette.ink,
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .accessibilityElement(children: .contain)
+            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98)))
+        } else {
+            Color.clear
+                .frame(height: 44)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var pageStatus: some View {
         VStack(spacing: 9) {
             if records.count > 1 {
                 HStack(spacing: 7) {
@@ -1755,42 +2020,114 @@ private struct PickupModeView: View {
 
                 Text("第 \(selectedIndex + 1) 个，共 \(records.count) 个 · 左右滑动切换")
                     .font(.caption)
-                    .foregroundStyle(ShouxiaPalette.mutedInk)
+                    .foregroundStyle(ShouxiaPalette.supportingInk)
             } else {
                 Text("长按取件码可以复制")
                     .font(.caption)
-                    .foregroundStyle(ShouxiaPalette.mutedInk)
+                    .foregroundStyle(ShouxiaPalette.supportingInk)
             }
         }
         .frame(minHeight: 46)
-        .padding(.horizontal, 20)
+    }
+
+    private var groupDescription: String {
+        guard records.count > 1 else {
+            return "把取件码给工作人员看"
+        }
+        if let batchID = selectedRecord?.importBatchID,
+           records.allSatisfy({ $0.importBatchID == batchID }) {
+            return "同批导入有 \(records.count) 个包裹"
+        }
+        return "同一地点有 \(records.count) 个包裹"
+    }
+
+    private func completeSelectedRecord() {
+        guard let record = selectedRecord else { return }
+        let currentRecords = records
+        let currentIndex = currentRecords.firstIndex { $0.id == record.id } ?? 0
+        let remaining = currentRecords.filter { $0.id != record.id }
+        let nextRecord = currentRecords.count > 1
+            ? currentRecords[(currentIndex + 1) % currentRecords.count]
+            : nil
+
+        if let nextRecord {
+            withAnimation(reduceMotion ? nil : ShouxiaMotion.settle) {
+                selectedRecordID = nextRecord.id
+            }
+        }
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        onComplete(record)
+
+        if remaining.isEmpty {
+            if reduceMotion {
+                dismiss()
+            } else {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(260))
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func undoLastCompletion(_ record: PickupRecord) {
+        Task {
+            await store.undoLastCompletion()
+            guard store.pendingRecords.contains(where: { $0.id == record.id }) else {
+                return
+            }
+            withAnimation(reduceMotion ? nil : ShouxiaMotion.settle) {
+                selectedRecordID = record.id
+            }
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
     }
 }
 
 private struct PickupCodePage: View {
     let record: PickupRecord
+    let onEdit: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 30)
 
-            VStack(spacing: 10) {
-                Text(record.location ?? "地点待确认")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(ShouxiaPalette.ink)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.72)
+            Button(action: onEdit) {
+                VStack(spacing: 10) {
+                    HStack(spacing: 7) {
+                        Text(record.locationDisplayName)
+                            .font(.title2.weight(.semibold))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(ShouxiaPalette.ink)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.72)
 
-                if let platform = record.platform {
-                    Text(platform)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(ShouxiaPalette.mutedInk)
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 6)
-                        .background(ShouxiaPalette.skyWash, in: Capsule())
+                        Image(systemName: "pencil.circle")
+                            .font(.subheadline)
+                            .foregroundStyle(ShouxiaPalette.mutedInk)
+                    }
+
+                    if let platform = record.platform {
+                        Text(platform)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(ShouxiaPalette.mutedInk)
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 6)
+                            .background(ShouxiaPalette.skyWash, in: Capsule())
+                    }
+
+                    if record.locationSource == .commonDefault {
+                        Label("来自常用取件点", systemImage: "house")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(ShouxiaPalette.mutedInk)
+                    }
                 }
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("取件地点，\(record.locationDisplayName)")
+            .accessibilityHint("双击更正取件码或地点")
 
             Spacer(minLength: 24)
 
@@ -1815,7 +2152,7 @@ private struct PickupCodePage: View {
 
             Label("请核对地点后出示", systemImage: "shippingbox")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(ShouxiaPalette.softInk)
+                .foregroundStyle(ShouxiaPalette.supportingInk)
 
             Spacer(minLength: 30)
         }
@@ -1836,7 +2173,104 @@ private struct PickupCodePage: View {
         }
         .shadow(color: ShouxiaPalette.ink.opacity(0.08), radius: 26, y: 12)
         .padding(.vertical, 24)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private struct PickupRecordEditView: View {
+    private enum Field: Hashable {
+        case code
+        case location
+    }
+
+    @Environment(\.dismiss) private var dismiss
+
+    let record: PickupRecord
+    let store: PickupStore
+    @State private var code: String
+    @State private var location: String
+    @State private var validationMessage: String?
+    @State private var isSaving = false
+    @FocusState private var focusedField: Field?
+
+    init(record: PickupRecord, store: PickupStore) {
+        self.record = record
+        self.store = store
+        _code = State(initialValue: record.code)
+        _location = State(initialValue: record.location ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("取件码") {
+                    TextField("例如 3-2-4012", text: $code)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .code)
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .location }
+                        .accessibilityLabel("取件码")
+
+                    if let validationMessage {
+                        Label(validationMessage, systemImage: "exclamationmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(ShouxiaPalette.apricot)
+                            .accessibilityLabel("保存失败，\(validationMessage)")
+                    }
+                }
+
+                Section {
+                    TextField("例如 北门菜鸟驿站", text: $location)
+                        .focused($focusedField, equals: .location)
+                        .submitLabel(.done)
+                        .onSubmit { save() }
+                        .accessibilityLabel("取件地点")
+                } header: {
+                    Text("取件地点")
+                } footer: {
+                    Text("可以留空，之后仍可从取件现场更正。")
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(ShouxiaBackground())
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle("更正取件信息")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(isSaving ? "正在保存" : "保存") {
+                        save()
+                    }
+                    .disabled(isSaving)
+                }
+            }
+            .onAppear { focusedField = .code }
+        }
+        .tint(ShouxiaPalette.mutedInk)
+        .fontDesign(.rounded)
+    }
+
+    private func save() {
+        guard !isSaving else { return }
+        validationMessage = nil
+        isSaving = true
+
+        Task {
+            do {
+                _ = try await store.update(record, code: code, location: location)
+                dismiss()
+            } catch {
+                validationMessage = (error as? LocalizedError)?.errorDescription
+                    ?? "暂时无法保存，请再试一次"
+                focusedField = .code
+                isSaving = false
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+        }
     }
 }
 

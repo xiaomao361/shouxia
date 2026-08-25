@@ -6,6 +6,7 @@ enum ShouxiaPalette {
     static let warmPaper = Color(red: 1.0, green: 0.953, blue: 0.929)
     static let ink = Color(red: 0.149, green: 0.216, blue: 0.275)
     static let mutedInk = Color(red: 0.396, green: 0.475, blue: 0.522)
+    static let supportingInk = Color(red: 0.376, green: 0.455, blue: 0.502)
     static let softInk = Color(red: 0.541, green: 0.604, blue: 0.639)
     static let breeze = Color(red: 0.718, green: 0.867, blue: 0.824)
     static let breezePressed = Color(red: 0.624, green: 0.812, blue: 0.761)

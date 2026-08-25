@@ -40,9 +40,17 @@ final class PickupStore {
         }
     }
 
-    func importText(_ text: String, source: PickupSource) async {
+    func importText(
+        _ text: String,
+        source: PickupSource,
+        defaultLocation: String? = nil
+    ) async {
         do {
-            let result = try await repository.importText(text, source: source)
+            let result = try await repository.importText(
+                text,
+                source: source,
+                defaultLocation: defaultLocation
+            )
             records = try await repository.records()
             switch result {
             case let .added(record):
@@ -57,17 +65,44 @@ final class PickupStore {
         }
     }
 
-    func importImageCandidates(_ candidates: [ImagePickupCandidate]) async {
+    func importClipboardAutomatically(
+        _ text: String,
+        defaultLocation: String? = nil
+    ) async {
+        do {
+            let result = try await repository.importText(
+                text,
+                source: .paste,
+                defaultLocation: defaultLocation
+            )
+            guard case let .added(record) = result else { return }
+            records = try await repository.records()
+            notice = .success("已从剪贴板收好取件码 \(record.code)")
+        } catch is PickupImportError {
+            // Automatic checks stay quiet when the clipboard is unrelated.
+        } catch {
+            notice = .error("剪贴板里的取件信息没有收好")
+        }
+    }
+
+    func importImageCandidates(
+        _ candidates: [ImagePickupCandidate],
+        defaultLocation: String? = nil
+    ) async {
         guard !candidates.isEmpty else { return }
 
         do {
             var addedCodes: [String] = []
             var duplicateCount = 0
+            var seenCodes: Set<String> = []
+            let importBatchID = UUID()
 
-            for candidate in candidates {
+            for candidate in candidates where seenCodes.insert(candidate.code).inserted {
                 let result = try await repository.importText(
                     candidate.sanitizedImportText,
-                    source: .imageRecognition
+                    source: .imageRecognition,
+                    importBatchID: importBatchID,
+                    defaultLocation: defaultLocation
                 )
                 switch result {
                 case let .added(record):
@@ -149,6 +184,19 @@ final class PickupStore {
         } catch {
             notice = .error("暂时无法撤销")
         }
+    }
+
+    func update(_ record: PickupRecord, code: String, location: String?) async throws -> PickupRecord {
+        guard let updated = try await repository.update(
+            id: record.id,
+            code: code,
+            location: location
+        ) else {
+            throw PickupRecordEditError.missingRecord
+        }
+        records = try await repository.records()
+        notice = .success("取件信息已更正")
+        return updated
     }
 
     func restoreToPending(_ record: PickupRecord) async {

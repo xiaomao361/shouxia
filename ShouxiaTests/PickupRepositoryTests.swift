@@ -14,6 +14,34 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertFalse(missingLocation.sharesPickupLocation(with: missingLocation))
     }
 
+    func testPickupGroupUsesImportBatchWhenLocationIsMissing() {
+        let batchID = UUID()
+        let first = makeRecord(location: nil, importBatchID: batchID)
+        let sameBatch = makeRecord(location: "北门驿站", importBatchID: batchID)
+        let otherBatch = makeRecord(location: nil, importBatchID: UUID())
+
+        XCTAssertTrue(first.sharesPickupGroup(with: sameBatch))
+        XCTAssertFalse(first.sharesPickupGroup(with: otherBatch))
+        XCTAssertEqual(first.locationDisplayName, "同批导入 · 地点待确认")
+    }
+
+    func testLegacyRecordWithoutBatchAndLocationSourceStillDecodes() throws {
+        let record = makeRecord(location: "北门驿站")
+        let encoded = try JSONEncoder().encode(record)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "importBatchID")
+        object.removeValue(forKey: "locationSource")
+
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+        let decoded = try JSONDecoder().decode(PickupRecord.self, from: legacyData)
+
+        XCTAssertNil(decoded.importBatchID)
+        XCTAssertNil(decoded.locationSource)
+        XCTAssertEqual(decoded.location, "北门驿站")
+    }
+
     func testLegacyNotificationAutomationSourceMigratesToSMSAutomation() throws {
         let legacy = Data(#""notificationAutomation""#.utf8)
         let source = try JSONDecoder().decode(PickupSource.self, from: legacy)
@@ -106,6 +134,87 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertNil(restored?.archivedAt)
     }
 
+    func testImportAppliesCommonLocationOnlyWhenLocationIsMissing() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let batchID = UUID()
+
+        let fallbackResult = try await repository.importText(
+            "包裹已到，请使用领取码 P668899 完成取件。",
+            source: .imageRecognition,
+            importBatchID: batchID,
+            defaultLocation: " 小区北门驿站 "
+        )
+        let recognizedResult = try await repository.importText(
+            "包裹已到南门快递柜，取件码 829146。",
+            source: .paste,
+            defaultLocation: "小区北门驿站"
+        )
+
+        guard case let .added(fallback) = fallbackResult,
+              case let .added(recognized) = recognizedResult else {
+            return XCTFail("Both imports should add records")
+        }
+        XCTAssertEqual(fallback.location, "小区北门驿站")
+        XCTAssertEqual(fallback.locationSource, .commonDefault)
+        XCTAssertEqual(fallback.importBatchID, batchID)
+        XCTAssertEqual(recognized.location, "南门快递柜")
+        XCTAssertEqual(recognized.locationSource, .recognized)
+    }
+
+    func testUpdateNormalizesAndPersistsPickupCodeAndLocation() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let result = try await repository.importText(
+            "【丰巢】快件已存入1号柜，取件码829146，请及时领取。",
+            source: .paste
+        )
+        guard case let .added(record) = result else {
+            return XCTFail("Import should add a record")
+        }
+
+        let updated = try await repository.update(
+            id: record.id,
+            code: " ab-123 ",
+            location: " 北门驿站 "
+        )
+        let persisted = try await repository.records().first
+
+        XCTAssertEqual(updated?.code, "AB-123")
+        XCTAssertEqual(updated?.location, "北门驿站")
+        XCTAssertEqual(updated?.locationSource, .userEdited)
+        XCTAssertEqual(persisted?.code, "AB-123")
+        XCTAssertEqual(persisted?.location, "北门驿站")
+
+        let cleared = try await repository.update(
+            id: record.id,
+            code: "AB-123",
+            location: "   "
+        )
+        XCTAssertNil(cleared?.location)
+        XCTAssertNil(cleared?.locationSource)
+    }
+
+    func testUpdateRejectsInvalidPickupCode() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let result = try await repository.importText(
+            "【丰巢】快件已存入1号柜，取件码829146，请及时领取。",
+            source: .paste
+        )
+        guard case let .added(record) = result else {
+            return XCTFail("Import should add a record")
+        }
+
+        do {
+            _ = try await repository.update(id: record.id, code: "错误 码", location: nil)
+            XCTFail("Invalid code should be rejected")
+        } catch let error as PickupRecordEditError {
+            XCTAssertEqual(error, .invalidCode)
+        }
+    }
+
     func testArchiveRestoreAndPermanentDeleteLifecycle() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
@@ -152,7 +261,8 @@ final class PickupRepositoryTests: XCTestCase {
 
     private func makeRecord(
         code: String = "123456",
-        location: String?
+        location: String?,
+        importBatchID: UUID? = nil
     ) -> PickupRecord {
         PickupRecord(
             id: UUID(),
@@ -163,6 +273,7 @@ final class PickupRepositoryTests: XCTestCase {
             createdAt: Date(),
             source: .paste,
             fingerprint: UUID().uuidString,
+            importBatchID: importBatchID,
             completedAt: nil,
             archivedAt: nil
         )

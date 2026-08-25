@@ -37,6 +37,43 @@ struct ImagePickupCandidate: Equatable, Hashable, Identifiable, Sendable {
     }
 }
 
+struct ImagePickupBatchMerger: Sendable {
+    func merge(_ candidateGroups: [[ImagePickupCandidate]]) -> [ImagePickupCandidate] {
+        var orderedCodes: [String] = []
+        var bestByCode: [String: ImagePickupCandidate] = [:]
+
+        for candidate in candidateGroups.flatMap({ $0 }) {
+            if let existing = bestByCode[candidate.code] {
+                if isBetter(candidate, than: existing) {
+                    bestByCode[candidate.code] = candidate
+                }
+            } else {
+                orderedCodes.append(candidate.code)
+                bestByCode[candidate.code] = candidate
+            }
+        }
+
+        return orderedCodes.compactMap { bestByCode[$0] }
+    }
+
+    private func isBetter(
+        _ candidate: ImagePickupCandidate,
+        than existing: ImagePickupCandidate
+    ) -> Bool {
+        let candidateScore = score(candidate)
+        let existingScore = score(existing)
+        return candidateScore > existingScore
+    }
+
+    private func score(_ candidate: ImagePickupCandidate) -> Double {
+        var result = Double(candidate.confidence)
+        if candidate.location != nil { result += 4 }
+        if candidate.isLabelled { result += 2 }
+        if candidate.platform != nil { result += 1 }
+        return result
+    }
+}
+
 enum ImagePickupRecognitionError: LocalizedError, Equatable {
     case unreadableImage
     case noText

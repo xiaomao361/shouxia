@@ -3,14 +3,44 @@ import Foundation
 struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
     let id: UUID
     let rawText: String
-    let code: String
-    let location: String?
+    var code: String
+    var location: String?
     let platform: String?
     let createdAt: Date
     let source: PickupSource
     let fingerprint: String
+    var importBatchID: UUID?
+    var locationSource: PickupLocationSource?
     var completedAt: Date?
     var archivedAt: Date?
+
+    init(
+        id: UUID,
+        rawText: String,
+        code: String,
+        location: String?,
+        platform: String?,
+        createdAt: Date,
+        source: PickupSource,
+        fingerprint: String,
+        importBatchID: UUID? = nil,
+        locationSource: PickupLocationSource? = nil,
+        completedAt: Date?,
+        archivedAt: Date?
+    ) {
+        self.id = id
+        self.rawText = rawText
+        self.code = code
+        self.location = location
+        self.platform = platform
+        self.createdAt = createdAt
+        self.source = source
+        self.fingerprint = fingerprint
+        self.importBatchID = importBatchID
+        self.locationSource = locationSource
+        self.completedAt = completedAt
+        self.archivedAt = archivedAt
+    }
 
     var isCompleted: Bool {
         completedAt != nil
@@ -31,6 +61,46 @@ struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
     func sharesPickupLocation(with other: PickupRecord) -> Bool {
         guard let normalizedLocation else { return false }
         return normalizedLocation == other.normalizedLocation
+    }
+
+    func sharesPickupGroup(with other: PickupRecord) -> Bool {
+        if let importBatchID, importBatchID == other.importBatchID {
+            return true
+        }
+        return sharesPickupLocation(with: other)
+    }
+
+    var locationDisplayName: String {
+        if let location, !location.isEmpty {
+            return location
+        }
+        return importBatchID == nil ? "地点待确认" : "同批导入 · 地点待确认"
+    }
+}
+
+enum PickupLocationSource: String, Codable, Sendable {
+    case recognized
+    case commonDefault
+    case userEdited
+}
+
+enum PickupRecordEditError: LocalizedError, Equatable {
+    case missingRecord
+    case emptyCode
+    case invalidCode
+    case locationTooLong
+
+    var errorDescription: String? {
+        switch self {
+        case .missingRecord:
+            "这条取件信息已经不存在了"
+        case .emptyCode:
+            "请填写取件码"
+        case .invalidCode:
+            "取件码请使用字母、数字和短横线，长度不超过 40 个字符"
+        case .locationTooLong:
+            "取件地点请控制在 80 个字符以内"
+        }
     }
 }
 
