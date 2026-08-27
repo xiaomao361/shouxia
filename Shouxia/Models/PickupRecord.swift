@@ -11,6 +11,7 @@ struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
     let fingerprint: String
     var importBatchID: UUID?
     var locationSource: PickupLocationSource?
+    var handedOffAt: Date?
     var completedAt: Date?
     var archivedAt: Date?
 
@@ -25,6 +26,7 @@ struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
         fingerprint: String,
         importBatchID: UUID? = nil,
         locationSource: PickupLocationSource? = nil,
+        handedOffAt: Date? = nil,
         completedAt: Date?,
         archivedAt: Date?
     ) {
@@ -38,12 +40,17 @@ struct PickupRecord: Codable, Equatable, Identifiable, Sendable {
         self.fingerprint = fingerprint
         self.importBatchID = importBatchID
         self.locationSource = locationSource
+        self.handedOffAt = handedOffAt
         self.completedAt = completedAt
         self.archivedAt = archivedAt
     }
 
     var isCompleted: Bool {
         completedAt != nil
+    }
+
+    var isHandedOff: Bool {
+        handedOffAt != nil
     }
 
     var isArchived: Bool {

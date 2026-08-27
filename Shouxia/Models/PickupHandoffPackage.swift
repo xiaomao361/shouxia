@@ -59,7 +59,7 @@ struct PickupHandoffPackage: Codable, Equatable, Identifiable, Sendable {
         return try decoder.decode(Self.self, from: Data(contentsOf: url)).validated()
     }
 
-    fileprivate func exportURL() throws -> URL {
+    func exportURL() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("ShouxiaHandoffs", isDirectory: true)
         try FileManager.default.createDirectory(

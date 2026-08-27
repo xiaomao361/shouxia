@@ -33,12 +33,14 @@ final class PickupRepositoryTests: XCTestCase {
         )
         object.removeValue(forKey: "importBatchID")
         object.removeValue(forKey: "locationSource")
+        object.removeValue(forKey: "handedOffAt")
 
         let legacyData = try JSONSerialization.data(withJSONObject: object)
         let decoded = try JSONDecoder().decode(PickupRecord.self, from: legacyData)
 
         XCTAssertNil(decoded.importBatchID)
         XCTAssertNil(decoded.locationSource)
+        XCTAssertNil(decoded.handedOffAt)
         XCTAssertEqual(decoded.location, "北门驿站")
     }
 
@@ -132,6 +134,53 @@ final class PickupRepositoryTests: XCTestCase {
         let restored = try await repository.undoCompletion(id: record.id)
         XCTAssertNil(restored?.completedAt)
         XCTAssertNil(restored?.archivedAt)
+    }
+
+    func testHandoffCompletesSenderFlowAndUndoRestoresPendingState() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let result = try await repository.importText(
+            "【丰巢】快件已存入1号柜，取件码829146，请及时领取。",
+            source: .paste
+        )
+        guard case let .added(record) = result else {
+            return XCTFail("Import should add a record")
+        }
+        let handoffDate = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let handedOff = try await repository.handOff(ids: [record.id], at: handoffDate)
+
+        XCTAssertEqual(handedOff.count, 1)
+        XCTAssertEqual(handedOff.first?.handedOffAt, handoffDate)
+        XCTAssertEqual(handedOff.first?.completedAt, handoffDate)
+        let persistedAfterHandoff = try await repository.records()
+        XCTAssertTrue(persistedAfterHandoff.first?.isHandedOff == true)
+
+        let restored = try await repository.undoCompletion(id: record.id)
+        XCTAssertNil(restored?.handedOffAt)
+        XCTAssertNil(restored?.completedAt)
+        XCTAssertNil(restored?.archivedAt)
+    }
+
+    func testHandoffIsAtomicWhenAnyRecordIsNotPending() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let first = try await repository.importText("取件码 123456", source: .paste)
+        let second = try await repository.importText("取件码 654321", source: .paste)
+        guard case let .added(firstRecord) = first,
+              case let .added(secondRecord) = second else {
+            return XCTFail("Both imports should add records")
+        }
+        _ = try await repository.complete(id: secondRecord.id)
+
+        let handedOff = try await repository.handOff(ids: [firstRecord.id, secondRecord.id])
+        let persisted = try await repository.records()
+
+        XCTAssertTrue(handedOff.isEmpty)
+        XCTAssertNil(persisted.first(where: { $0.id == firstRecord.id })?.completedAt)
+        XCTAssertNil(persisted.first(where: { $0.id == firstRecord.id })?.handedOffAt)
     }
 
     func testImportAppliesCommonLocationOnlyWhenLocationIsMissing() async throws {

@@ -216,7 +216,10 @@ struct InboxView: View {
                 case .about:
                     AboutView()
                 case .handoffCompose:
-                    PickupHandoffComposeView(records: store.pendingRecords)
+                    PickupHandoffComposeView(
+                        records: store.pendingRecords,
+                        store: store
+                    )
                 case let .handoffReview(package):
                     PickupHandoffReviewView(package: package, store: store)
                 case .history:
@@ -334,7 +337,9 @@ struct InboxView: View {
                         )
                     }
                 }
-                .buttonStyle(ShouxiaPrimaryButtonStyle())
+                .controlSize(.large)
+                .buttonBorderShape(.roundedRectangle(radius: 14))
+                .tint(ShouxiaPalette.breezePressed)
                 .accessibilityLabel("读取剪贴板并添加别人发来的取件信息")
                 .accessibilityHint("请先从聊天或其他 App 复制对方发来的完整取件文字")
 
@@ -355,7 +360,7 @@ struct InboxView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(ShouxiaSecondaryButtonStyle())
+                .buttonStyle(ShouxiaImportButtonStyle())
                 .disabled(recognizingImage)
                 .accessibilityHint("从相册一次选择最多五张取件截图")
             }
@@ -717,10 +722,14 @@ private struct PickupHandoffComposeView: View {
     @Environment(\.dismiss) private var dismiss
 
     let records: [PickupRecord]
+    let store: PickupStore
     @State private var selectedIDs: Set<UUID>
+    @State private var sharePayload: HandoffSharePayload?
+    @State private var shareErrorMessage: String?
 
-    init(records: [PickupRecord]) {
+    init(records: [PickupRecord], store: PickupStore) {
         self.records = records
+        self.store = store
         _selectedIDs = State(
             initialValue: Set(
                 records
@@ -775,24 +784,18 @@ private struct PickupHandoffComposeView: View {
 
                         VStack(spacing: 12) {
                             if !selectedRecords.isEmpty {
-                                ShareLink(
-                                    item: PickupHandoffPackage(records: selectedRecords),
-                                    subject: Text("收下交接包 · \(selectedRecords.count) 件"),
-                                    message: Text("请帮我取这 \(selectedRecords.count) 件，点开交接包即可导入收下。"),
-                                    preview: SharePreview(
-                                        Text("收下交接包 · \(selectedRecords.count) 件"),
-                                        icon: Image(systemName: "shippingbox.fill")
-                                    )
-                                ) {
+                                Button {
+                                    prepareShare()
+                                } label: {
                                     Label(
-                                        "发送交接包（\(selectedRecords.count) 件）",
+                                        "发送并完成交接（\(selectedRecords.count) 件）",
                                         systemImage: "square.and.arrow.up"
                                     )
                                 }
                                 .buttonStyle(ShouxiaPrimaryButtonStyle())
                             }
 
-                            Text("交接包只包含取件码、地点和平台，不包含短信原文、手机号、运单号或商品信息。发送后不会自动删除你这里的记录。")
+                            Text("系统分享成功结束后，这些包裹会从你的待取列表移走，并在收下记录中标记为“交给别人”。交接包不包含短信原文、手机号、运单号或商品信息。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.softInk)
                                 .multilineTextAlignment(.center)
@@ -814,6 +817,32 @@ private struct PickupHandoffComposeView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
+        .sheet(item: $sharePayload) { payload in
+            HandoffActivityView(url: payload.url) { completed in
+                sharePayload = nil
+                guard completed else { return }
+
+                Task {
+                    guard await store.handOff(payload.records) else {
+                        shareErrorMessage = "交接包已经分享，但本地记录没有成功更新，请再试一次。"
+                        return
+                    }
+                    dismiss()
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .alert(
+            "没有完成交接",
+            isPresented: Binding(
+                get: { shareErrorMessage != nil },
+                set: { if !$0 { shareErrorMessage = nil } }
+            )
+        ) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text(shareErrorMessage ?? "请再试一次。")
+        }
     }
 
     private func toggle(_ record: PickupRecord) {
@@ -823,6 +852,48 @@ private struct PickupHandoffComposeView: View {
             selectedIDs.insert(record.id)
         }
     }
+
+    private func prepareShare() {
+        do {
+            let package = PickupHandoffPackage(records: selectedRecords)
+            sharePayload = HandoffSharePayload(
+                packageID: package.id,
+                records: selectedRecords,
+                url: try package.exportURL()
+            )
+        } catch {
+            shareErrorMessage = "交接包没有生成成功，请再试一次。"
+        }
+    }
+}
+
+private struct HandoffSharePayload: Identifiable {
+    let packageID: UUID
+    let records: [PickupRecord]
+    let url: URL
+
+    var id: UUID { packageID }
+}
+
+private struct HandoffActivityView: UIViewControllerRepresentable {
+    let url: URL
+    let completion: (Bool) -> Void
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+        controller.completionWithItemsHandler = { _, completed, _, _ in
+            completion(completed)
+        }
+        return controller
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIActivityViewController,
+        context: Context
+    ) {}
 }
 
 private struct PickupHandoffReviewView: View {

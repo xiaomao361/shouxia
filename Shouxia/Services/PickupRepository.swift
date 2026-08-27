@@ -114,10 +114,36 @@ actor PickupRepository {
         guard let index = records.firstIndex(where: { $0.id == id }) else {
             return nil
         }
+        records[index].handedOffAt = nil
         records[index].completedAt = Date()
         let completed = records[index]
         try save(records)
         return completed
+    }
+
+    func handOff(ids: [UUID], at date: Date = Date()) throws -> [PickupRecord] {
+        let requestedIDs = Set(ids)
+        guard !requestedIDs.isEmpty, requestedIDs.count == ids.count else {
+            return []
+        }
+
+        var records = try loadRecords()
+        let matchingIndices = records.indices.filter { index in
+            requestedIDs.contains(records[index].id)
+                && !records[index].isCompleted
+                && !records[index].isArchived
+        }
+        guard matchingIndices.count == requestedIDs.count else {
+            return []
+        }
+
+        for index in matchingIndices {
+            records[index].handedOffAt = date
+            records[index].completedAt = date
+        }
+        let handedOff = matchingIndices.map { records[$0] }
+        try save(records)
+        return handedOff
     }
 
     func undoCompletion(id: UUID) throws -> PickupRecord? {
@@ -126,6 +152,7 @@ actor PickupRepository {
             return nil
         }
         records[index].completedAt = nil
+        records[index].handedOffAt = nil
         records[index].archivedAt = nil
         let restored = records[index]
         try save(records)

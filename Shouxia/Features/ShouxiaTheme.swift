@@ -146,6 +146,38 @@ struct ShouxiaSecondaryButtonStyle: ButtonStyle {
     }
 }
 
+struct ShouxiaImportButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            configuration.label
+            Spacer(minLength: 0)
+        }
+        .font(.headline)
+        .fontDesign(.rounded)
+        .foregroundStyle(ShouxiaPalette.ink)
+        .frame(maxWidth: .infinity, minHeight: 50)
+        .background(
+            configuration.isPressed
+                ? ShouxiaPalette.skyWash.opacity(0.88)
+                : ShouxiaPalette.paper.opacity(0.94),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
+        }
+        .scaleEffect(configuration.isPressed ? 0.99 : 1)
+        .offset(y: configuration.isPressed ? 1 : 0)
+        .shadow(
+            color: ShouxiaPalette.ink.opacity(configuration.isPressed ? 0.025 : 0.055),
+            radius: configuration.isPressed ? 4 : 11,
+            y: configuration.isPressed ? 1 : 5
+        )
+        .animation(ShouxiaMotion.press, value: configuration.isPressed)
+    }
+}
+
 struct ShouxiaMark: View {
     var showsBackground = false
 

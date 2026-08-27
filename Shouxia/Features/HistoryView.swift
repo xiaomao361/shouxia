@@ -169,6 +169,14 @@ private struct RecordRow: View {
                     .foregroundStyle(ShouxiaPalette.ink)
                     .lineLimit(1)
                 Spacer()
+                if record.isHandedOff {
+                    Text("交给别人")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(ShouxiaPalette.breezePressed)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(ShouxiaPalette.skyWash, in: Capsule())
+                }
                 if let platform = record.platform {
                     Text(platform)
                         .font(.caption2.weight(.medium))
@@ -189,7 +197,7 @@ private struct RecordRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 dateLine("录入", date: record.createdAt)
                 if let completedAt = record.completedAt {
-                    dateLine("收下", date: completedAt)
+                    dateLine(record.isHandedOff ? "交接" : "收下", date: completedAt)
                 }
                 if showsArchivedAt, let archivedAt = record.archivedAt {
                     dateLine("归档", date: archivedAt)

@@ -174,6 +174,23 @@ final class PickupStore {
         }
     }
 
+    func handOff(_ selectedRecords: [PickupRecord]) async -> Bool {
+        do {
+            let handedOff = try await repository.handOff(ids: selectedRecords.map(\.id))
+            guard handedOff.count == selectedRecords.count else {
+                notice = .error("这些包裹没有成功完成交接")
+                return false
+            }
+            records = try await repository.records()
+            notice = .success("已交给别人，完成 \(handedOff.count) 件交接")
+            return true
+        } catch {
+            records = (try? await repository.records()) ?? records
+            notice = .error("这些包裹没有成功完成交接")
+            return false
+        }
+    }
+
     func undoLastCompletion() async {
         guard let lastCompleted else { return }
         do {
