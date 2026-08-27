@@ -1,6 +1,6 @@
 # 收下 1.2.0 (6) TestFlight 测试说明
 
-Status: Draft — 当前源码候选已完成自动化测试与 Debug/Release 模拟器构建，尚未完成本轮真机交互、Release Archive 或 TestFlight 上传。
+Status: Uploaded — 2026-08-27 已完成自动化测试、Release Archive 与 App Store Connect 上传；Apple 已返回 `Uploaded package is processing`，尚未验证 TestFlight 处理完成或外部测试。
 
 ## Beta App Description
 

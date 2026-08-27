@@ -128,10 +128,12 @@
 - [x] 32 个自动化测试执行完成：30 个通过，2 个可选真实图片夹具测试跳过
 - [x] Debug 模拟器测试构建通过
 - [x] Release 模拟器构建通过
-- [ ] 本地 Archive 针对 `(6)` 重新验证
+- [x] 本地 arm64 Release Archive 成功，确认 Bundle ID `com.zhouwei.shouxia`、版本 `1.2.0 (6)`，App 与 dSYM UUID 一致
 - [ ] 真机验证微信或信息分享成功后移出待取并正确标记
 - [ ] 真机验证取消分享、恢复待取、批量交接和辅助功能文案
-- [ ] 上传 TestFlight 前核对 App Store Connect 构建号与分发签名
+- [x] 2026-08-27 15:03 上传成功；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [ ] 确认 App Store Connect 处理完成且 Build 6 可在 TestFlight 安装
+- [ ] 如需外部测试，再配置测试组、Beta 测试说明并提交 TestFlight Beta Review
 
 ## TestFlight 产品验收
 
