@@ -156,6 +156,6 @@ Logo、App Icon、空状态与完成提示统一使用“杏桃包裹 + 云白�
 
 ## App Store 与版本
 
-`1.0` 已在中国大陆 App Store 上架；`1.1.0 (4)` 是完成过 TestFlight 真机验收的历史候选，`1.2.0 (6)` 已上传 App Store Connect。当前候选为 `1.2.0 (7)`，在 `(6)` 的发送方交接终态基础上，将本地记录加载和剪贴板自动识别拆为两个 SwiftUI 生命周期任务，使已有取件码先完成首屏绘制，再读取发生变化的剪贴板。32 个自动化测试中 30 个通过，2 个依赖外部真实图片夹具的测试按设计跳过；Debug 真机构建、签名和覆盖安装已完成，Release Archive 与 TestFlight 上传仍待执行。项目使用 iPhone-only 配置、工具类别、无透明通道的 1024 × 1024 App Icon，并在生成的 Info.plist 中声明不使用非豁免加密。`Shouxia/Resources/PrivacyInfo.xcprivacy` 声明当前版本不跟踪、不收集数据，也不连接跟踪域名。
+`1.0` 已在中国大陆 App Store 上架；`1.1.0 (4)` 是完成过 TestFlight 真机验收的历史候选，`1.2.0 (6)` 已由后续构建替代。当前候选为 `1.2.0 (7)`，在 `(6)` 的发送方交接终态基础上，将本地记录加载和剪贴板自动识别拆为两个 SwiftUI 生命周期任务，使已有取件码先完成首屏绘制，再读取发生变化的剪贴板。32 个自动化测试中 30 个通过，2 个依赖外部真实图片夹具的测试按设计跳过；Debug 真机构建、签名和覆盖安装已完成，arm64 Release Archive 已通过验证并于 2026-08-27 上传 App Store Connect，当前等待 Apple 处理。项目使用 iPhone-only 配置、工具类别、无透明通道的 1024 × 1024 App Icon，并在生成的 Info.plist 中声明不使用非豁免加密。`Shouxia/Resources/PrivacyInfo.xcprivacy` 声明当前版本不跟踪、不收集数据，也不连接跟踪域名。
 
-App 内“隐私与关于”页面说明本地处理、系统主动粘贴、可选前台剪贴板识别和短信个人自动化边界。App Store Connect 元数据、隐私政策、支持页、审核说明、提交检查表和 `1.2.0 (7)` TestFlight 测试说明位于 `docs/app-store/`。当前先生成并上传 Build 7，再按测试说明验证启动首屏、交接终态和上一轮界面改版；真实用户 TestFlight 验收完成前不重新提交正式 App Review。
+App 内“隐私与关于”页面说明本地处理、系统主动粘贴、可选前台剪贴板识别和短信个人自动化边界。App Store Connect 元数据、隐私政策、支持页、审核说明、提交检查表和 `1.2.0 (7)` TestFlight 测试说明位于 `docs/app-store/`。当前等待 Build 7 在 App Store Connect 处理完成，再按测试说明验证启动首屏、交接终态和上一轮界面改版；真实用户 TestFlight 验收完成前不重新提交正式 App Review。

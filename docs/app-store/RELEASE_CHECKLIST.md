@@ -144,8 +144,8 @@
 - [x] Debug 真机构建、签名并覆盖安装到 iPhone 14 Pro；设备确认版本 `1.2.0 (7)`
 - [x] 准备 Build 7 TestFlight 测试内容，增加启动首屏与剪贴板授权回归
 - [ ] 真机确认复制新内容后进入 App 时，已有取件码不再先闪空
-- [ ] 本地 arm64 Release Archive 针对 Build 7 验证
-- [ ] 上传 Build 7 到 App Store Connect 并取得处理回执
+- [x] 本地 arm64 Release Archive 成功，确认 Bundle ID `com.zhouwei.shouxia`、版本 `1.2.0 (7)`，App 与 dSYM UUID 一致
+- [x] 2026-08-27 18:17 上传成功；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
 - [ ] 确认 App Store Connect 处理完成且 Build 7 可在 TestFlight 安装
 
 ## TestFlight 产品验收
