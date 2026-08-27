@@ -132,8 +132,21 @@
 - [ ] 真机验证微信或信息分享成功后移出待取并正确标记
 - [ ] 真机验证取消分享、恢复待取、批量交接和辅助功能文案
 - [x] 2026-08-27 15:03 上传成功；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [x] 准备 Build 6 的 TestFlight 测试内容，覆盖交接终态、上一轮界面与取件流程、导入和升级回归
 - [ ] 确认 App Store Connect 处理完成且 Build 6 可在 TestFlight 安装
 - [ ] 如需外部测试，再配置测试组、Beta 测试说明并提交 TestFlight Beta Review
+
+## 2026-08-27 剪贴板首屏修复候选 1.2.0 (7)
+
+- [x] Build Number 从 `6` 升级为 `7`
+- [x] 本地记录加载完成并触发首屏更新后，再异步检查发生变化的剪贴板
+- [x] 30 个自动化测试通过，2 个可选真实图片夹具测试按设计跳过
+- [x] Debug 真机构建、签名并覆盖安装到 iPhone 14 Pro；设备确认版本 `1.2.0 (7)`
+- [x] 准备 Build 7 TestFlight 测试内容，增加启动首屏与剪贴板授权回归
+- [ ] 真机确认复制新内容后进入 App 时，已有取件码不再先闪空
+- [ ] 本地 arm64 Release Archive 针对 Build 7 验证
+- [ ] 上传 Build 7 到 App Store Connect 并取得处理回执
+- [ ] 确认 App Store Connect 处理完成且 Build 7 可在 TestFlight 安装
 
 ## TestFlight 产品验收
 

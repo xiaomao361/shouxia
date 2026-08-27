@@ -37,9 +37,9 @@ App Icon 以“杏桃包裹 + 云白取件卡”为核心图形，直接表达 A
 - [双入口改造与 TestFlight 计划](docs/PLAN_DUAL_INTAKE_AUTOMATION_TESTFLIGHT_2026-07-30.md)
 - [开发与验证](docs/DEVELOPMENT.md)
 - [TestFlight 与上架检查表](docs/app-store/RELEASE_CHECKLIST.md)
-- [1.2.0 (6) TestFlight 测试说明](docs/app-store/TESTFLIGHT_1.2.0_6.md)
+- [1.2.0 (7) TestFlight 测试说明](docs/app-store/TESTFLIGHT_1.2.0_7.md)
 - [App Store 6.5 英寸截图](docs/app-store/screenshots/final-6.5)
 
 ## 下一步
 
-`1.0` 已在中国大陆 App Store 上架。`1.1.0 (4)` 保留为已完成 TestFlight 真机验收的历史候选；当前候选 `1.2.0 (6)` 在 `(5)` 的取件现场、纠错与批量导入能力上，新增“发送方交接即结束”：系统分享成功后记录离开待取并标记为“交给别人”，不增加账号、回执或双边状态同步。32 个自动化测试已执行，30 个通过，2 个真实图片夹具测试按设计跳过；Release Archive 已完成并于 2026-08-27 上传到 App Store Connect，当前等待 Apple 处理。处理完成后继续通过 TestFlight 验证分享成功、取消分享、记录标记与恢复。
+`1.0` 已在中国大陆 App Store 上架。`1.1.0 (4)` 保留为已完成 TestFlight 真机验收的历史候选；`1.2.0 (6)` 已上传 App Store Connect。当前候选 `1.2.0 (7)` 保留“发送方交接即结束”，并修复开启剪贴板自动识别后，复制新内容再进入 App 时已有取件码短暂显示为空的问题。32 个自动化测试已执行，30 个通过，2 个真实图片夹具测试按设计跳过；Debug 真机包已安装，正在准备 Release Archive 与 TestFlight 上传。

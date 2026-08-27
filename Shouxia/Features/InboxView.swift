@@ -97,6 +97,7 @@ struct InboxView: View {
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var isRecognizingImage = false
     @State private var isCheckingClipboard = false
+    @State private var clipboardCheckRequestID = 0
 
     private let imageTextRecognizer = ImageTextRecognizer()
     private let imagePickupExtractor = ImagePickupExtractor()
@@ -247,6 +248,12 @@ struct InboxView: View {
             .task {
                 await store.load()
                 hideAutomationSetupAfterSMSImport()
+                clipboardCheckRequestID &+= 1
+            }
+            .task(id: clipboardCheckRequestID) {
+                guard clipboardCheckRequestID > 0 else { return }
+                await Task.yield()
+                guard !Task.isCancelled else { return }
                 await importClipboardIfNeeded()
             }
             .onChange(of: store.pendingRecords.count) { _, count in
@@ -263,7 +270,7 @@ struct InboxView: View {
                 Task {
                     await store.load()
                     hideAutomationSetupAfterSMSImport()
-                    await importClipboardIfNeeded()
+                    clipboardCheckRequestID &+= 1
                 }
             }
             .onOpenURL { url in
