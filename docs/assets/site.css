@@ -212,17 +212,6 @@ li {
   font-size: 13px;
 }
 
-.release-notice {
-  margin: 18px 0 28px;
-  padding: 16px 18px;
-  border: 1px solid rgba(241, 161, 125, 0.22);
-  border-radius: 18px;
-  background: var(--apricot-soft);
-  color: var(--ink-soft);
-  font-size: 14px;
-  font-style: normal;
-}
-
 .hero-art {
   position: relative;
   min-height: 480px;
