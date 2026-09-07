@@ -136,6 +136,49 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertNil(restored?.archivedAt)
     }
 
+    func testActivePickupCodeDeduplicatesAcrossDifferentInputText() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+
+        let first = try await repository.importText(
+            "【丰巢】快件已存入1号柜，取件码829146，请及时领取。",
+            source: .paste
+        )
+        let second = try await repository.importText("829146", source: .paste)
+
+        guard case .added = first, case .duplicate = second else {
+            return XCTFail("The same active pickup code should only create one record")
+        }
+        let activeRecords = try await repository.records()
+        XCTAssertEqual(activeRecords.count, 1)
+    }
+
+    func testCompletedPickupCodeCanBeReusedByANewNotification() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+
+        let first = try await repository.importText(
+            "【丰巢】取件码829146，请及时领取。",
+            source: .paste
+        )
+        guard case let .added(record) = first else {
+            return XCTFail("First import should add a record")
+        }
+        _ = try await repository.complete(id: record.id)
+
+        let reused = try await repository.importText(
+            "【菜鸟】新的包裹已到，取件码829146。",
+            source: .paste
+        )
+        guard case .added = reused else {
+            return XCTFail("A completed short code must remain reusable for a future package")
+        }
+        let reusedRecords = try await repository.records()
+        XCTAssertEqual(reusedRecords.count, 2)
+    }
+
     func testHandoffCompletesSenderFlowAndUndoRestoresPendingState() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -306,6 +349,72 @@ final class PickupRepositoryTests: XCTestCase {
         let remainingRecords = try await repository.records()
         XCTAssertFalse(deleted)
         XCTAssertEqual(remainingRecords.count, 1)
+    }
+
+    func testAutomaticClipboardDoesNotRestorePermanentlyDeletedRecord() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let text = "【丰巢】快件已存入1号柜，取件码829146，请及时领取。"
+
+        let first = try await repository.importAutomaticClipboardText(text)
+        guard case let .added(record)? = first else {
+            return XCTFail("Automatic clipboard import should add the record")
+        }
+        _ = try await repository.complete(id: record.id)
+        _ = try await repository.archive(id: record.id)
+        let deleted = try await repository.permanentlyDelete(id: record.id)
+        XCTAssertTrue(deleted)
+
+        let automaticRetry = try await repository.importAutomaticClipboardText(text)
+        let remainingRecords = try await repository.records()
+        XCTAssertNil(automaticRetry)
+        XCTAssertTrue(remainingRecords.isEmpty)
+
+        let manualRetry = try await repository.importText(text, source: .paste)
+        guard case .added = manualRetry else {
+            return XCTFail("An explicit manual paste should still be allowed")
+        }
+    }
+
+    func testAutomaticClipboardSuppressionsDoNotDiscardOlderDeletions() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directory.appendingPathComponent("pickups.json")
+        let suppressionURL = directory.appendingPathComponent(
+            "automatic-clipboard-suppressions.json"
+        )
+        let repository = PickupRepository(fileURL: fileURL)
+        let firstText = "【丰巢】取件码829146，请及时领取。"
+        let secondText = "【菜鸟】取件码729915，请及时领取。"
+
+        let first = try await repository.importAutomaticClipboardText(firstText)
+        guard case let .added(firstRecord)? = first else {
+            return XCTFail("First automatic import should add a record")
+        }
+        _ = try await repository.complete(id: firstRecord.id)
+        _ = try await repository.archive(id: firstRecord.id)
+        let firstDeleted = try await repository.permanentlyDelete(id: firstRecord.id)
+        XCTAssertTrue(firstDeleted)
+
+        let firstFingerprint = try PickupParser()
+            .parseAutomaticClipboard(firstText)
+            .fingerprint
+        let seededSuppressions = [firstFingerprint]
+            + (0..<511).map { "placeholder-\($0)" }
+        try JSONEncoder().encode(seededSuppressions).write(to: suppressionURL, options: .atomic)
+
+        let second = try await repository.importAutomaticClipboardText(secondText)
+        guard case let .added(secondRecord)? = second else {
+            return XCTFail("Second automatic import should add a record")
+        }
+        _ = try await repository.complete(id: secondRecord.id)
+        _ = try await repository.archive(id: secondRecord.id)
+        let secondDeleted = try await repository.permanentlyDelete(id: secondRecord.id)
+        XCTAssertTrue(secondDeleted)
+
+        let firstRetry = try await repository.importAutomaticClipboardText(firstText)
+        XCTAssertNil(firstRetry)
     }
 
     private func makeRecord(

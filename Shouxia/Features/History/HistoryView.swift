@@ -152,7 +152,7 @@ private struct ArchiveView: View {
             }
             Button("取消", role: .cancel) {}
         } message: { record in
-            Text("取件码 \(record.code) 将被真实删除，且无法恢复。")
+            Text("取件码 \(record.code) 的记录内容将被删除且无法恢复；同一剪贴板原文不会再被自动加入。")
         }
     }
 }

@@ -148,6 +148,52 @@
 - [x] 2026-08-27 18:17 上传成功；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
 - [ ] 确认 App Store Connect 处理完成且 Build 7 可在 TestFlight 安装
 
+## 2026-08-28 自动识别与去重修复候选 1.2.0 (8)
+
+- [x] Build Number 从 `7` 升级为 `8`
+- [x] 自动剪贴板只提取与取件标签直接关联的代码，拒绝混有取件提示的验证码文本
+- [x] 手动粘贴继续接受独立的 4 至 8 位数字，并统一可访问性提示与错误文案
+- [x] 完整原文指纹之外，对当前待取记录按取件码跨入口去重；完成后的短码允许未来复用
+- [x] 永久删除保留无上限的本地原文指纹阻止标记，手动粘贴仍可重新添加
+- [x] 隐私清单声明 UserDefaults 的 `CA92.1` 使用理由
+- [x] 37 个自动化测试通过，2 个可选真实图片夹具测试按设计跳过
+- [x] PrivacyInfo plist 校验通过且测试构建确认已打包
+- [x] 将当前源码重新构建并覆盖安装到 iPhone 14 Pro；设备确认版本 `1.2.0 (8)`
+- [x] 用户完成真机验证，包括自动标签文本、混合验证码、裸数字手动粘贴、跨入口去重和结构拆分后的页面回归
+- [x] 2026-08-28 14:50 完成 Release Archive 并上传 App Store Connect；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [x] 使用当前真机空首页截图重新生成 `1.2.0` 第二版七张候选；首页及完成反馈图均使用当前“粘贴”按钮
+- [ ] 获取真实“请人帮取”界面截图后，再决定是否增加第八张；不使用推测生成的界面
+- [ ] 人工确认 `1.2.0` 第二版七张截图候选后，在 App Store Connect 替换现有产品页截图
+- [ ] 确认 App Store Connect 处理完成且 Build 8 可在 TestFlight 安装
+
+## 2026-09-03 iPhone 17 Pro 粘贴按钮修复候选 1.2.1 (9)
+
+- [x] Build Number 从 `8` 升级为 `9`
+- [x] 首次以 `1.2.0 (9)` 上传时，Apple 返回 `90186`（该预发布通道已关闭）与 `90062`（版本必须高于已批准的 `1.2.0`）；营销版本据此升级为 `1.2.1`
+- [x] 系统 `PasteButton` 显式使用图标加标题，并设置稳定的最小尺寸与布局优先级
+- [x] 保留系统主动粘贴机制，不改为程序化读取剪贴板
+- [x] 重新执行 iPhone 17 Pro 模拟器自动化测试：39 项，37 通过，2 项按预期跳过，0 失败
+- [x] 重新完成 `1.2.1 (9)` arm64 Release Archive，核验 Bundle ID `com.zhouwei.shouxia` 与 App/dSYM UUID `7A8FF38E-7627-3412-9C3D-6429B66866AB`
+- [x] 上传 App Store Connect 并保存 Apple 上传回执：2026-09-03 09:52:28 +0800，`Uploaded package is processing`、`Upload succeeded`
+- [ ] 确认 Build 9 处理完成且可在 TestFlight 安装
+- [ ] 在实际复现问题的 iPhone 17 Pro 上验证无文本禁用态与有文本可用态
+
+## 2026-09-04 丰巢地点识别修复候选 1.2.2 (10)
+
+- [x] Marketing Version 从 `1.2.1` 升级为 `1.2.2`，Build Number 从 `9` 升级为 `10`
+- [x] 复制文字支持“取件码……至……取件”句式，不再把短信开头的“丰巢】凭”误认为地点
+- [x] 图片识别支持跨行组合丰巢地点，并识别“丰巢柜”地点类型
+- [x] 图片仅识别到取件码但缺少地点时进入人工确认，不再作为完整高置信度结果自动导入
+- [x] 真实问题样本只用于本机验证；仓库测试使用脱敏取件码、地点和链接
+- [x] iPhone 17 Pro 模拟器完整测试通过：43 项，41 项通过，2 项可选真实图片夹具测试跳过，0 失败
+- [x] 用户在 iPhone 14 Pro 开发包上完成本次丰巢图片与复制文字真机验证，未发现问题
+- [x] 完成 `1.2.2 (10)` arm64 Release Archive；核验 Bundle ID `com.zhouwei.shouxia`、版本 `1.2.2 (10)`、架构 `arm64` 与 App/dSYM UUID `533F41AA-57DD-3643-88D7-0FA7FAFB3FF5`
+- [x] 2026-09-04 09:25 +0800 上传 App Store Connect；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [x] 用户确认 Build 10 已完成 App Store Connect 处理并可通过 TestFlight 安装
+- [x] 用户从线上 `1.2.0` 覆盖安装 TestFlight Build 10，已有数据保留，并完成丰巢截图、复制文字和首页粘贴按钮真机回归
+- [x] 2026-09-07 发布收口复跑 iPhone 17 Pro / iOS 26.5 模拟器完整测试：43 项，41 项通过，2 项可选真实图片夹具测试跳过，0 失败
+- [ ] 如能取得实际复现问题的 iPhone 17 Pro，再补充该机型上的粘贴按钮专项验证；不阻塞当前已验收候选提交审核
+
 ## TestFlight 产品验收
 
 - [ ] 从未安装普通快捷指令的状态开始配置

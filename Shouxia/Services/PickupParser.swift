@@ -8,10 +8,26 @@ struct PickupParser: Sendable {
             throw PickupImportError.emptyText
         }
 
-        guard let code = extractCode(from: rawText) else {
+        guard let code = extractLabelledCode(from: rawText) ?? extractFallbackCode(from: rawText) else {
             throw PickupImportError.missingCode
         }
 
+        return parsedPickup(rawText: rawText, code: code)
+    }
+
+    func parseAutomaticClipboard(_ input: String) throws -> ParsedPickup {
+        let rawText = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawText.isEmpty else {
+            throw PickupImportError.emptyText
+        }
+        guard let code = extractLabelledCode(from: rawText) else {
+            throw PickupImportError.missingCode
+        }
+
+        return parsedPickup(rawText: rawText, code: code)
+    }
+
+    private func parsedPickup(rawText: String, code: String) -> ParsedPickup {
         return ParsedPickup(
             rawText: rawText,
             code: code.uppercased(),
@@ -21,7 +37,7 @@ struct PickupParser: Sendable {
         )
     }
 
-    private func extractCode(from text: String) -> String? {
+    private func extractLabelledCode(from text: String) -> String? {
         let labelledPatterns = [
             #"(?:取件码|提货码|取货码|领取码|取件编号)[\s：:为是]*([A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4})"#,
             #"(?:凭码|凭取件码)[\s：:为是]*([A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4})"#,
@@ -33,6 +49,10 @@ struct PickupParser: Sendable {
             }
         }
 
+        return nil
+    }
+
+    private func extractFallbackCode(from text: String) -> String? {
         let fallbackPatterns = [
             #"(?<![A-Za-z0-9])([A-Za-z]?\d{1,4}(?:-[A-Za-z0-9]{1,8}){1,3})(?![A-Za-z0-9])"#,
             #"(?<!\d)(\d{4,8})(?!\d)"#,
@@ -49,8 +69,9 @@ struct PickupParser: Sendable {
 
     private func extractLocation(from text: String) -> String? {
         let arrivalPatterns = [
+            #"(?:取件码|提货码|取货码|领取码|取件编号)[\s：:为是]*[A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4}\s*(?:至|到|前往)\s*([^，。；;\n]{2,40}?)(?:取件|领取|$)"#,
             #"(?:已到达|已到|送达|送至|存放在|存放于|已存入|请到|领取地点[：:]?)[\s]*([^，。；;\n]{2,32})"#,
-            #"([^，。；;\n]{2,28}(?:菜鸟驿站|快递超市|快递柜|代收点|服务站|丰巢))"#,
+            #"([^，。；;\n]{2,28}(?:菜鸟驿站|快递超市|快递柜|丰巢柜|代收点|服务站))"#,
         ]
 
         for pattern in arrivalPatterns {

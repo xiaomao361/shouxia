@@ -49,5 +49,5 @@ iOS 不允许第三方 App 通用地读取其他 App 的通知中心正文。支
 
 - 支持邮箱：[zhouwei@linux.com](mailto:zhouwei@linux.com)
 - 隐私政策：[https://xiaomao361.github.io/shouxia/privacy/](https://xiaomao361.github.io/shouxia/privacy/)
-- 当前公开版本：1.0.0
-- 当前测试候选：1.2.0 (6)，尚未发布
+- 当前公开版本：1.2.0
+- 当前正式候选：1.2.2 (10)，已通过 TestFlight 真机验收，等待 App Store 审核与发布

@@ -33,7 +33,7 @@ struct ImagePickupCandidate: Equatable, Hashable, Identifiable, Sendable {
     }
 
     var isHighConfidence: Bool {
-        isLabelled && confidence >= 0.35
+        isLabelled && confidence >= 0.35 && location != nil
     }
 }
 
@@ -246,7 +246,22 @@ struct ImagePickupExtractor: Sendable {
         guard !lines.isEmpty else { return nil }
         let lowerBound = max(0, codeLineIndex - 9)
         let upperBound = min(lines.count - 1, codeLineIndex + 2)
-        let keywords = ["驿站", "快递柜", "代收点", "快递超市", "服务站", "号楼店"]
+        let keywords = ["驿站", "快递柜", "丰巢柜", "代收点", "快递超市", "服务站", "号楼店"]
+
+        let followingText = lines[codeLineIndex...upperBound]
+            .map(\.text)
+            .joined()
+        if let directedLocation = firstCapture(
+            pattern: #"(?:取件码|提货码|取货码|领取码|取件编号)\s*[:：为是]?\s*[A-Za-z0-9]+(?:\s*-\s*[A-Za-z0-9]+){0,4}\s*(?:至|到|前往)\s*([^，。；;\n]{2,42}?)(?:取件|领取|$)"#,
+            in: followingText
+        ) {
+            let cleaned = cleanLocation(directedLocation)
+            if cleaned.count >= 2,
+               cleaned.count <= 42,
+               !containsPrivateContact(cleaned) {
+                return cleaned
+            }
+        }
 
         let ranked = (lowerBound...upperBound).compactMap { index -> (String, Int)? in
             let cleaned = cleanLocation(lines[index].text)
@@ -367,6 +382,10 @@ struct ImagePickupExtractor: Sendable {
             }
             return String(text[captureRange])
         }
+    }
+
+    private func firstCapture(pattern: String, in text: String) -> String? {
+        captures(pattern: pattern, in: text).first
     }
 
     private func deduplicated(

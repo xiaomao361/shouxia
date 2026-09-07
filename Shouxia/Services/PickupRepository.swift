@@ -4,19 +4,25 @@ actor PickupRepository {
     static let shared = PickupRepository()
 
     private let fileURL: URL
+    private let automaticClipboardSuppressionsURL: URL
     private let parser: PickupParser
 
     init(fileURL: URL? = nil, parser: PickupParser = PickupParser()) {
         self.parser = parser
+        let resolvedFileURL: URL
         if let fileURL {
-            self.fileURL = fileURL
+            resolvedFileURL = fileURL
         } else {
             let baseURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? FileManager.default.temporaryDirectory
-            self.fileURL = baseURL
+            resolvedFileURL = baseURL
                 .appendingPathComponent("com.zhouwei.shouxia", isDirectory: true)
                 .appendingPathComponent("pickups.json", isDirectory: false)
         }
+        self.fileURL = resolvedFileURL
+        self.automaticClipboardSuppressionsURL = resolvedFileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("automatic-clipboard-suppressions.json", isDirectory: false)
     }
 
     func records() throws -> [PickupRecord] {
@@ -30,9 +36,43 @@ actor PickupRepository {
         defaultLocation: String? = nil
     ) throws -> PickupImportResult {
         let parsed = try parser.parse(text)
+        return try importParsedPickup(
+            parsed,
+            source: source,
+            importBatchID: importBatchID,
+            defaultLocation: defaultLocation
+        )
+    }
+
+    func importAutomaticClipboardText(
+        _ text: String,
+        defaultLocation: String? = nil
+    ) throws -> PickupImportResult? {
+        let parsed = try parser.parseAutomaticClipboard(text)
+        let suppressions = try loadAutomaticClipboardSuppressions()
+        guard !suppressions.contains(parsed.fingerprint) else {
+            return nil
+        }
+        return try importParsedPickup(
+            parsed,
+            source: .paste,
+            defaultLocation: defaultLocation
+        )
+    }
+
+    private func importParsedPickup(
+        _ parsed: ParsedPickup,
+        source: PickupSource,
+        importBatchID: UUID? = nil,
+        defaultLocation: String? = nil
+    ) throws -> PickupImportResult {
         var records = try loadRecords()
 
-        if let existing = records.first(where: { $0.fingerprint == parsed.fingerprint }) {
+        if let existing = duplicateRecord(
+            code: parsed.code,
+            fingerprint: parsed.fingerprint,
+            in: records
+        ) {
             return .duplicate(existing)
         }
 
@@ -77,7 +117,11 @@ actor PickupRepository {
         var duplicateCount = 0
 
         for item in package.items {
-            if records.contains(where: { $0.fingerprint == item.importFingerprint }) {
+            if duplicateRecord(
+                code: item.code,
+                fingerprint: item.importFingerprint,
+                in: records
+            ) != nil {
                 duplicateCount += 1
                 continue
             }
@@ -226,6 +270,7 @@ actor PickupRepository {
         guard let index = records.firstIndex(where: { $0.id == id && $0.isArchived }) else {
             return false
         }
+        try suppressAutomaticClipboardImport(for: records[index].fingerprint)
         records.remove(at: index)
         try save(records)
         return true
@@ -244,5 +289,38 @@ actor PickupRepository {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(records)
         try data.write(to: fileURL, options: .atomic)
+    }
+
+    private func duplicateRecord(
+        code: String,
+        fingerprint: String,
+        in records: [PickupRecord]
+    ) -> PickupRecord? {
+        records.first { record in
+            if record.fingerprint == fingerprint {
+                return true
+            }
+            return !record.isCompleted
+                && !record.isArchived
+                && record.code.caseInsensitiveCompare(code) == .orderedSame
+        }
+    }
+
+    private func loadAutomaticClipboardSuppressions() throws -> Set<String> {
+        guard FileManager.default.fileExists(atPath: automaticClipboardSuppressionsURL.path) else {
+            return Set()
+        }
+        let data = try Data(contentsOf: automaticClipboardSuppressionsURL)
+        return Set(try JSONDecoder().decode([String].self, from: data))
+    }
+
+    private func suppressAutomaticClipboardImport(for fingerprint: String) throws {
+        var suppressions = try loadAutomaticClipboardSuppressions()
+        guard suppressions.insert(fingerprint).inserted else { return }
+
+        let directory = automaticClipboardSuppressionsURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(suppressions.sorted())
+        try data.write(to: automaticClipboardSuppressionsURL, options: .atomic)
     }
 }

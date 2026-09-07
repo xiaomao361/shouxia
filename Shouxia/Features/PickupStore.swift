@@ -70,11 +70,10 @@ final class PickupStore {
         defaultLocation: String? = nil
     ) async {
         do {
-            let result = try await repository.importText(
+            guard let result = try await repository.importAutomaticClipboardText(
                 text,
-                source: .paste,
                 defaultLocation: defaultLocation
-            )
+            ) else { return }
             guard case let .added(record) = result else { return }
             records = try await repository.records()
             notice = .success("已从剪贴板收好取件码 \(record.code)")

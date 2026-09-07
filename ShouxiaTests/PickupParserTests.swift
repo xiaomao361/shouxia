@@ -22,6 +22,24 @@ final class PickupParserTests: XCTestCase {
         XCTAssertEqual(result.platform, "丰巢")
     }
 
+    func testParsesFengchaoCodeBeforeLocationNotification() throws {
+        let result = try parser.parse(
+            "【丰巢】凭取件码81234567至云朵大厦北侧丰巢柜1号柜取件。快递员及畅存规则p.fcbox.com/demo"
+        )
+
+        XCTAssertEqual(result.code, "81234567")
+        XCTAssertEqual(result.location, "云朵大厦北侧丰巢柜1号柜")
+        XCTAssertEqual(result.platform, "丰巢")
+    }
+
+    func testFengchaoHeaderIsNotUsedAsLocation() throws {
+        let result = try parser.parse("丰巢】凭取件码81234567取件。")
+
+        XCTAssertEqual(result.code, "81234567")
+        XCTAssertNil(result.location)
+        XCTAssertEqual(result.platform, "丰巢")
+    }
+
     func testParsesShelfCode() throws {
         let result = try parser.parse("您的快递已到幸福里快递超市，货架号A-12-08，取件码6688。")
 
@@ -62,6 +80,37 @@ final class PickupParserTests: XCTestCase {
         XCTAssertThrowsError(try parser.parse("您的快递正在运输中，请耐心等待。")) { error in
             XCTAssertEqual(error as? PickupImportError, .missingCode)
         }
+    }
+
+    func testAutomaticClipboardRequiresExplicitPickupCodeCue() {
+        XCTAssertThrowsError(
+            try parser.parseAutomaticClipboard("【登录提醒】验证码 829146，5 分钟内有效。")
+        ) { error in
+            XCTAssertEqual(error as? PickupImportError, .missingCode)
+        }
+        XCTAssertThrowsError(
+            try parser.parseAutomaticClipboard("829146")
+        ) { error in
+            XCTAssertEqual(error as? PickupImportError, .missingCode)
+        }
+        XCTAssertThrowsError(
+            try parser.parseAutomaticClipboard("取件码已失效，请输入登录验证码 829146")
+        ) { error in
+            XCTAssertEqual(error as? PickupImportError, .missingCode)
+        }
+    }
+
+    func testAutomaticClipboardAcceptsExplicitPickupCodeCue() throws {
+        let result = try parser.parseAutomaticClipboard(
+            "【丰巢】快件已存入1号柜，取件码829146，请及时领取。"
+        )
+
+        XCTAssertEqual(result.code, "829146")
+    }
+
+    func testManualParsingAcceptsBareSixAndEightDigitCodes() throws {
+        XCTAssertEqual(try parser.parse("829146").code, "829146")
+        XCTAssertEqual(try parser.parse("82914657").code, "82914657")
     }
 
     func testFingerprintIgnoresWhitespace() throws {
@@ -105,6 +154,36 @@ final class PickupParserTests: XCTestCase {
 
         XCTAssertEqual(candidates.map(\.code), ["3-2-4012", "8-5-2031"])
         XCTAssertTrue(candidates.allSatisfy(\.isHighConfidence))
+    }
+
+    func testImageExtractorJoinsFengchaoLocationSplitAcrossLines() throws {
+        let candidates = try imageExtractor.candidates(
+            from: [
+                imageLine("【丰巢】凭取件码81234567至云"),
+                imageLine("朵大厦北侧丰巢柜1号柜取件。"),
+                imageLine("快递员及畅存规则p.fcbox.com/demo"),
+                imageLine("【丰巢】凭取件码87654321至"),
+                imageLine("云朵大厦北侧丰巢柜1号柜取件。"),
+            ]
+        )
+
+        XCTAssertEqual(candidates.map(\.code), ["81234567", "87654321"])
+        XCTAssertEqual(
+            candidates.map(\.location),
+            ["云朵大厦北侧丰巢柜1号柜", "云朵大厦北侧丰巢柜1号柜"]
+        )
+        XCTAssertTrue(candidates.allSatisfy { $0.platform == "丰巢" })
+        XCTAssertTrue(candidates.allSatisfy(\.isHighConfidence))
+    }
+
+    func testImageCandidateWithoutLocationRequiresReview() throws {
+        let candidate = try XCTUnwrap(
+            imageExtractor.candidates(from: [imageLine("丰巢 取件码 829146")]).first
+        )
+
+        XCTAssertEqual(candidate.platform, "丰巢")
+        XCTAssertNil(candidate.location)
+        XCTAssertFalse(candidate.isHighConfidence)
     }
 
     func testImageBatchMergerDeduplicatesByCodeAndKeepsRicherCandidate() {

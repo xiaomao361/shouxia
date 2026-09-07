@@ -175,7 +175,7 @@ enum PickupImportError: LocalizedError, Equatable {
         case .emptyText:
             "剪贴板里没有可用文字"
         case .missingCode:
-            "没有识别到取件码，请复制完整通知后重试"
+            "没有识别到取件码；可粘贴 4 至 8 位数字，或包含取件码的完整通知"
         }
     }
 }
