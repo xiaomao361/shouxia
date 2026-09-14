@@ -194,6 +194,44 @@
 - [x] 2026-09-07 发布收口复跑 iPhone 17 Pro / iOS 26.5 模拟器完整测试：43 项，41 项通过，2 项可选真实图片夹具测试跳过，0 失败
 - [ ] 如能取得实际复现问题的 iPhone 17 Pro，再补充该机型上的粘贴按钮专项验证；不阻塞当前已验收候选提交审核
 
+## 2026-09-07 暗色模式修复候选 1.2.2 (11)
+
+- [x] 用户在 Build 10 提交审核后发现未完整适配系统暗色模式，并主动取消本次审核
+- [x] Build Number 从 `10` 升级为 `11`，Marketing Version 保持 `1.2.2`
+- [x] 品牌背景、卡片、四级文字、按钮、强调色、标签、描边和完成反馈改为随系统外观动态解析
+- [x] 保持现有浅色品牌颜色不变；暗色模式不使用简单反色，也不强制覆盖用户系统外观
+- [x] 新增颜色模式与对比度测试；暗色正文和主按钮关键组合均达到至少 `4.5:1`
+- [x] iPhone 17 Pro / iOS 26.5 模拟器完整测试通过：46 项，44 项通过，2 项可选真实图片夹具测试跳过，0 失败
+- [x] 用户在 iPhone 14 Pro 开发包上完成浅色与暗色模式真机检查，未发现问题
+- [x] 完成 `1.2.2 (11)` arm64 Release Archive；核验 Bundle ID `com.zhouwei.shouxia`、版本 `1.2.2 (11)`、架构 `arm64` 与 App/dSYM UUID `270FD9C2-68E9-3200-8C74-E486615C9725`
+- [x] 2026-09-07 11:21 +0800 上传 App Store Connect；Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [ ] 通过 TestFlight 从 Build 10 覆盖安装 Build 11，确认数据保留与暗色模式回归
+
+## 2026-09-14 多取货码修复候选 1.2.3 (12)
+
+- [x] Build Number 从 `11` 升级为 `12`
+- [x] 首次以 `1.2.2 (12)` 上传被 Apple 以 `90186` / `90062` 拒绝：`1.2.2` 已批准、通道关闭；Marketing Version 因此递增为 `1.2.3`
+- [x] 同一通知多个取货码分别解析、原子保存和去重；兼容旧首码记录及删除抑制，补充妈妈驿站地点识别与图片同一行多码提取
+- [x] 54 项自动化测试通过、0 失败，2 项真实 OCR 夹具测试跳过；用户在 iPhone 14 Pro 开发包试用后反馈未发现问题
+- [x] `1.2.3 (12)` arm64 Release Archive 和签名校验成功；App/dSYM UUID 均为 `528228A0-4951-334F-A253-1395A87CFDE9`
+- [x] 2026-09-14 10:57 +0800 上传成功，Apple 回执为 `Uploaded package is processing` 与 `Upload succeeded`
+- [x] 准备 [Build 12 测试说明](TESTFLIGHT_1.2.3_12.md)
+- [ ] Apple 处理完成后由用户配置 TestFlight 测试组并开测
+- [ ] TestFlight 覆盖安装、实际短信自动化与截图 OCR 验收；本轮未提交正式审核
+
+## 2026-09-14 普通文字复制候选 1.2.3 (13)
+
+- [x] Marketing Version 保持 `1.2.3`，Build Number 为 `13`
+- [x] “请人帮取”默认第一项为交接包，第二项普通文字支持预览与复制；不提供普通文字系统分享按钮
+- [x] 文字复制保留待取状态；专用包取消或错误不交接
+- [x] 最终源码全套 XCTest：59 通过、2 项真实 OCR 夹具测试跳过、0 失败
+- [x] 14:36 +0800 修正版开发包覆盖安装 iPhone 14 Pro，设备读回 `1.2.3 (13)`
+- [x] arm64 Release Archive、签名和 App/dSYM UUID 一致性通过：`3DEF012A-ED15-3ACC-AEFF-31B366F78187`
+- [x] 14:52:51 +0800 上传成功：`Uploaded package is processing`、`Upload succeeded`、`EXPORT SUCCEEDED`
+- [x] 准备 [Build 13 测试说明](TESTFLIGHT_1.2.3_13.md)
+- [ ] 确认 Apple 处理完成、TestFlight 测试组可见性
+- [ ] TestFlight 覆盖安装及最终交互验收；未提交正式 App Store 审核
+
 ## TestFlight 产品验收
 
 - [ ] 从未安装普通快捷指令的状态开始配置

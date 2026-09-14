@@ -57,6 +57,11 @@ final class PickupStore {
                 notice = .success("已收好取件码 \(record.code)")
             case .duplicate:
                 notice = .neutral("这条取件通知已经收过了")
+            case let .batch(added, duplicateCount):
+                notice = added.isEmpty ? .neutral("这些取件码已经收过了")
+                    : .success((duplicateCount > 0
+                        ? "已收好 \(added.count) 个取件码，另有 \(duplicateCount) 个已收过"
+                        : "已收好 \(added.count) 个取件码"))
             }
         } catch let error as PickupImportError {
             notice = .error(error.localizedDescription)
@@ -74,9 +79,12 @@ final class PickupStore {
                 text,
                 defaultLocation: defaultLocation
             ) else { return }
-            guard case let .added(record) = result else { return }
+            let added = result.addedRecords
+            guard !added.isEmpty else { return }
             records = try await repository.records()
-            notice = .success("已从剪贴板收好取件码 \(record.code)")
+            notice = .success(added.count == 1
+                ? "已从剪贴板收好取件码 \(added[0].code)"
+                : "已从剪贴板收好 \(added.count) 个取件码")
         } catch is PickupImportError {
             // Automatic checks stay quiet when the clipboard is unrelated.
         } catch {
@@ -108,6 +116,9 @@ final class PickupStore {
                     addedCodes.append(record.code)
                 case .duplicate:
                     duplicateCount += 1
+                case let .batch(added, duplicates):
+                    addedCodes.append(contentsOf: added.map(\.code))
+                    duplicateCount += duplicates
                 }
             }
 

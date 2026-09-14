@@ -35,8 +35,8 @@ actor PickupRepository {
         importBatchID: UUID? = nil,
         defaultLocation: String? = nil
     ) throws -> PickupImportResult {
-        let parsed = try parser.parse(text)
-        return try importParsedPickup(
+        let parsed = try parser.parseAll(text)
+        return try importParsedPickups(
             parsed,
             source: source,
             importBatchID: importBatchID,
@@ -48,26 +48,42 @@ actor PickupRepository {
         _ text: String,
         defaultLocation: String? = nil
     ) throws -> PickupImportResult? {
-        let parsed = try parser.parseAutomaticClipboard(text)
+        let parsed = try parser.parseAll(text, requiresLabel: true)
         let suppressions = try loadAutomaticClipboardSuppressions()
-        guard !suppressions.contains(parsed.fingerprint) else {
-            return nil
-        }
-        return try importParsedPickup(
-            parsed,
+        let allowed = parsed.filter { !suppressions.contains($0.fingerprint) }
+        guard !allowed.isEmpty else { return nil }
+        return try importParsedPickups(
+            allowed,
             source: .paste,
             defaultLocation: defaultLocation
         )
+    }
+
+    private func importParsedPickups(
+        _ parsed: [ParsedPickup],
+        source: PickupSource,
+        importBatchID: UUID? = nil,
+        defaultLocation: String? = nil
+    ) throws -> PickupImportResult {
+        var records = try loadRecords()
+        let batchID = importBatchID ?? (parsed.count > 1 ? UUID() : nil)
+        let results = parsed.map {
+            importParsedPickup($0, source: source, importBatchID: batchID,
+                               defaultLocation: defaultLocation, records: &records)
+        }
+        let added = results.flatMap(\.addedRecords)
+        if !added.isEmpty { try save(records) }
+        if results.count == 1 { return results[0] }
+        return .batch(added: added, duplicateCount: results.count - added.count)
     }
 
     private func importParsedPickup(
         _ parsed: ParsedPickup,
         source: PickupSource,
         importBatchID: UUID? = nil,
-        defaultLocation: String? = nil
-    ) throws -> PickupImportResult {
-        var records = try loadRecords()
-
+        defaultLocation: String? = nil,
+        records: inout [PickupRecord]
+    ) -> PickupImportResult {
         if let existing = duplicateRecord(
             code: parsed.code,
             fingerprint: parsed.fingerprint,
@@ -106,7 +122,6 @@ actor PickupRepository {
             archivedAt: nil
         )
         records.append(record)
-        try save(records)
         return .added(record)
     }
 

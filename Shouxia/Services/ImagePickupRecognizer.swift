@@ -152,9 +152,8 @@ struct ImagePickupExtractor: Sendable {
         var labelled: [ImagePickupCandidate] = []
 
         for (index, line) in normalizedLines.enumerated() {
-            let matches = captures(
-                pattern: #"(?:取件码|提货码|取货码|领取码|取件编号)\s*[:：为是]?\s*([A-Za-z0-9]+(?:\s*-\s*[A-Za-z0-9]+){0,4})"#,
-                in: line.text
+            let matches = PickupParser().extractLabelledCodes(
+                from: line.text.replacingOccurrences(of: #"\s*-\s*"#, with: "-", options: .regularExpression)
             )
             for match in matches {
                 guard let code = normalizedCode(match) else { continue }
@@ -287,7 +286,15 @@ struct ImagePickupExtractor: Sendable {
             return (cleaned, score)
         }
 
-        return ranked.max(by: { $0.1 < $1.1 })?.0
+        if let location = ranked.max(by: { $0.1 < $1.1 })?.0 { return location }
+        // A complete SMS can occupy a single OCR line, including code and place.
+        if let parsed = try? PickupParser().parseAutomaticClipboard(lines[codeLineIndex].text),
+           let location = parsed.location,
+           location.count <= 80,
+           !containsPrivateContact(location) {
+            return location
+        }
+        return nil
     }
 
     private func cleanLocation(_ text: String) -> String {

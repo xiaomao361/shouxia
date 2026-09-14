@@ -1,21 +1,62 @@
 import SwiftUI
+import UIKit
 
 enum ShouxiaPalette {
-    static let canvas = Color(red: 0.953, green: 0.976, blue: 0.984)
-    static let paper = Color(red: 1.0, green: 0.992, blue: 0.988)
-    static let warmPaper = Color(red: 1.0, green: 0.953, blue: 0.929)
-    static let ink = Color(red: 0.149, green: 0.216, blue: 0.275)
-    static let mutedInk = Color(red: 0.396, green: 0.475, blue: 0.522)
-    static let supportingInk = Color(red: 0.376, green: 0.455, blue: 0.502)
-    static let softInk = Color(red: 0.541, green: 0.604, blue: 0.639)
-    static let breeze = Color(red: 0.718, green: 0.867, blue: 0.824)
-    static let breezePressed = Color(red: 0.624, green: 0.812, blue: 0.761)
-    static let skyWash = Color(red: 0.867, green: 0.937, blue: 0.965)
-    static let mist = Color(red: 0.910, green: 0.886, blue: 0.937)
-    static let apricot = Color(red: 0.945, green: 0.631, blue: 0.490)
-    static let line = ink.opacity(0.065)
-    static let cardHighlight = Color.white.opacity(0.82)
-    static let celebrationGlow = apricot.opacity(0.15)
+    static let canvas = adaptive(light: 0xF3F9FB, dark: 0x10181C)
+    static let paper = adaptive(light: 0xFFFDFC, dark: 0x192429)
+    static let warmPaper = adaptive(light: 0xFFF3ED, dark: 0x2A211E)
+    static let ink = adaptive(light: 0x263746, dark: 0xEEF5F6)
+    static let actionInk = adaptive(light: 0x263746, dark: 0x08110E)
+    static let mutedInk = adaptive(light: 0x657985, dark: 0xB0C0C5)
+    static let supportingInk = adaptive(light: 0x607480, dark: 0x9EB0B6)
+    static let softInk = adaptive(light: 0x8A9AA3, dark: 0x84979D)
+    static let breeze = adaptive(light: 0xB7DDD2, dark: 0x4C9583)
+    static let breezePressed = adaptive(light: 0x9FCFC2, dark: 0x478B7B)
+    static let skyWash = adaptive(light: 0xDDEFF6, dark: 0x1C3440)
+    static let mist = adaptive(light: 0xE8E2EF, dark: 0x332D3D)
+    static let apricot = adaptive(light: 0xF1A17D, dark: 0xE48A67)
+    static let line = adaptive(
+        light: 0x263746,
+        dark: 0xFFFFFF,
+        lightAlpha: 0.065,
+        darkAlpha: 0.12
+    )
+    static let cardHighlight = adaptive(
+        light: 0xFFFFFF,
+        dark: 0xFFFFFF,
+        lightAlpha: 0.82,
+        darkAlpha: 0.12
+    )
+    static let celebrationGlow = adaptive(
+        light: 0xF1A17D,
+        dark: 0xE48A67,
+        lightAlpha: 0.15,
+        darkAlpha: 0.18
+    )
+
+    private static func adaptive(
+        light: UInt32,
+        dark: UInt32,
+        lightAlpha: CGFloat = 1,
+        darkAlpha: CGFloat = 1
+    ) -> Color {
+        Color(
+            uiColor: UIColor { traits in
+                let value = traits.userInterfaceStyle == .dark ? dark : light
+                let alpha = traits.userInterfaceStyle == .dark ? darkAlpha : lightAlpha
+                return uiColor(hex: value, alpha: alpha)
+            }
+        )
+    }
+
+    private static func uiColor(hex: UInt32, alpha: CGFloat) -> UIColor {
+        UIColor(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: alpha
+        )
+    }
 
     static func accent(for record: PickupRecord) -> Color {
         switch record.platform {
@@ -93,7 +134,7 @@ struct ShouxiaPrimaryButtonStyle: ButtonStyle {
         }
             .font(.headline)
             .fontDesign(.rounded)
-            .foregroundStyle(ShouxiaPalette.ink)
+            .foregroundStyle(ShouxiaPalette.actionInk)
             .frame(maxWidth: .infinity, minHeight: 56)
             .background(
                 configuration.isPressed

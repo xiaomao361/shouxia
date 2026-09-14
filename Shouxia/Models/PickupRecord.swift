@@ -164,6 +164,15 @@ struct ParsedPickup: Equatable, Sendable {
 enum PickupImportResult: Equatable, Sendable {
     case added(PickupRecord)
     case duplicate(PickupRecord)
+    case batch(added: [PickupRecord], duplicateCount: Int)
+
+    var addedRecords: [PickupRecord] {
+        switch self {
+        case let .added(record): [record]
+        case .duplicate: []
+        case let .batch(added, _): added
+        }
+    }
 }
 
 enum PickupImportError: LocalizedError, Equatable {

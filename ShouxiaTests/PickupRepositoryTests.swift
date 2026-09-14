@@ -417,6 +417,125 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertNil(firstRetry)
     }
 
+    private var multiCodeText: String {
+        "【中通快递】您有2个包裹在老六号楼（新4号楼）二单元106妈妈驿站，取货码9-4-0178、5-1-2889"
+    }
+
+    func testMultiCodeImportPersistsBothAndDeduplicatesWholeMessage() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appendingPathComponent("pickups.json")
+        let repository = PickupRepository(fileURL: fileURL)
+        let first = try await repository.importText(multiCodeText, source: .smsAutomation)
+        XCTAssertEqual(first.addedRecords.map(\.code), ["9-4-0178", "5-1-2889"])
+        XCTAssertNotNil(first.addedRecords.first?.importBatchID)
+        XCTAssertEqual(Set(first.addedRecords.compactMap(\.importBatchID)).count, 1)
+        XCTAssertTrue(first.addedRecords.allSatisfy { $0.source == .smsAutomation && $0.locationSource == .recognized })
+        let second = try await repository.importText(multiCodeText, source: .paste)
+        XCTAssertEqual(second, .batch(added: [], duplicateCount: 2))
+        let reloaded = try await PickupRepository(fileURL: fileURL).records()
+        XCTAssertEqual(reloaded.count, 2)
+    }
+
+    func testLegacyCompletedFirstCodeDoesNotBlockMissingSecondCode() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let fileURL = directory.appendingPathComponent("pickups.json")
+        // Old releases stored the whole-message fingerprint for the first code.
+        let parsed = try PickupParser().parse(multiCodeText)
+        let legacy = PickupRecord(id: UUID(), rawText: "", code: parsed.code,
+                                  location: nil, platform: "中通", createdAt: Date(),
+                                  source: .paste, fingerprint: parsed.fingerprint,
+                                  completedAt: Date(), archivedAt: nil)
+        try JSONEncoder().encode([legacy]).write(to: fileURL)
+        let repository = PickupRepository(fileURL: fileURL)
+        let result = try await repository.importText(multiCodeText, source: .paste)
+        guard case let .batch(added, duplicates) = result else { return XCTFail("Expected a batch") }
+        XCTAssertEqual(added.map(\.code), ["5-1-2889"])
+        XCTAssertEqual(duplicates, 1)
+        let records = try await repository.records()
+        XCTAssertEqual(records.count, 2)
+        XCTAssertEqual(records.first?.id, legacy.id)
+        XCTAssertNotNil(records.first?.completedAt)
+    }
+
+    func testMultiCodeAutomaticClipboardHonorsIndividualDeletionSuppression() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
+        let result = try await repository.importAutomaticClipboardText(multiCodeText)
+        let added = try XCTUnwrap(result).addedRecords
+        XCTAssertEqual(added.count, 2)
+        for record in added {
+            _ = try await repository.complete(id: record.id)
+            _ = try await repository.archive(id: record.id)
+            _ = try await repository.permanentlyDelete(id: record.id)
+            _ = try await repository.importAutomaticClipboardText(multiCodeText)
+            let records = try await repository.records()
+            XCTAssertFalse(records.contains { $0.id == record.id || $0.code == record.code })
+        }
+        let retry = try await repository.importAutomaticClipboardText(multiCodeText)
+        XCTAssertNil(retry)
+        let explicit = try await repository.importText(multiCodeText, source: .paste)
+        XCTAssertEqual(explicit.addedRecords.count, 2)
+    }
+
+    func testMultiCodeWriteFailureThrowsWithoutPartialSuccess() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let blocker = directory.appendingPathComponent("not-a-directory")
+        try Data("blocker".utf8).write(to: blocker)
+        let repository = PickupRepository(fileURL: blocker.appendingPathComponent("pickups.json"))
+        do {
+            _ = try await repository.importText(multiCodeText, source: .paste)
+            XCTFail("An unwritable batch must throw")
+        } catch {
+            XCTAssertEqual(try Data(contentsOf: blocker), Data("blocker".utf8))
+        }
+    }
+
+    @MainActor
+    func testStoreReportsBatchCountsForManualAutomaticAndImageImports() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = PickupRepository(fileURL: directory.appendingPathComponent("manual.json"))
+        let store = PickupStore(repository: repository)
+        await store.importText("取货码9-4-0178", source: .paste)
+        await store.importText(multiCodeText, source: .paste)
+        XCTAssertEqual(store.records.count, 2)
+        XCTAssertEqual(store.notice, .success("已收好 1 个取件码，另有 1 个已收过"))
+        await store.importText(multiCodeText, source: .paste)
+        XCTAssertEqual(store.notice, .neutral("这些取件码已经收过了"))
+
+        let automatic = PickupStore(repository: PickupRepository(fileURL: directory.appendingPathComponent("automatic.json")))
+        await automatic.importClipboardAutomatically(multiCodeText)
+        XCTAssertEqual(automatic.records.count, 2)
+        XCTAssertEqual(automatic.notice, .success("已从剪贴板收好 2 个取件码"))
+
+        let images = PickupStore(repository: PickupRepository(fileURL: directory.appendingPathComponent("images.json")))
+        let candidates = try ImagePickupExtractor().candidates(from: [
+            RecognizedTextLine(text: multiCodeText, confidence: 0.95, minX: 0, midY: 0)
+        ])
+        await images.importImageCandidates(candidates)
+        XCTAssertEqual(Set(images.records.map(\.code)), Set(["9-4-0178", "5-1-2889"]))
+        XCTAssertEqual(images.notice, .success("已从图片收好 2 个取件码"))
+    }
+
+    @MainActor
+    func testStoreReportsBatchWriteFailureAsError() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let blocker = directory.appendingPathComponent("not-a-directory")
+        try Data("blocker".utf8).write(to: blocker)
+        let store = PickupStore(repository: PickupRepository(fileURL: blocker.appendingPathComponent("pickups.json")))
+        await store.importText(multiCodeText, source: .paste)
+        XCTAssertEqual(store.notice, .error("没有收好，再试一次"))
+        XCTAssertTrue(store.records.isEmpty)
+    }
+
     private func makeRecord(
         code: String = "123456",
         location: String?,

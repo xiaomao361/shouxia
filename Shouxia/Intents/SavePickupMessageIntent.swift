@@ -31,6 +31,12 @@ struct SavePickupMessageIntent: AppIntent {
                 return .result(dialog: "已收好取件码 \(record.code)")
             case .duplicate:
                 return .result(dialog: "这条取件短信已经收过了")
+            case let .batch(added, duplicateCount):
+                let message = added.isEmpty ? "这些取件码已经收过了"
+                    : (duplicateCount > 0
+                        ? "已收好 \(added.count) 个取件码，另有 \(duplicateCount) 个已收过"
+                        : "已收好 \(added.count) 个取件码")
+                return .result(dialog: IntentDialog(stringLiteral: message))
             }
         } catch let error as PickupImportError {
             return .result(dialog: IntentDialog(stringLiteral: error.localizedDescription))

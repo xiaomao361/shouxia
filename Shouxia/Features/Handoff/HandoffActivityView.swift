@@ -2,24 +2,37 @@ import SwiftUI
 import UIKit
 
 struct HandoffSharePayload: Identifiable {
-    let packageID: UUID
-    let records: [PickupRecord]
-    let url: URL
+    let id = UUID()
+    let content: HandoffShareContent
+}
 
-    var id: UUID { packageID }
+struct HandoffShareContent {
+    let url: URL
+    let records: [PickupRecord]
+
+    var activityItems: [Any] {
+        [url]
+    }
+
+    func recordsToHandOff(completed: Bool, error: Error?) -> [PickupRecord] {
+        guard completed, error == nil else {
+            return []
+        }
+        return records
+    }
 }
 
 struct HandoffActivityView: UIViewControllerRepresentable {
-    let url: URL
-    let completion: (Bool) -> Void
+    let content: HandoffShareContent
+    let completion: (Bool, Error?) -> Void
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(
-            activityItems: [url],
+            activityItems: content.activityItems,
             applicationActivities: nil
         )
-        controller.completionWithItemsHandler = { _, completed, _, _ in
-            completion(completed)
+        controller.completionWithItemsHandler = { _, completed, _, error in
+            completion(completed, error)
         }
         return controller
     }

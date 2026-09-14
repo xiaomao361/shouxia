@@ -434,7 +434,7 @@ struct InboxView: View {
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(.white.opacity(0.7), lineWidth: 1)
+                    .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
             }
             .shadow(color: ShouxiaPalette.ink.opacity(0.12), radius: 22, y: 8)
             .padding(.horizontal, 16)

@@ -6,6 +6,35 @@ final class PickupParserTests: XCTestCase {
     private let imageExtractor = ImagePickupExtractor()
     private let imageBatchMerger = ImagePickupBatchMerger()
 
+    func testParsesZTOSharedLabelCodeListAndLocation() throws {
+        let text = "【中通快递】您有2个包裹在老六号楼（新4号楼）二单元106妈妈驿站，取货码9-4-0178、5-1-2889"
+        for requiresLabel in [false, true] {
+            let results = try parser.parseAll(text, requiresLabel: requiresLabel)
+            XCTAssertEqual(results.map(\.code), ["9-4-0178", "5-1-2889"])
+            XCTAssertEqual(results.map(\.location), Array(repeating: "老六号楼（新4号楼）二单元106妈妈驿站", count: 2))
+            XCTAssertEqual(results.map(\.platform), ["中通", "中通"])
+            XCTAssertEqual(Set(results.map(\.fingerprint)).count, 2)
+        }
+    }
+
+    func testLabelledListsSupportSeparatorsAndDeduplicateCodes() throws {
+        for separator in ["、", "，", ", "] {
+            let results = try parser.parseAll("取货码9-4-0178" + separator + "5-1-2889" + separator + "9-4-0178")
+            XCTAssertEqual(results.map(\.code), ["9-4-0178", "5-1-2889"])
+        }
+        XCTAssertEqual(try parser.parseAll("取件码829146、729915").map(\.code), ["829146", "729915"])
+        XCTAssertEqual(try parser.parseAll("取件码A-12-08、b-23-09").map(\.code), ["A-12-08", "B-23-09"])
+        XCTAssertEqual(try parser.parseAll("取货码9-4-0178、取货码5-1-2889").map(\.code), ["9-4-0178", "5-1-2889"])
+    }
+
+    func testLabelledListDoesNotCollectPhoneTrackingOrAddressNumbers() throws {
+        for suffix in ["、13800138000", "，76543210987654", "，106妈妈驿站", "，客服电话13800138000"] {
+            XCTAssertEqual(try parser.parseAll("取货码9-4-0178、5-1-2889" + suffix).map(\.code), ["9-4-0178", "5-1-2889"])
+        }
+        XCTAssertThrowsError(try parser.parseAll("验证码829146、729915", requiresLabel: true))
+        XCTAssertThrowsError(try parser.parseAll("   "))
+    }
+
     func testParsesCainiaoNotification() throws {
         let result = try parser.parse("【菜鸟驿站】您的包裹已到北门菜鸟驿站，取件码3-2-4012，请凭码取件。")
 
@@ -118,6 +147,17 @@ final class PickupParserTests: XCTestCase {
         let second = try parser.parse("取件码123456，已到北门菜鸟驿站")
 
         XCTAssertEqual(first.fingerprint, second.fingerprint)
+    }
+
+    func testImageExtractorRecognizesSharedLabelCodesOnOneLine() throws {
+        let candidates = try imageExtractor.candidates(from: [imageLine(
+            "【中通快递】您有2个包裹在老六号楼（新4号楼）二单元106妈妈驿站，取货码9-4-0178、5-1-2889"
+        )])
+        XCTAssertEqual(candidates.map(\.code), ["9-4-0178", "5-1-2889"])
+        XCTAssertEqual(candidates.map(\.location), Array(repeating: "老六号楼（新4号楼）二单元106妈妈驿站", count: 2))
+        XCTAssertTrue(candidates.allSatisfy(\.isHighConfidence))
+        let spaced = try imageExtractor.candidates(from: [imageLine("取货码9 - 4 - 0178、5 - 1 - 2889，电话13800138000")])
+        XCTAssertEqual(spaced.map(\.code), ["9-4-0178", "5-1-2889"])
     }
 
     func testImageExtractorPrefersLabelledPickupCodeAndSanitizesPrivateText() throws {

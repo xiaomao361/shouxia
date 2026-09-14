@@ -3,28 +3,35 @@ import Foundation
 
 struct PickupParser: Sendable {
     func parse(_ input: String) throws -> ParsedPickup {
-        let rawText = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !rawText.isEmpty else {
-            throw PickupImportError.emptyText
-        }
-
-        guard let code = extractLabelledCode(from: rawText) ?? extractFallbackCode(from: rawText) else {
-            throw PickupImportError.missingCode
-        }
-
-        return parsedPickup(rawText: rawText, code: code)
+        try parseAll(input)[0]
     }
 
     func parseAutomaticClipboard(_ input: String) throws -> ParsedPickup {
-        let rawText = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !rawText.isEmpty else {
-            throw PickupImportError.emptyText
-        }
-        guard let code = extractLabelledCode(from: rawText) else {
-            throw PickupImportError.missingCode
-        }
+        try parseAll(input, requiresLabel: true)[0]
+    }
 
-        return parsedPickup(rawText: rawText, code: code)
+    /// A labelled list belongs to one notification; unrelated numbers are not a list.
+    func parseAll(_ input: String, requiresLabel: Bool = false) throws -> [ParsedPickup] {
+        let rawText = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawText.isEmpty else { throw PickupImportError.emptyText }
+        var codes = extractLabelledCodes(from: rawText)
+        if codes.isEmpty, !requiresLabel, let fallback = extractFallbackCode(from: rawText) {
+            codes = [fallback]
+        }
+        guard !codes.isEmpty else { throw PickupImportError.missingCode }
+        return codes.enumerated().map { index, code in
+            let parsed = parsedPickup(rawText: rawText, code: code)
+            // Keep the first code's legacy fingerprint so existing imports and
+            // deletion suppressions still match. Other codes need their own identity.
+            return ParsedPickup(
+                rawText: parsed.rawText,
+                code: parsed.code,
+                location: parsed.location,
+                platform: parsed.platform,
+                fingerprint: index == 0 ? parsed.fingerprint
+                    : fingerprint(for: rawText + "\n取件码:" + parsed.code)
+            )
+        }
     }
 
     private func parsedPickup(rawText: String, code: String) -> ParsedPickup {
@@ -37,19 +44,23 @@ struct PickupParser: Sendable {
         )
     }
 
-    private func extractLabelledCode(from text: String) -> String? {
-        let labelledPatterns = [
-            #"(?:取件码|提货码|取货码|领取码|取件编号)[\s：:为是]*([A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4})"#,
-            #"(?:凭码|凭取件码)[\s：:为是]*([A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4})"#,
-        ]
-
-        for pattern in labelledPatterns {
-            if let match = firstCapture(pattern: pattern, in: text) {
-                return match
-            }
+    func extractLabelledCodes(from text: String) -> [String] {
+        let code = #"[A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4}"#
+        // Bare continuation numbers are limited to pickup-code lengths, excluding
+        // phone/tracking numbers and address fragments after the list.
+        let continuation = #"(?:[A-Za-z0-9]+(?:-[A-Za-z0-9]+){1,4}|[A-Za-z]*[0-9]{4,8})(?![A-Za-z0-9-])"#
+        let pattern = #"(?:取件码|提货码|取货码|领取码|取件编号|凭码)[\s：:为是]*("#
+            + code + #"(?:[ \t]*[、，,][ \t]*"# + continuation + #")*)"#
+        guard let expression = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return []
         }
-
-        return nil
+        var seen: Set<String> = []
+        return expression.matches(in: text, range: NSRange(text.startIndex..., in: text)).flatMap { match -> [String] in
+            guard let range = Range(match.range(at: 1), in: text) else { return [] }
+            return text[range].components(separatedBy: CharacterSet(charactersIn: "、，,"))
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() }
+                .filter { seen.insert($0).inserted }
+        }
     }
 
     private func extractFallbackCode(from text: String) -> String? {
@@ -69,6 +80,7 @@ struct PickupParser: Sendable {
 
     private func extractLocation(from text: String) -> String? {
         let arrivalPatterns = [
+            #"(?:包裹|快件|快递)(?:已)?在[\s]*([^，。；;\n]{2,80}?(?:妈妈驿站|菜鸟驿站|快递超市|快递柜|丰巢柜|代收点|服务站))"#,
             #"(?:取件码|提货码|取货码|领取码|取件编号)[\s：:为是]*[A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4}\s*(?:至|到|前往)\s*([^，。；;\n]{2,40}?)(?:取件|领取|$)"#,
             #"(?:已到达|已到|送达|送至|存放在|存放于|已存入|请到|领取地点[：:]?)[\s]*([^，。；;\n]{2,32})"#,
             #"([^，。；;\n]{2,28}(?:菜鸟驿站|快递超市|快递柜|丰巢柜|代收点|服务站))"#,
