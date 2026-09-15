@@ -11,6 +11,7 @@ struct InboxView: View {
     @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
     @AppStorage("lastProcessedPasteboardChangeCount") private var lastProcessedPasteboardChangeCount = -1
     @State private var store = PickupStore()
+    @State private var liveActivity = PickupLiveActivityController()
     @State private var presentedSheet: PresentedSheet?
     @State private var selectedPickup: PickupRecord?
     @State private var completingID: UUID?
@@ -161,12 +162,14 @@ struct InboxView: View {
             .fullScreenCover(item: $selectedPickup) { record in
                 PickupModeView(
                     store: store,
+                    liveActivity: liveActivity,
                     records: pickupModeRecords(startingAt: record),
                     initialRecordID: record.id,
                     onComplete: completeFromPickupMode
                 )
             }
             .task {
+                liveActivity.stop()
                 await store.load()
                 hideAutomationSetupAfterSMSImport()
                 clipboardCheckRequestID &+= 1

@@ -37,6 +37,14 @@
 		D10000000000000000000001 /* ShouxiaThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* ShouxiaThemeTests.swift */; };
 		E10000000000000000000001 /* PickupShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* PickupShareText.swift */; };
 		E10000000000000000000002 /* PickupShareTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* PickupShareTextTests.swift */; };
+
+        F10000000000000000000001 /* PickupActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001; };
+        F10000000000000000000002 /* PickupActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001; };
+        F10000000000000000000003 /* PickupLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002; };
+        F10000000000000000000004 /* ShouxiaLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000003; };
+        F10000000000000000000005 /* PickupLiveActivityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000004; };
+        F10000000000000000000006 /* ShouxiaLiveActivity.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F20000000000000000000005; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,7 +55,14 @@
 			remoteGlobalIDString = A50000000000000000000001;
 			remoteInfo = Shouxia;
 		};
+
+        F30000000000000000000001 = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001; proxyType = 1; remoteGlobalIDString = F50000000000000000000001; remoteInfo = ShouxiaLiveActivity; };
+
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+        FD0000000000000000000001 /* Embed App Extensions */ = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (F10000000000000000000006, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* ShouxiaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaApp.swift; sourceTree = "<group>"; };
@@ -83,6 +98,14 @@
 		D20000000000000000000001 /* ShouxiaThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaThemeTests.swift; sourceTree = "<group>"; };
 		E20000000000000000000001 /* PickupShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupShareText.swift; sourceTree = "<group>"; };
 		E20000000000000000000002 /* PickupShareTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupShareTextTests.swift; sourceTree = "<group>"; };
+
+        F20000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupActivityAttributes.swift; sourceTree = "<group>"; };
+        F20000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupLiveActivityController.swift; sourceTree = "<group>"; };
+        F20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaLiveActivity.swift; sourceTree = "<group>"; };
+        F20000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupLiveActivityTests.swift; sourceTree = "<group>"; };
+        F20000000000000000000005 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = ShouxiaLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+        F20000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,12 +123,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+        F60000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		A70000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				F70000000000000000000001 /* ShouxiaLiveActivity */,
 				A70000000000000000000002 /* Shouxia */,
 				A70000000000000000000008 /* ShouxiaTests */,
 				A70000000000000000000009 /* Products */,
@@ -151,6 +178,7 @@
 		A70000000000000000000005 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				F20000000000000000000001 /* PickupActivityAttributes.swift */,
 				A20000000000000000000002 /* PickupRecord.swift */,
 				A20000000000000000000011 /* PickupHandoffPackage.swift */,
 				E20000000000000000000001 /* PickupShareText.swift */,
@@ -161,6 +189,7 @@
 		A70000000000000000000006 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				F20000000000000000000002 /* PickupLiveActivityController.swift */,
 				A20000000000000000000003 /* PickupParser.swift */,
 				A20000000000000000000004 /* PickupRepository.swift */,
 				A20000000000000000000010 /* ImagePickupRecognizer.swift */,
@@ -179,6 +208,7 @@
 		A70000000000000000000008 /* ShouxiaTests */ = {
 			isa = PBXGroup;
 			children = (
+				F20000000000000000000004 /* PickupLiveActivityTests.swift */,
 				A20000000000000000000009 /* PickupParserTests.swift */,
 				A2000000000000000000000A /* PickupRepositoryTests.swift */,
 				D20000000000000000000001 /* ShouxiaThemeTests.swift */,
@@ -190,6 +220,7 @@
 		A70000000000000000000009 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				F20000000000000000000005 /* ShouxiaLiveActivity.appex */,
 				A2000000000000000000000B /* Shouxia.app */,
 				A2000000000000000000000C /* ShouxiaTests.xctest */,
 			);
@@ -262,6 +293,9 @@
 			path = History;
 			sourceTree = "<group>";
 		};
+
+        F70000000000000000000001 /* ShouxiaLiveActivity */ = {isa = PBXGroup; children = (F20000000000000000000003, F20000000000000000000006, ); path = ShouxiaLiveActivity; sourceTree = "<group>"; };
+
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -269,6 +303,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A80000000000000000000002 /* Build configuration list for PBXNativeTarget "Shouxia" */;
 			buildPhases = (
+                FD0000000000000000000001 /* Embed App Extensions */,
 				A90000000000000000000001 /* Sources */,
 				A60000000000000000000001 /* Frameworks */,
 				AA0000000000000000000001 /* Resources */,
@@ -276,6 +311,7 @@
 			buildRules = (
 			);
 			dependencies = (
+                FB0000000000000000000001,
 			);
 			name = Shouxia;
 			productName = Shouxia;
@@ -300,6 +336,17 @@
 			productReference = A2000000000000000000000C /* ShouxiaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+
+        F50000000000000000000001 /* ShouxiaLiveActivity */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = F80000000000000000000001;
+            buildPhases = (F90000000000000000000001, F60000000000000000000001, FA0000000000000000000001, );
+            buildRules = (); dependencies = ();
+            name = ShouxiaLiveActivity; productName = ShouxiaLiveActivity;
+            productReference = F20000000000000000000005;
+            productType = "com.apple.product-type.app-extension";
+        };
+
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -333,6 +380,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+                F50000000000000000000001 /* ShouxiaLiveActivity */,
 				A50000000000000000000001 /* Shouxia */,
 				A50000000000000000000002 /* ShouxiaTests */,
 			);
@@ -356,6 +404,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+        FA0000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -363,6 +414,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10000000000000000000001 /* PickupActivityAttributes.swift in Sources */,
+				F10000000000000000000003 /* PickupLiveActivityController.swift in Sources */,
 				A10000000000000000000001 /* ShouxiaApp.swift in Sources */,
 				A10000000000000000000002 /* PickupRecord.swift in Sources */,
 				A10000000000000000000003 /* PickupParser.swift in Sources */,
@@ -394,6 +447,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10000000000000000000005 /* PickupLiveActivityTests.swift in Sources */,
 				A10000000000000000000009 /* PickupParserTests.swift in Sources */,
 				A1000000000000000000000A /* PickupRepositoryTests.swift in Sources */,
 				D10000000000000000000001 /* ShouxiaThemeTests.swift in Sources */,
@@ -401,6 +455,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+        F90000000000000000000001 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (F10000000000000000000002, F10000000000000000000004, ); runOnlyForDeploymentPostprocessing = 0; };
+
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -409,6 +466,9 @@
 			target = A50000000000000000000001 /* Shouxia */;
 			targetProxy = A30000000000000000000001 /* PBXContainerItemProxy */;
 		};
+
+        FB0000000000000000000001 = {isa = PBXTargetDependency; target = F50000000000000000000001; targetProxy = F30000000000000000000001; };
+
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -535,6 +595,52 @@
 			};
 			name = Release;
 		};
+
+        FC0000000000000000000001 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 13;
+                DEVELOPMENT_TEAM = A5L4GGX82X;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = ShouxiaLiveActivity/Info.plist;
+                INFOPLIST_KEY_CFBundleDisplayName = "收下取件";
+                IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+                MARKETING_VERSION = 1.2.3;
+                PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.liveactivity;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SKIP_INSTALL = YES;
+                SWIFT_VERSION = 6.0;
+                TARGETED_DEVICE_FAMILY = 1;
+            };
+            name = Debug;
+        };
+
+
+        FC0000000000000000000002 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                APPLICATION_EXTENSION_API_ONLY = YES;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 13;
+                DEVELOPMENT_TEAM = A5L4GGX82X;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_FILE = ShouxiaLiveActivity/Info.plist;
+                INFOPLIST_KEY_CFBundleDisplayName = "收下取件";
+                IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+                LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+                MARKETING_VERSION = 1.2.3;
+                PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.liveactivity;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SKIP_INSTALL = YES;
+                SWIFT_VERSION = 6.0;
+                TARGETED_DEVICE_FAMILY = 1;
+            };
+            name = Release;
+        };
+
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -565,6 +671,9 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+
+        F80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (FC0000000000000000000001, FC0000000000000000000002, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+
 /* End XCConfigurationList section */
 	};
 	rootObject = A40000000000000000000001 /* Project object */;

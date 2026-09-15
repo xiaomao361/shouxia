@@ -4,20 +4,25 @@ import UIKit
 struct PickupModeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     let store: PickupStore
+    let liveActivity: PickupLiveActivityController
     let onComplete: (PickupRecord) -> Void
     let groupRecordIDs: [UUID]
     @State private var selectedRecordID: UUID
     @State private var editingRecord: PickupRecord?
+    @State private var showsActivityConfirmation = false
 
     init(
         store: PickupStore,
+        liveActivity: PickupLiveActivityController,
         records: [PickupRecord],
         initialRecordID: UUID,
         onComplete: @escaping (PickupRecord) -> Void
     ) {
         self.store = store
+        self.liveActivity = liveActivity
         self.onComplete = onComplete
         groupRecordIDs = records.map(\.id)
         _selectedRecordID = State(initialValue: initialRecordID)
@@ -35,6 +40,11 @@ struct PickupModeView: View {
 
     private var selectedIndex: Int {
         records.firstIndex { $0.id == selectedRecordID } ?? 0
+    }
+
+    private var activityState: PickupActivityState? {
+        guard let selectedRecord else { return nil }
+        return .make(records: records, selectedID: selectedRecord.id)
     }
 
     var body: some View {
@@ -69,6 +79,28 @@ struct PickupModeView: View {
             PickupRecordEditView(record: record, store: store)
                 .presentationDetents([.medium])
         }
+        .onChange(of: activityState) { _, state in
+            liveActivity.update(state)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { liveActivity.update(activityState) }
+        }
+        .onDisappear { liveActivity.stop() }
+        .confirmationDialog("在锁屏与手表显示取件码", isPresented: $showsActivityConfirmation, titleVisibility: .visible) {
+            Button("开启") {
+                if let activityState { liveActivity.start(activityState) }
+            }
+        } message: {
+            Text("显示当前取件码和地点。切码与完成仍在手机操作，关闭取件台后停止显示。配对的 Apple Watch 需支持实时活动。")
+        }
+        .alert("实时活动", isPresented: Binding(
+            get: { liveActivity.message != nil },
+            set: { if !$0 { liveActivity.dismissMessage() } }
+        )) {
+            Button("知道了") { liveActivity.dismissMessage() }
+        } message: {
+            Text(liveActivity.message ?? "")
+        }
     }
 
     private var topBar: some View {
@@ -87,10 +119,24 @@ struct PickupModeView: View {
             Spacer()
 
             if let selectedRecord {
-                Button {
-                    editingRecord = selectedRecord
+                Menu {
+                    Button("更正取件信息", systemImage: "pencil") {
+                        editingRecord = selectedRecord
+                    }
+                    if #available(iOS 18.0, *) {
+                        if liveActivity.isEnabled {
+                            Button("停止锁屏与手表显示", systemImage: "stop.circle") {
+                                liveActivity.stop()
+                            }
+                        } else {
+                            Button("在锁屏与手表显示", systemImage: "applewatch") {
+                                showsActivityConfirmation = true
+                            }
+                            .disabled(liveActivity.isBusy)
+                        }
+                    }
                 } label: {
-                    Image(systemName: "pencil")
+                    Image(systemName: liveActivity.isEnabled ? "applewatch" : "ellipsis")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(ShouxiaPalette.ink)
                         .frame(width: 44, height: 44)
@@ -100,8 +146,8 @@ struct PickupModeView: View {
                                 .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
                         }
                 }
-                .accessibilityLabel("更正取件信息")
-                .accessibilityHint("修改当前包裹的取件码或地点")
+                .accessibilityLabel("取件选项")
+                .accessibilityHint("更正信息，或开启锁屏与手表看码")
             }
 
             Button {

@@ -32,6 +32,7 @@ App Icon 以“杏桃包裹 + 云白取件卡”为核心图形，直接表达 A
 
 ## 文档
 
+- [Apple Watch 抬腕看码（本地开发，待真机验收）](docs/APPLE_WATCH_PICKUP.md)
 - [产品 Seed](docs/PRODUCT_SEED.md)
 - [后续方向 Seed：取件年度回顾](docs/SEED_PICKUP_YEAR_IN_REVIEW.md)
 - [双入口改造与 TestFlight 计划](docs/PLAN_DUAL_INTAKE_AUTOMATION_TESTFLIGHT_2026-07-30.md)
