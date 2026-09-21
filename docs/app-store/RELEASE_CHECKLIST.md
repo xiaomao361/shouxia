@@ -256,7 +256,8 @@
 - [x] 主页、支持页、隐私政策及其 Markdown 版本同步，标明新版待发布
 - [x] 新功能核心测试 17 项通过
 - [ ] 新版完整真机交互验收
-- [ ] 发行 Archive／App Store Connect 上传
+- [x] 发行 Archive／App Store Connect 上传（2026-09-21 10:18 +0800）
+- [ ] Apple 处理完成与测试组可见性
 - [ ] 网页发布及线上内容核对
 
 详见 [Build 14](TESTFLIGHT_1.2.4_14.md)。

@@ -188,4 +188,4 @@ App Store Connect 元数据与历史版本说明保留在 `docs/app-store/`。�
 
 主 App 与 WidgetKit 扩展的 Debug/Release 版本统一为 1.2.4（14）。新增桌面与锁屏组件、用户主动开启的实时活动、设置三入口、最近 30 天／全部历史及直接删除确认；无搜索、归档入口或自动删除。实时活动和前台剪贴板识别默认关闭，升级保留明确选择。
 
-本轮网页、支持和隐私政策源码同步更新，未发布线上网页；版本核验、构建与安装状态见 [Build 14](app-store/TESTFLIGHT_1.2.4_14.md)。Build 13 的历史上传证据不代表 Build 14 已上传。
+本轮网页、支持和隐私政策源码已随 main 推送，线上部署未核验；1.2.4 (14) 已上传 TestFlight，Apple 已接收并处理。版本核验、构建、安装与上传状态见 [Build 14](app-store/TESTFLIGHT_1.2.4_14.md)。Build 13 的历史上传证据不代表 Build 14 已上传。

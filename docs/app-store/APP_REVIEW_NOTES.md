@@ -61,4 +61,4 @@ Open Settings → 锁屏与灵动岛 and enable the switch to show pending picku
 
 History defaults to the last 30 calendar days and offers an All filter. Legacy archived records remain visible; restore to pending and confirmed permanent deletion are supported. No automatic deletion or archive action is offered. Automatic clipboard import also remains off by default.
 
-中文：主页齿轮进入设置。小组件由用户在系统中添加；实时活动需在“锁屏与灵动岛”手动开启，默认关闭。收下记录支持最近 30 天／全部、设为待取与确认删除，旧归档数据保留。本版本尚未上传，此文为待提交审核说明。
+中文：主页齿轮进入设置。小组件由用户在系统中添加；实时活动需在“锁屏与灵动岛”手动开启，默认关闭。收下记录支持最近 30 天／全部、设为待取与确认删除，旧归档数据保留。本版本已上传 TestFlight，尚未提交正式审核，此文为审核说明草稿。
