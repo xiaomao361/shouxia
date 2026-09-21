@@ -6,9 +6,19 @@ actor PickupRepository {
     private let fileURL: URL
     private let automaticClipboardSuppressionsURL: URL
     private let parser: PickupParser
+    private let surfacePublisher: (@Sendable (PickupSurfaceSnapshot) throws -> Void)?
+    private let publishesLiveActivity: Bool
+    private(set) var surfaceRefreshFailed = false
 
-    init(fileURL: URL? = nil, parser: PickupParser = PickupParser()) {
+    init(fileURL: URL? = nil, parser: PickupParser = PickupParser(),
+         surfacePublisher: (@Sendable (PickupSurfaceSnapshot) throws -> Void)? = nil) {
         self.parser = parser
+        self.publishesLiveActivity = fileURL == nil
+        #if os(iOS)
+        self.surfacePublisher = surfacePublisher ?? (fileURL == nil ? PickupSurfacePublisher.publish : nil)
+        #else
+        self.surfacePublisher = surfacePublisher
+        #endif
         let resolvedFileURL: URL
         if let fileURL {
             resolvedFileURL = fileURL
@@ -26,7 +36,9 @@ actor PickupRepository {
     }
 
     func records() throws -> [PickupRecord] {
-        try loadRecords()
+        let records = try loadRecords()
+        refreshSurfaces(records)
+        return records
     }
 
     func importText(
@@ -282,7 +294,7 @@ actor PickupRepository {
 
     func permanentlyDelete(id: UUID) throws -> Bool {
         var records = try loadRecords()
-        guard let index = records.firstIndex(where: { $0.id == id && $0.isArchived }) else {
+        guard let index = records.firstIndex(where: { $0.id == id && ($0.isCompleted || $0.isArchived) }) else {
             return false
         }
         try suppressAutomaticClipboardImport(for: records[index].fingerprint)
@@ -292,11 +304,17 @@ actor PickupRepository {
     }
 
     private func loadRecords() throws -> [PickupRecord] {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return try JSONDecoder().decode([PickupRecord].self, from: data)
+        } catch CocoaError.fileReadNoSuchFile {
+            // A new installation has no source file. Permission and decoding failures
+            // must reach the unavailable path, never become an empty successful list.
             return []
+        } catch {
+            publishSurface(.unavailable())
+            throw error
         }
-        let data = try Data(contentsOf: fileURL)
-        return try JSONDecoder().decode([PickupRecord].self, from: data)
     }
 
     private func save(_ records: [PickupRecord]) throws {
@@ -304,6 +322,32 @@ actor PickupRepository {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(records)
         try data.write(to: fileURL, options: .atomic)
+        refreshSurfaces(records)
+        #if os(iOS)
+        if publishesLiveActivity {
+            Task { @MainActor in PickupLiveActivityController.shared.refresh() }
+        }
+        #endif
+    }
+
+    private func refreshSurfaces(_ records: [PickupRecord]) {
+        publishSurface(.make(records: records))
+    }
+
+    private func publishSurface(_ snapshot: PickupSurfaceSnapshot) {
+        #if os(iOS)
+        if !snapshot.isAvailable, publishesLiveActivity {
+            Task { @MainActor in PickupLiveActivityController.shared.sourceBecameUnavailable() }
+        }
+        #endif
+        guard let surfacePublisher else { return }
+        do {
+            try surfacePublisher(snapshot)
+            surfaceRefreshFailed = false
+        } catch {
+            // The source commit succeeded. Do not report import/completion as failed.
+            surfaceRefreshFailed = true
+        }
     }
 
     private func duplicateRecord(

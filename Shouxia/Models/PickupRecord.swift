@@ -188,3 +188,25 @@ enum PickupImportError: LocalizedError, Equatable {
         }
     }
 }
+
+/// Presentation-only history filtering; legacy archive fields remain untouched.
+enum PickupHistoryRange: String, CaseIterable, Identifiable {
+    case recent = "最近 30 天"
+    case all = "全部"
+    var id: Self { self }
+
+    func records(from records: [PickupRecord], now: Date = Date(), calendar: Calendar = .current) -> [PickupRecord] {
+        // Today and the preceding 29 calendar days, including DST transitions.
+        let start = calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: now))!
+        return records.filter {
+            ($0.isCompleted || $0.isArchived) && (self == .all || $0.historyDate >= start)
+        }.sorted {
+            if $0.historyDate == $1.historyDate { return $0.id.uuidString < $1.id.uuidString }
+            return $0.historyDate > $1.historyDate
+        }
+    }
+}
+
+extension PickupRecord {
+    var historyDate: Date { completedAt ?? handedOffAt ?? archivedAt ?? createdAt }
+}

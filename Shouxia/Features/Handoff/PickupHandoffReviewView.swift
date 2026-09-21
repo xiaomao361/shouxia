@@ -19,7 +19,7 @@ struct PickupHandoffReviewView: View {
                                 .font(.title2.weight(.semibold))
                                 .foregroundStyle(ShouxiaPalette.ink)
 
-                            Text("确认后，这些取件信息会加入你的待取列表。")
+                            Text("确认后加入待取。")
                                 .font(.subheadline)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
                                 .multilineTextAlignment(.center)
@@ -56,7 +56,7 @@ struct PickupHandoffReviewView: View {
                         .buttonStyle(ShouxiaPrimaryButtonStyle())
                         .disabled(isImporting)
 
-                        Text("交接包是对方发出时的快照，不会建立账号、云同步或双方状态联动。")
+                        Text("内容以发送时为准，双方取件状态不会同步。")
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
                             .multilineTextAlignment(.center)

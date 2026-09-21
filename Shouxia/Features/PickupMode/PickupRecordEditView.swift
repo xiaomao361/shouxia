@@ -52,7 +52,7 @@ struct PickupRecordEditView: View {
                 } header: {
                     Text("取件地点")
                 } footer: {
-                    Text("可以留空，之后仍可从取件现场更正。")
+                    Text("可留空，之后可更正。")
                 }
             }
             .scrollContentBackground(.hidden)

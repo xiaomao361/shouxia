@@ -1,11 +1,50 @@
 import SwiftUI
 import UIKit
+import ActivityKit
+
+struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    NavigationLink {
+                        ImportPreferencesView()
+                    } label: {
+                        Label("导入设置", systemImage: "shippingbox.and.arrow.backward")
+                    }
+                    NavigationLink {
+                        PickupActivityPreferencesView()
+                    } label: {
+                        Label("锁屏与灵动岛", systemImage: "lock.iphone")
+                    }
+                }
+                Section {
+                    NavigationLink {
+                        AboutView()
+                    } label: {
+                        Label("隐私与关于", systemImage: "info.circle")
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(ShouxiaBackground())
+            .navigationTitle("设置")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+        .tint(ShouxiaPalette.breezePressed)
+        .fontDesign(.rounded)
+    }
+}
 
 struct AboutView: View {
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
     @AppStorage("automaticClipboardImportEnabled") private var automaticClipboardImportEnabled = false
-    @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
 
     private var versionText: String {
         let version = Bundle.main.object(
@@ -18,166 +57,139 @@ struct AboutView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ShouxiaBackground()
+        ZStack {
+            ShouxiaBackground()
 
-                ScrollView {
-                    VStack(spacing: 22) {
-                        ShouxiaMark(showsBackground: true)
-                            .frame(width: 92, height: 92)
-                            .padding(.top, 10)
+            ScrollView {
+                VStack(spacing: 22) {
+                    ShouxiaMark(showsBackground: true)
+                        .frame(width: 92, height: 92)
+                        .padding(.top, 10)
 
-                        VStack(spacing: 5) {
-                            Text("收下")
-                                .font(.title2.weight(.semibold))
-                                .foregroundStyle(ShouxiaPalette.ink)
-                            Text(versionText)
-                                .font(.caption)
-                                .foregroundStyle(ShouxiaPalette.softInk)
-                        }
-
-                        NavigationLink {
-                            ImportPreferencesView()
-                        } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: "shippingbox.and.arrow.backward")
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundStyle(ShouxiaPalette.ink)
-                                    .frame(width: 42, height: 42)
-                                    .background(ShouxiaPalette.warmPaper, in: Circle())
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text("导入设置")
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(ShouxiaPalette.ink)
-                                    Text(importPreferencesSummary)
-                                        .font(.caption)
-                                        .foregroundStyle(ShouxiaPalette.mutedInk)
-                                        .lineLimit(2)
-                                }
-
-                                Spacer(minLength: 8)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(ShouxiaPalette.softInk)
-                            }
-                            .padding(14)
-                            .background(
-                                ShouxiaPalette.paper.opacity(0.94),
-                                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            )
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("设置常用取件点和打开时剪贴板识别")
-
-                        VStack(alignment: .leading, spacing: 0) {
-                            PrivacyRow(
-                                icon: "iphone",
-                                title: "只在本机处理",
-                                detail: "取件通知、取件码、地点和历史记录只保存在你的设备上，不会发送到开发者服务器。"
-                            )
-                            PrivacyDivider()
-                            PrivacyRow(
-                                icon: "doc.on.clipboard",
-                                title: automaticClipboardImportEnabled
-                                    ? "剪贴板自动识别由你开启"
-                                    : "由你主动粘贴",
-                                detail: automaticClipboardImportEnabled
-                                    ? "打开收下时只检查发生变化的剪贴板内容；识别和筛选都在本机完成，无关文字不会保存。iOS 可能询问是否允许粘贴。"
-                                    : "只有点击系统粘贴按钮后，收下才会读取当前剪贴板内容。"
-                            )
-                            PrivacyDivider()
-                            PrivacyRow(
-                                icon: "photo",
-                                title: "图片只在本机识别",
-                                detail: "你选择的物流图片由 Apple Vision 在设备上识别；收下不保存原图，也不保留手机号、运单号或商品等无关文字。"
-                            )
-                            PrivacyDivider()
-                            PrivacyRow(
-                                icon: "message",
-                                title: "短信自动化由你控制",
-                                detail: "收下只能处理你在快捷指令个人自动化中明确交给它的短信文本，不能读取短信历史或其他 App 的通知。"
-                            )
-                            PrivacyDivider()
-                            PrivacyRow(
-                                icon: "person.2",
-                                title: "交接包由你主动发送",
-                                detail: "交接包只包含你选中的取件码、地点和平台；不包含短信原文、手机号、运单号或商品信息。"
-                            )
-                            PrivacyDivider()
-                            PrivacyRow(
-                                icon: "person.crop.circle.badge.xmark",
-                                title: "不跟踪、不建账号",
-                                detail: "当前版本不包含广告、分析 SDK、用户账号、云同步或跨 App 跟踪。"
-                            )
-                        }
-                        .background(
-                            ShouxiaPalette.paper.opacity(0.94),
-                            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                                .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
-                        }
-
-                        if automationSetupCardHidden {
-                            Button {
-                                automationSetupCardHidden = false
-                                dismiss()
-                            } label: {
-                                Label(
-                                    "重新显示短信自动收码设置",
-                                    systemImage: "message.badge"
-                                )
-                            }
-                            .buttonStyle(ShouxiaSecondaryButtonStyle())
-                            .accessibilityHint("关闭本页后，设置入口会重新出现在首页")
-                        }
-
-                        Text("你可以在“收下记录”中归档内容，并在归档页永久删除。删除后无法恢复；为避免同一剪贴板内容再次自动出现，本机会保留不可读的阻止标记。")
+                    VStack(spacing: 5) {
+                        Text("收下")
+                            .font(.title2.weight(.semibold))
+                            .foregroundStyle(ShouxiaPalette.ink)
+                        Text(versionText)
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(2)
-                            .padding(.horizontal, 10)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 30)
-                }
-                .scrollIndicators(.hidden)
-            }
-            .navigationTitle("隐私与关于")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") {
-                        dismiss()
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        PrivacyRow(
+                            icon: "iphone",
+                            title: "只在本机处理",
+                            detail: "取件信息和历史记录保存在本机，不上传开发者服务器。"
+                        )
+                        PrivacyDivider()
+                        PrivacyRow(
+                            icon: "doc.on.clipboard",
+                            title: automaticClipboardImportEnabled
+                                ? "剪贴板自动识别由你开启"
+                                : "由你主动粘贴",
+                            detail: automaticClipboardImportEnabled
+                                ? "打开时识别新复制的内容，无关文字不保存。iOS 可能询问粘贴权限。"
+                                : "点击粘贴后才读取剪贴板。"
+                        )
+                        PrivacyDivider()
+                        PrivacyRow(
+                            icon: "photo",
+                            title: "图片只在本机识别",
+                            detail: "图片在本机识别，不保存原图、手机号、运单号或商品信息。"
+                        )
+                        PrivacyDivider()
+                        PrivacyRow(
+                            icon: "message",
+                            title: "短信自动化由你控制",
+                            detail: "只处理你通过自动化传入的短信，无法读取短信历史或其他 App 通知。"
+                        )
+                        PrivacyDivider()
+                        PrivacyRow(
+                            icon: "person.2",
+                            title: "交接包由你主动发送",
+                            detail: "只分享所选取件码、地点和平台，不含短信原文等其他信息。"
+                        )
+                        PrivacyDivider()
+                        PrivacyRow(
+                            icon: "person.crop.circle.badge.xmark",
+                            title: "不跟踪、不建账号",
+                            detail: "无广告、统计跟踪、账号或云同步。"
+                        )
                     }
+                    .background(
+                        ShouxiaPalette.paper.opacity(0.94),
+                        in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
+                    }
+
+                    Text("可在“收下记录”中永久删除。删除后保留不含原文的去重标记，避免同一剪贴板内容再次自动导入。")
+                        .font(.caption)
+                        .foregroundStyle(ShouxiaPalette.softInk)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.horizontal, 10)
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
+            .scrollIndicators(.hidden)
         }
+        .navigationTitle("隐私与关于")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .tint(ShouxiaPalette.mutedInk)
         .fontDesign(.rounded)
     }
 
-    private var importPreferencesSummary: String {
-        let location = commonPickupLocation
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        switch (location.isEmpty, automaticClipboardImportEnabled) {
-        case (false, true):
-            return "常用地点：\(location) · 自动识别剪贴板"
-        case (false, false):
-            return "常用地点：\(location)"
-        case (true, true):
-            return "已开启自动识别剪贴板"
-        case (true, false):
-            return "设置常用取件点和剪贴板识别"
+}
+
+
+private struct PickupActivityPreferencesView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
+    @State private var isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled
+    @State private var activity = PickupLiveActivityController.shared
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("在锁屏和灵动岛显示待取", isOn: Binding(
+                    get: { activity.isEnabled },
+                    set: { activity.setEnabled($0) }
+                ))
+                if let message = activity.message {
+                    Text(message).font(.caption).foregroundStyle(.secondary)
+                }
+            } footer: {
+                Text("有待取就展示，取完自动收起。关闭不影响待取记录。")
+            }
+            Section {
+                LabeledContent("系统允许实时活动", value: isAllowed ? "已允许" : "未允许")
+                Button("前往系统设置") {
+                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                    openURL(url)
+                }
+            } footer: {
+                Text(isAllowed ? "取件码会显示在锁屏和灵动岛上。" : "请在收下的系统设置中开启实时活动。")
+            }
+            Section {
+                Text("每次活动最长 8 小时。到期或移除后，开关仍开启时，下次打开收下会恢复展示。")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                Text("后台仅更新已有活动；开始新活动需打开 App。")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } header: {
+                Text("展示何时恢复")
+            }
+        }
+        .navigationTitle("锁屏与灵动岛")
+        .navigationBarTitleDisplayMode(.inline)
+        .tint(ShouxiaPalette.breezePressed)
+        .onAppear { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
         }
     }
 }

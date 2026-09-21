@@ -7,6 +7,8 @@ struct ImportPreferencesView: View {
 
     @State private var automaticClipboardImportEnabled: Bool
     @State private var commonPickupLocation: String
+    @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
+    @State private var showsAutomationSetup = false
     @State private var validationMessage: String?
 
     init() {
@@ -35,7 +37,7 @@ struct ImportPreferencesView: View {
             } header: {
                 Text("常用取件点")
             } footer: {
-                Text("图片或文字没有识别出地点时，用它补全新导入的包裹。修改后不会改变旧记录。")
+                Text("未识别到地点时使用，仅影响新导入的包裹。")
             }
 
             Section {
@@ -44,8 +46,28 @@ struct ImportPreferencesView: View {
                     isOn: $automaticClipboardImportEnabled
                 )
             } footer: {
-                Text("默认关闭。开启后，收下只在进入前台且剪贴板发生变化时读取一次；无关文字不会保存。首次使用时 iOS 可能询问是否允许粘贴。")
+                Text("打开 App 时识别新复制的取件信息，无关文字不保存。iOS 可能询问粘贴权限。")
             }
+            Section {
+                Button("设置短信自动收码") {
+                    showsAutomationSetup = true
+                }
+                if automationSetupCardHidden {
+                    Button("重新显示首页设置入口") {
+                        automationSetupCardHidden = false
+                    }
+                } else {
+                    Label("首页设置入口已显示", systemImage: "checkmark.circle")
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("短信自动收码")
+            } footer: {
+                Text("隐藏首页入口不影响已配置的自动收码。")
+            }
+        }
+        .sheet(isPresented: $showsAutomationSetup) {
+            AutomationSetupView()
         }
         .scrollContentBackground(.hidden)
         .background(ShouxiaBackground())

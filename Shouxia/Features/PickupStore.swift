@@ -7,6 +7,7 @@ final class PickupStore {
     private(set) var records: [PickupRecord] = []
     private(set) var notice: Notice?
     private(set) var lastCompleted: PickupRecord?
+    private(set) var loadFailed = false
 
     private let repository: PickupRepository
 
@@ -21,9 +22,7 @@ final class PickupStore {
     }
 
     var historyRecords: [PickupRecord] {
-        records
-            .filter { $0.isCompleted && !$0.isArchived }
-            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+        PickupHistoryRange.all.records(from: records)
     }
 
     var archivedRecords: [PickupRecord] {
@@ -35,7 +34,14 @@ final class PickupStore {
     func load() async {
         do {
             records = try await repository.records()
+            loadFailed = false
+            PickupLiveActivityController.shared.refresh()
+            if await repository.surfaceRefreshFailed {
+                notice = .error("取件信息已保存，小组件暂时无法更新")
+            }
         } catch {
+            loadFailed = true
+            PickupLiveActivityController.shared.refresh()
             notice = .error("暂时无法读取本地取件信息")
         }
     }
@@ -207,7 +213,7 @@ final class PickupStore {
             _ = try await repository.undoCompletion(id: lastCompleted.id)
             records = try await repository.records()
             self.lastCompleted = nil
-            notice = .neutral("已经放回待取列表")
+            notice = .neutral("已设为待取")
         } catch {
             notice = .error("暂时无法撤销")
         }
@@ -230,7 +236,7 @@ final class PickupStore {
         do {
             _ = try await repository.undoCompletion(id: record.id)
             records = try await repository.records()
-            notice = .neutral("已经放回待取列表")
+            notice = .neutral("已设为待取")
         } catch {
             notice = .error("暂时无法恢复这条记录")
         }
@@ -257,7 +263,7 @@ final class PickupStore {
     func permanentlyDelete(_ record: PickupRecord) async {
         do {
             guard try await repository.permanentlyDelete(id: record.id) else {
-                notice = .error("这条记录不在归档中")
+                notice = .error("这条记录已不在收下记录中")
                 return
             }
             records = try await repository.records()

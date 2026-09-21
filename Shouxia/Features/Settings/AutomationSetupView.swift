@@ -22,11 +22,11 @@ struct AutomationSetupView: View {
                             .padding(.top, 12)
 
                         VStack(spacing: 8) {
-                            Text("自己的取件短信，自动收好")
+                            Text("短信自动收码")
                             .font(.title2.weight(.semibold))
                             .foregroundStyle(ShouxiaPalette.ink)
 
-                            Text("先一键添加“收下自动收码”，再手动创建一次“信息”个人自动化。以后收到自己的取件短信，不用复制，也不用打开收下。")
+                            Text("先添加快捷指令，再创建信息自动化。设置后，取件短信自动加入待取。")
                             .font(.subheadline)
                             .foregroundStyle(ShouxiaPalette.mutedInk)
                             .multilineTextAlignment(.center)
@@ -55,7 +55,7 @@ struct AutomationSetupView: View {
                             .buttonStyle(ShouxiaPrimaryButtonStyle())
                             .accessibilityHint("打开苹果快捷指令导入页，仍需确认添加")
 
-                            Text("苹果会显示快捷指令内容，请确认名称和两个操作后点“添加快捷指令”。")
+                            Text("确认名称和两个操作，再点“添加快捷指令”。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -144,7 +144,7 @@ struct AutomationSetupView: View {
                             in: RoundedRectangle(cornerRadius: 22, style: .continuous)
                         )
 
-                        Text("收下无法查询个人自动化是否配置成功。只有第一条真实短信自动进入 App，才能证明整条链路完成。仅支持进入苹果“信息”App 的 SMS 或 iMessage；支付宝及其他 App 的通知无法读取。")
+                        Text("设置后，用一条真实取件短信确认是否生效。仅支持苹果“信息”中的短信和 iMessage，无法读取其他 App 通知。")
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
                             .multilineTextAlignment(.center)
@@ -155,7 +155,7 @@ struct AutomationSetupView: View {
                             automationSetupCardHidden = true
                             dismiss()
                         } label: {
-                            Text("我已设置，隐藏首页入口")
+                            Text("隐藏首页入口")
                         }
                         .buttonStyle(ShouxiaSecondaryButtonStyle())
                     }

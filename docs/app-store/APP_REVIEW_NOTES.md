@@ -41,7 +41,7 @@ All message text and parsed records remain on device. The app contains no advert
 
 “收下”是一款完全本地处理、给实际去取快递的人使用的取件码收件箱，不需要账号或测试登录。自己的取件短信可以通过系统自动化进入，他人托取的文字或截图可以主动交给 App。
 
-审核员可以复制上面的演示文本，打开 App 后点击系统“粘贴”按钮，检查解析、去重、轻点卡片进入大字取件模式、滑动完成、撤销、归档和永久删除。也可以在“导入设置”中主动开启“打开时识别剪贴板”；此选项默认关闭，仅在 App 进入前台且剪贴板发生变化后读取一次，iOS 可能显示系统粘贴授权提示，无关内容会被静默忽略，后台不会读取。
+审核员可以复制上面的演示文本，打开 App 后点击系统“粘贴”按钮，检查解析、去重、轻点卡片进入大字取件模式、滑动完成、撤销、最近 30 天／全部历史、设为待取和永久删除。也可以在“导入设置”中主动开启“打开时识别剪贴板”；此选项默认关闭，仅在 App 进入前台且剪贴板发生变化后读取一次，iOS 可能显示系统粘贴授权提示，无关内容会被静默忽略，后台不会读取。
 
 系统照片选择器支持一次选择最多五张物流截图；图片只在本机 OCR，随后跨图按取件码去重并统一确认，原图和无关全文不会保存。可选的“常用取件点”只补全以后导入且原文缺少地点的记录，并会显示来源标记；同批图片即使没有地点也可连续取件。
 
@@ -52,3 +52,13 @@ App 内“添加‘收下自动收码’”按钮会打开 Apple iCloud 快捷�
 `https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a`
 
 用户确认导入后，仍需亲自创建“信息”个人自动化并选择“立即运行”；App 不会声称能够静默创建该自动化。
+
+## 1.2.4 (14): widgets, Live Activities and history
+
+Add Shouxia's small/medium Home Screen widget or Lock Screen count widget through iOS. The extension reads a minimal on-device App Group snapshot; it never writes source records or sends data to a server. Widget refresh is system scheduled.
+
+Open Settings → 锁屏与灵动岛 and enable the switch to show pending pickups in a Live Activity. This setting is off by default, independently of system permission. Codes may be visible on the Lock Screen. The app starts activities in the foreground and updates existing activities after local data changes; there is no push backend. Activities last at most eight hours; an enabled preference resumes display on a later foreground launch when pending records remain.
+
+History defaults to the last 30 calendar days and offers an All filter. Legacy archived records remain visible; restore to pending and confirmed permanent deletion are supported. No automatic deletion or archive action is offered. Automatic clipboard import also remains off by default.
+
+中文：主页齿轮进入设置。小组件由用户在系统中添加；实时活动需在“锁屏与灵动岛”手动开启，默认关闭。收下记录支持最近 30 天／全部、设为待取与确认删除，旧归档数据保留。本版本尚未上传，此文为待提交审核说明。

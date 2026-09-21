@@ -3,17 +3,33 @@ import SwiftUI
 struct HistoryView: View {
     @Environment(\.dismiss) private var dismiss
     let store: PickupStore
+    @State private var range: PickupHistoryRange = .recent
+    @State private var recordToDelete: PickupRecord?
 
     var body: some View {
-        Group {
-            if store.historyRecords.isEmpty {
+        VStack(spacing: 0) {
+            Picker("记录范围", selection: $range) {
+                ForEach(PickupHistoryRange.allCases) { value in
+                    Text(value.rawValue).tag(value)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding()
+
+            if case let .error(message) = store.notice {
+                Text(message).font(.caption).foregroundStyle(.red).padding(.horizontal)
+            }
+            if store.loadFailed {
+                ContentUnavailableView("暂时无法读取记录", systemImage: "exclamationmark.triangle",
+                                       description: Text("请稍后重新打开收下。"))
+            } else if visibleRecords.isEmpty {
                 ContentUnavailableView {
-                    Label("还没有收下记录", systemImage: "clock.arrow.circlepath")
+                    Label(store.historyRecords.isEmpty ? "还没有收下记录" : "最近 30 天没有记录",
+                          systemImage: "clock.arrow.circlepath")
                 } description: {
-                    Text("在主页面收下包裹后，这里会保留录入与收下时间。")
+                    Text(store.historyRecords.isEmpty ? "取完的包裹会留在这里。" : "切换“全部”查看更早的记录。")
                 }
                 .foregroundStyle(ShouxiaPalette.mutedInk)
-                .background(ShouxiaBackground())
             } else {
                 List {
                     ForEach(historySections) { section in
@@ -31,13 +47,10 @@ struct HistoryView: View {
                                         }
                                         .tint(ShouxiaPalette.mutedInk)
                                     }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button {
-                                            Task { await store.archive(record) }
-                                        } label: {
-                                            Label("归档", systemImage: "archivebox")
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) { recordToDelete = record } label: {
+                                            Label("删除", systemImage: "trash")
                                         }
-                                        .tint(ShouxiaPalette.apricot)
                                     }
                             }
                         }
@@ -45,121 +58,51 @@ struct HistoryView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .background(ShouxiaBackground())
             }
         }
+        .background(ShouxiaBackground())
         .fontDesign(.rounded)
         .navigationTitle("收下记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("完成") {
-                    dismiss()
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink {
-                    ArchiveView(store: store)
-                } label: {
-                    Image(systemName: "archivebox")
-                }
-                .accessibilityLabel("查看归档，共 \(store.archivedRecords.count) 条")
+                Button("完成") { dismiss() }
             }
         }
-    }
-
-    private var historySections: [RecordSection] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: store.historyRecords) { record in
-            calendar.startOfDay(for: record.completedAt ?? record.createdAt)
-        }
-        return grouped.keys
-            .sorted(by: >)
-            .map { day in
-                RecordSection(
-                    day: day,
-                    title: sectionTitle(for: day, calendar: calendar),
-                    records: grouped[day] ?? []
-                )
-            }
-    }
-
-    private func sectionTitle(for day: Date, calendar: Calendar) -> String {
-        if calendar.isDateInToday(day) {
-            return "今天"
-        }
-        if calendar.isDateInYesterday(day) {
-            return "昨天"
-        }
-        return day.formatted(.dateTime.year().month().day())
-    }
-}
-
-private struct ArchiveView: View {
-    let store: PickupStore
-    @State private var recordToDelete: PickupRecord?
-
-    var body: some View {
-        Group {
-            if store.archivedRecords.isEmpty {
-                ContentUnavailableView {
-                    Label("归档是空的", systemImage: "archivebox")
-                } description: {
-                    Text("从收下记录归档的内容会出现在这里。")
-                }
-                .foregroundStyle(ShouxiaPalette.mutedInk)
-                .background(ShouxiaBackground())
-            } else {
-                List(store.archivedRecords) { record in
-                    RecordRow(record: record, showsArchivedAt: true)
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                Task { await store.restoreFromArchive(record) }
-                            } label: {
-                                Label("恢复", systemImage: "arrow.uturn.backward")
-                            }
-                            .tint(ShouxiaPalette.mutedInk)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                recordToDelete = record
-                            } label: {
-                                Label("永久删除", systemImage: "trash")
-                            }
-                        }
-                }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .background(ShouxiaBackground())
-            }
-        }
-        .fontDesign(.rounded)
-        .navigationTitle("归档")
-        .navigationBarTitleDisplayMode(.inline)
-        .alert(
-            "永久删除这条记录？",
-            isPresented: Binding(
-                get: { recordToDelete != nil },
-                set: { if !$0 { recordToDelete = nil } }
-            ),
-            presenting: recordToDelete
-        ) { record in
+        .alert("删除这条记录？", isPresented: Binding(
+            get: { recordToDelete != nil },
+            set: { if !$0 { recordToDelete = nil } }
+        ), presenting: recordToDelete) { record in
             Button("永久删除", role: .destructive) {
                 Task { await store.permanentlyDelete(record) }
             }
             Button("取消", role: .cancel) {}
         } message: { record in
-            Text("取件码 \(record.code) 的记录内容将被删除且无法恢复；同一剪贴板原文不会再被自动加入。")
+            Text("取件码 \(record.code) 的记录将永久删除，无法恢复。")
         }
+    }
+
+    private var visibleRecords: [PickupRecord] {
+        range.records(from: store.historyRecords)
+    }
+
+    private var historySections: [RecordSection] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: visibleRecords) { calendar.startOfDay(for: $0.historyDate) }
+        return grouped.keys.sorted(by: >).map { day in
+            RecordSection(day: day, title: sectionTitle(for: day, calendar: calendar), records: grouped[day] ?? [])
+        }
+    }
+
+    private func sectionTitle(for day: Date, calendar: Calendar) -> String {
+        if calendar.isDateInToday(day) { return "今天" }
+        if calendar.isDateInYesterday(day) { return "昨天" }
+        return day.formatted(.dateTime.year().month().day())
     }
 }
 
 private struct RecordRow: View {
     let record: PickupRecord
-    var showsArchivedAt = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -198,9 +141,6 @@ private struct RecordRow: View {
                 dateLine("录入", date: record.createdAt)
                 if let completedAt = record.completedAt {
                     dateLine(record.isHandedOff ? "交接" : "收下", date: completedAt)
-                }
-                if showsArchivedAt, let archivedAt = record.archivedAt {
-                    dateLine("归档", date: archivedAt)
                 }
             }
             .font(.caption)

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        B1B00000000000000000000C /* ShouxiaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* ShouxiaTheme.swift */; };
+		F10000000000000000000001 /* AppIcon-1024.png in Resources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* AppIcon-1024.png */; };
 		A10000000000000000000001 /* ShouxiaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* ShouxiaApp.swift */; };
 		A10000000000000000000002 /* PickupRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* PickupRecord.swift */; };
 		A10000000000000000000003 /* PickupParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* PickupParser.swift */; };
@@ -37,6 +39,20 @@
 		D10000000000000000000001 /* ShouxiaThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* ShouxiaThemeTests.swift */; };
 		E10000000000000000000001 /* PickupShareText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* PickupShareText.swift */; };
 		E10000000000000000000002 /* PickupShareTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* PickupShareTextTests.swift */; };
+		B1A00000000000000000001 = {isa = PBXBuildFile; fileRef = B20000000000000000000001; };
+		B1B00000000000000000001 = {isa = PBXBuildFile; fileRef = B20000000000000000000001; };
+		B1A00000000000000000002 = {isa = PBXBuildFile; fileRef = B20000000000000000000002; };
+		B1B00000000000000000003 = {isa = PBXBuildFile; fileRef = B20000000000000000000003; };
+		B10000000000000000000004 = {isa = PBXBuildFile; fileRef = A20000000000000000000002; };
+		B10000000000000000000005 = {isa = PBXBuildFile; fileRef = B20000000000000000000005; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B1A00000000000000000006 = {isa = PBXBuildFile; fileRef = B20000000000000000000006; };
+		B1B00000000000000000006 = {isa = PBXBuildFile; fileRef = B20000000000000000000006; };
+		B1A00000000000000000007 = {isa = PBXBuildFile; fileRef = B20000000000000000000007; };
+		B1B00000000000000000007 = {isa = PBXBuildFile; fileRef = B20000000000000000000007; };
+		B1A00000000000000000008 = {isa = PBXBuildFile; fileRef = B20000000000000000000008; };
+		B1B00000000000000000009 = {isa = PBXBuildFile; fileRef = B20000000000000000000009; };
+		B1C0000000000000000000A = {isa = PBXBuildFile; fileRef = B2000000000000000000000A; };
+		B1C0000000000000000000B = {isa = PBXBuildFile; fileRef = B2000000000000000000000B; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,9 +63,15 @@
 			remoteGlobalIDString = A50000000000000000000001;
 			remoteInfo = Shouxia;
 		};
+		B30000000000000000000001 = {isa = PBXContainerItemProxy; containerPortal = A40000000000000000000001; proxyType = 1; remoteGlobalIDString = B50000000000000000000001; remoteInfo = ShouxiaWidgets; };
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		BD0000000000000000000001 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (B10000000000000000000005, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		F20000000000000000000001 /* AppIcon-1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "AppIcon-1024.png"; path = "Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"; sourceTree = "<group>"; };
 		A20000000000000000000001 /* ShouxiaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* PickupRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupRecord.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* PickupParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupParser.swift; sourceTree = "<group>"; };
@@ -83,6 +105,16 @@
 		D20000000000000000000001 /* ShouxiaThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaThemeTests.swift; sourceTree = "<group>"; };
 		E20000000000000000000001 /* PickupShareText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupShareText.swift; sourceTree = "<group>"; };
 		E20000000000000000000002 /* PickupShareTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupShareTextTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupSurfaceSnapshot.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shouxia/Services/PickupSurfacePublisher.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaWidgets/PickupWidgets.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000005 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = ShouxiaWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupActivitySession.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000007 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupActivityAttributes.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000008 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shouxia/Services/PickupLiveActivityController.swift; sourceTree = SOURCE_ROOT; };
+		B20000000000000000000009 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaWidgets/PickupLiveActivity.swift; sourceTree = SOURCE_ROOT; };
+		B2000000000000000000000A = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaTests/PickupSurfaceTests.swift; sourceTree = SOURCE_ROOT; };
+		B2000000000000000000000B = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaTests/PickupActivityTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +138,15 @@
 		A70000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				B2000000000000000000000B,
+				B2000000000000000000000A,
+				B20000000000000000000009,
+				B20000000000000000000008,
+				B20000000000000000000007,
+				B20000000000000000000006,
+				B20000000000000000000003,
+				B20000000000000000000002,
+				B20000000000000000000001,
 				A70000000000000000000002 /* Shouxia */,
 				A70000000000000000000008 /* ShouxiaTests */,
 				A70000000000000000000009 /* Products */,
@@ -192,6 +233,7 @@
 			children = (
 				A2000000000000000000000B /* Shouxia.app */,
 				A2000000000000000000000C /* ShouxiaTests.xctest */,
+				B20000000000000000000005,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -199,6 +241,7 @@
 		A7000000000000000000000A /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				F20000000000000000000001 /* AppIcon-1024.png */,
 				A20000000000000000000012 /* Info.plist */,
 				A20000000000000000000008 /* Assets.xcassets */,
 				A2000000000000000000000F /* PrivacyInfo.xcprivacy */,
@@ -272,10 +315,11 @@
 				A90000000000000000000001 /* Sources */,
 				A60000000000000000000001 /* Frameworks */,
 				AA0000000000000000000001 /* Resources */,
+				BD0000000000000000000001,
 			);
 			buildRules = (
 			);
-			dependencies = (
+			dependencies = (BB0000000000000000000001,
 			);
 			name = Shouxia;
 			productName = Shouxia;
@@ -300,6 +344,7 @@
 			productReference = A2000000000000000000000C /* ShouxiaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		B50000000000000000000001 = {isa = PBXNativeTarget; buildConfigurationList = B80000000000000000000001; buildPhases = (B90000000000000000000001, ); buildRules = (); dependencies = (); name = ShouxiaWidgets; productName = ShouxiaWidgets; productReference = B20000000000000000000005; productType = "com.apple.product-type.app-extension"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -332,7 +377,7 @@
 			productRefGroup = A70000000000000000000009 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (
+			targets = (B50000000000000000000001,
 				A50000000000000000000001 /* Shouxia */,
 				A50000000000000000000002 /* ShouxiaTests */,
 			);
@@ -344,6 +389,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F10000000000000000000001 /* AppIcon-1024.png in Resources */,
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 				A1000000000000000000000D /* PrivacyInfo.xcprivacy in Resources */,
 			);
@@ -363,6 +409,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1A00000000000000000008,
+				B1A00000000000000000007,
+				B1A00000000000000000006,
+				B1A00000000000000000002,
+				B1A00000000000000000001,
 				A10000000000000000000001 /* ShouxiaApp.swift in Sources */,
 				A10000000000000000000002 /* PickupRecord.swift in Sources */,
 				A10000000000000000000003 /* PickupParser.swift in Sources */,
@@ -394,6 +445,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B1C0000000000000000000B,
+				B1C0000000000000000000A,
 				A10000000000000000000009 /* PickupParserTests.swift in Sources */,
 				A1000000000000000000000A /* PickupRepositoryTests.swift in Sources */,
 				D10000000000000000000001 /* ShouxiaThemeTests.swift in Sources */,
@@ -401,6 +454,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B90000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
+                B1B00000000000000000000C,
+				B1B00000000000000000009,
+				B1B00000000000000000007,
+				B1B00000000000000000006,B10000000000000000000004,
+				B1B00000000000000000003,
+				B1B00000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -409,6 +469,7 @@
 			target = A50000000000000000000001 /* Shouxia */;
 			targetProxy = A30000000000000000000001 /* PBXContainerItemProxy */;
 		};
+		BB0000000000000000000001 = {isa = PBXTargetDependency; target = B50000000000000000000001; targetProxy = B30000000000000000000001; };
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -459,18 +520,19 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Shouxia/Resources/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Shouxia/Resources/Shouxia.entitlements;
 				INFOPLIST_KEY_CFBundleDisplayName = "收下";
 				INFOPLIST_KEY_CFBundleName = "收下";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
@@ -486,18 +548,19 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Shouxia/Resources/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = Shouxia/Resources/Shouxia.entitlements;
 				INFOPLIST_KEY_CFBundleDisplayName = "收下";
 				INFOPLIST_KEY_CFBundleName = "收下";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
@@ -535,6 +598,38 @@
 			};
 			name = Release;
 		};
+		BC0000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {
+ APPLICATION_EXTENSION_API_ONLY = YES;
+ CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
+ CODE_SIGN_STYLE = Automatic;
+ CURRENT_PROJECT_VERSION = 14;
+ DEVELOPMENT_TEAM = A5L4GGX82X;
+ GENERATE_INFOPLIST_FILE = YES;
+ INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
+ LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+ MARKETING_VERSION = 1.2.4;
+ PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.widgets;
+ PRODUCT_NAME = "$(TARGET_NAME)";
+ SKIP_INSTALL = YES;
+ SWIFT_VERSION = 6.0;
+ TARGETED_DEVICE_FAMILY = 1;
+ }; name = Debug; };
+		BC0000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {
+ APPLICATION_EXTENSION_API_ONLY = YES;
+ CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
+ CODE_SIGN_STYLE = Automatic;
+ CURRENT_PROJECT_VERSION = 14;
+ DEVELOPMENT_TEAM = A5L4GGX82X;
+ GENERATE_INFOPLIST_FILE = YES;
+ INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
+ LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
+ MARKETING_VERSION = 1.2.4;
+ PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.widgets;
+ PRODUCT_NAME = "$(TARGET_NAME)";
+ SKIP_INSTALL = YES;
+ SWIFT_VERSION = 6.0;
+ TARGETED_DEVICE_FAMILY = 1;
+ }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -565,6 +660,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B80000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (BC0000000000000000000001, BC0000000000000000000002, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 	};
 	rootObject = A40000000000000000000001 /* Project object */;

@@ -334,7 +334,7 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertTrue(remainingRecords.isEmpty)
     }
 
-    func testPermanentDeleteRejectsNonArchivedRecord() async throws {
+    func testPermanentDeleteRejectsPendingRecord() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
         let result = try await repository.importText(

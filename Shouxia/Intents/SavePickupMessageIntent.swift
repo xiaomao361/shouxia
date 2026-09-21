@@ -26,6 +26,7 @@ struct SavePickupMessageIntent: AppIntent {
                     forKey: "commonPickupLocation"
                 )
             )
+            await PickupLiveActivityController.shared.refreshAndWait()
             switch result {
             case let .added(record):
                 return .result(dialog: "已收好取件码 \(record.code)")

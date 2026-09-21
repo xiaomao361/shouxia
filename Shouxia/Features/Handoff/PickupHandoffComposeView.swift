@@ -40,11 +40,11 @@ struct PickupHandoffComposeView: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         VStack(spacing: 7) {
-                            Text("交给实际去取的人")
+                            Text("请人帮取")
                                 .font(.title2.weight(.semibold))
                                 .foregroundStyle(ShouxiaPalette.ink)
 
-                            Text("选好这次要取的包裹，发给帮忙的人。")
+                            Text("选择包裹，发给帮你取的人。")
                                 .font(.subheadline)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
                                 .multilineTextAlignment(.center)
@@ -130,8 +130,8 @@ struct PickupHandoffComposeView: View {
                             }
 
                             Text(shareAsText
-                                ? "复制后粘贴到聊天即可。包裹仍保留在待取列表，确认取到后再手动收下。文字只包含所选包裹的取件码、地点和平台。"
-                                : "系统分享成功结束后，这些包裹会从你的待取列表移走，并在收下记录中标记为“交给别人”。交接包不包含短信原文、手机号、运单号或商品信息。")
+                                ? "复制后发给对方。包裹仍在待取中，取到后请手动收下。仅分享码、地点和平台。"
+                                : "分享成功后移入收下记录，标记“交给别人”。仅分享码、地点和平台。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.softInk)
                                 .multilineTextAlignment(.center)

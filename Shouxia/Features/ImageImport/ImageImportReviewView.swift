@@ -61,7 +61,7 @@ struct ImageImportReviewView: View {
                             }
                         }
 
-                        Text("原图和未选中的其他文字不会保存在收下里。")
+                        Text("不保存原图和未选中的文字。")
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
                             .multilineTextAlignment(.center)

@@ -116,11 +116,11 @@ struct InboxView: View {
                     }
 
                     Button {
-                        presentedSheet = .about
+                        presentedSheet = .settings
                     } label: {
-                        Image(systemName: "info.circle")
+                        Image(systemName: "gearshape")
                     }
-                    .accessibilityLabel("隐私与关于")
+                    .accessibilityLabel("设置")
 
                     Button {
                         presentedSheet = .history
@@ -135,8 +135,8 @@ struct InboxView: View {
             }
             .sheet(item: $presentedSheet) { sheet in
                 switch sheet {
-                case .about:
-                    AboutView()
+                case .settings:
+                    SettingsView()
                 case .handoffCompose:
                     PickupHandoffComposeView(
                         records: store.pendingRecords,
@@ -195,7 +195,23 @@ struct InboxView: View {
                 }
             }
             .onOpenURL { url in
-                openHandoffPackage(at: url)
+                if url.scheme == "shouxia", url.host == "pickup" {
+                    Task {
+                        await store.load()
+                        guard !store.loadFailed else { return }
+                        presentedSheet = nil
+                        selectedPickup = nil
+                        if let id = PickupSurfaceLink.recordID(in: url) {
+                            if let record = store.pendingRecords.first(where: { $0.id == id }) {
+                                selectedPickup = record
+                            } else {
+                                store.showNotice(.neutral("这件包裹已不在待取列表，请重新选择"))
+                            }
+                        }
+                    }
+                } else {
+                    openHandoffPackage(at: url)
+                }
             }
         }
         .tint(ShouxiaPalette.mutedInk)
@@ -203,7 +219,7 @@ struct InboxView: View {
     }
 
     private enum PresentedSheet: Identifiable {
-        case about
+        case settings
         case automationSetup
         case handoffCompose
         case handoffReview(PickupHandoffPackage)
@@ -212,8 +228,8 @@ struct InboxView: View {
 
         var id: String {
             switch self {
-            case .about:
-                "about"
+            case .settings:
+                "settings"
             case .automationSetup:
                 "automationSetup"
             case .handoffCompose:
@@ -317,11 +333,11 @@ struct InboxView: View {
                 .frame(width: 42, height: 42)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("自己的取件短信，自动收好")
+                    Text("短信自动收码")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(ShouxiaPalette.ink)
 
-                    Text("设置一次，发到这台 iPhone 的取件短信会自动进入收下。")
+                    Text("设置后，取件短信自动加入待取。")
                     .font(.caption)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
                 }
@@ -365,10 +381,10 @@ struct InboxView: View {
                 .frame(width: 112, height: 112)
 
             VStack(spacing: 7) {
-                Text("别人托你取的，也能收好")
+                Text("帮别人取，也能收下")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(ShouxiaPalette.ink)
-                Text("粘贴聊天里的取件文字，或识别对方发来的截图。")
+                Text("粘贴取件文字，或导入截图。")
                     .font(.subheadline)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
                     .multilineTextAlignment(.center)
