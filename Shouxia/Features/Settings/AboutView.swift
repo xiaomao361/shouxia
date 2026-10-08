@@ -79,35 +79,35 @@ struct AboutView: View {
                         PrivacyRow(
                             icon: "iphone",
                             title: "只在本机处理",
-                            detail: "取件信息和历史记录保存在本机，不上传开发者服务器。"
+                            detail: "记录只保存在本机，不上传服务器。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
                             icon: "doc.on.clipboard",
                             title: automaticClipboardImportEnabled
-                                ? "剪贴板自动识别由你开启"
+                                ? "已开启剪贴板识别"
                                 : "由你主动粘贴",
                             detail: automaticClipboardImportEnabled
-                                ? "打开时识别新复制的内容，无关文字不保存。iOS 可能询问粘贴权限。"
+                                ? "打开时识别新复制的取件信息。无关文字不保存。"
                                 : "点击粘贴后才读取剪贴板。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
                             icon: "photo",
                             title: "图片只在本机识别",
-                            detail: "图片在本机识别，不保存原图、手机号、运单号或商品信息。"
+                            detail: "不保存原图、手机号、运单号或商品信息。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
                             icon: "message",
-                            title: "短信自动化由你控制",
-                            detail: "只处理你通过自动化传入的短信，无法读取短信历史或其他 App 通知。"
+                            title: "不读取短信历史",
+                            detail: "只处理你导入的文字或快捷指令传来的短信，不读取其他 App 通知。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
                             icon: "person.2",
-                            title: "交接包由你主动发送",
-                            detail: "只分享所选取件码、地点和平台，不含短信原文等其他信息。"
+                            title: "分享由你决定",
+                            detail: "只分享所选取件码、地点和平台，不含短信原文。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
@@ -125,7 +125,7 @@ struct AboutView: View {
                             .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
                     }
 
-                    Text("可在“收下记录”中永久删除。删除后保留不含原文的去重标记，避免同一剪贴板内容再次自动导入。")
+                    Text("可在“收下记录”中永久删除。删除后仅保留不含原文的标记，防止剪贴板重复导入。")
                         .font(.caption)
                         .foregroundStyle(ShouxiaPalette.softInk)
                         .multilineTextAlignment(.center)
@@ -167,7 +167,7 @@ private struct PickupActivityPreferencesView: View {
                 Text("有待取就展示，取完自动收起。关闭不影响待取记录。")
             }
             Section {
-                LabeledContent("系统允许实时活动", value: isAllowed ? "已允许" : "未允许")
+                LabeledContent("系统实时活动权限", value: isAllowed ? "已允许" : "未允许")
                 Button("前往系统设置") {
                     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                     openURL(url)
@@ -176,12 +176,12 @@ private struct PickupActivityPreferencesView: View {
                 Text(isAllowed ? "取件码会显示在锁屏和灵动岛上。" : "请在收下的系统设置中开启实时活动。")
             }
             Section {
-                Text("每次活动最长 8 小时。到期或移除后，开关仍开启时，下次打开收下会恢复展示。")
+                Text("每次最多显示 8 小时。到期或被移除后，打开收下即可恢复（需保持开关开启）。")
                     .font(.subheadline).foregroundStyle(.secondary)
-                Text("后台仅更新已有活动；开始新活动需打开 App。")
+                Text("开始新的展示需要打开 App。")
                     .font(.subheadline).foregroundStyle(.secondary)
             } header: {
-                Text("展示何时恢复")
+                Text("为什么不显示了？")
             }
         }
         .navigationTitle("锁屏与灵动岛")

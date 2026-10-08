@@ -15,8 +15,8 @@ struct PickupCard: View {
         .scaleEffect(isCompleting ? 0.98 : 1)
         .opacity(isCompleting ? 0 : 1)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("轻点用大字查看取件码，向右滑动可以收下")
-        .accessibilityAction(named: "收下", onComplete)
+        .accessibilityHint("轻点放大取件码，右滑标记已取到")
+        .accessibilityAction(named: "已取到", onComplete)
     }
 
     private var card: some View {

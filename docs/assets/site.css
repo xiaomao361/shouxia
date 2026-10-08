@@ -708,9 +708,9 @@ li {
   }
 
   .product-preview {
-    width: 180%;
-    max-width: none;
-    margin-left: -40%;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
   }
 
   .download-card {
@@ -763,3 +763,16 @@ li {
     transition: none;
   }
 }
+
+/* Current release illustrations stay uncropped at narrow widths. */
+.product-preview { height: auto; }
+.release-note, .asset-caption { font-size: 14px; }
+.screen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 22px; }
+.surface-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 22px; margin-top: 28px; }
+.screen-card { margin: 0; padding: 16px; border-radius: 24px; background: var(--paper-soft); border: 1px solid var(--line); }
+.screen-card img { width: 100%; height: auto; border-radius: 16px; }
+.screen-card figcaption { padding: 20px 4px 4px; }
+.screen-card p { margin: 8px 0 0; }
+.automation-example { max-width: 340px; margin: 24px auto; }
+.automation-example img { width: 100%; height: auto; border-radius: 20px; }
+.automation-example figcaption { font-size: 13px; margin-top: 12px; }

@@ -3,7 +3,7 @@ import Foundation
 
 struct SavePickupMessageIntent: AppIntent {
     static let title: LocalizedStringResource = "保存取件短信"
-    static let description = IntentDescription("接收普通快捷指令传来的完整取件短信，解析后保存到收下。")
+    static let description = IntentDescription("从快捷指令接收取件短信，提取并保存取件码。")
     static let openAppWhenRun = false
 
     @Parameter(
@@ -29,20 +29,20 @@ struct SavePickupMessageIntent: AppIntent {
             await PickupLiveActivityController.shared.refreshAndWait()
             switch result {
             case let .added(record):
-                return .result(dialog: "已收好取件码 \(record.code)")
+                return .result(dialog: "已添加取件码 \(record.code)")
             case .duplicate:
-                return .result(dialog: "这条取件短信已经收过了")
+                return .result(dialog: "这条取件短信已添加")
             case let .batch(added, duplicateCount):
-                let message = added.isEmpty ? "这些取件码已经收过了"
+                let message = added.isEmpty ? "这些取件码已添加"
                     : (duplicateCount > 0
-                        ? "已收好 \(added.count) 个取件码，另有 \(duplicateCount) 个已收过"
-                        : "已收好 \(added.count) 个取件码")
+                        ? "已添加 \(added.count) 个取件码，\(duplicateCount) 个已存在"
+                        : "已添加 \(added.count) 个取件码")
                 return .result(dialog: IntentDialog(stringLiteral: message))
             }
         } catch let error as PickupImportError {
             return .result(dialog: IntentDialog(stringLiteral: error.localizedDescription))
         } catch {
-            return .result(dialog: "没有收好，请稍后再试")
+            return .result(dialog: "添加失败，请稍后重试")
         }
     }
 }

@@ -130,7 +130,7 @@ struct PickupModeView: View {
             Button {
                 completeSelectedRecord()
             } label: {
-                Label("已取到，收下", systemImage: "shippingbox.fill")
+                Label("已取到", systemImage: "shippingbox.fill")
             }
             .buttonStyle(ShouxiaPrimaryButtonStyle())
             .disabled(selectedRecord == nil)
@@ -151,7 +151,7 @@ struct PickupModeView: View {
             HStack(spacing: 10) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(ShouxiaPalette.breezePressed)
-                Text("已收下 \(lastCompleted.code)")
+                Text("已取到 \(lastCompleted.code)")
                     .font(.subheadline.weight(.medium))
                     .lineLimit(1)
                 Spacer(minLength: 8)

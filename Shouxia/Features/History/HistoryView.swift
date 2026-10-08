@@ -140,7 +140,7 @@ private struct RecordRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 dateLine("录入", date: record.createdAt)
                 if let completedAt = record.completedAt {
-                    dateLine(record.isHandedOff ? "交接" : "收下", date: completedAt)
+                    dateLine(record.isHandedOff ? "已交给别人" : "已取到", date: completedAt)
                 }
             }
             .font(.caption)

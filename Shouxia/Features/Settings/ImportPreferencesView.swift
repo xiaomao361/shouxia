@@ -37,7 +37,7 @@ struct ImportPreferencesView: View {
             } header: {
                 Text("常用取件点")
             } footer: {
-                Text("未识别到地点时使用，仅影响新导入的包裹。")
+                Text("新添加的包裹没有地点时，使用这里填写的地点。")
             }
 
             Section {
@@ -46,7 +46,7 @@ struct ImportPreferencesView: View {
                     isOn: $automaticClipboardImportEnabled
                 )
             } footer: {
-                Text("打开 App 时识别新复制的取件信息，无关文字不保存。iOS 可能询问粘贴权限。")
+                Text("复制取件信息后，打开 App 自动添加。无关文字不保存；系统可能询问粘贴权限。")
             }
             Section {
                 Button("设置短信自动收码") {

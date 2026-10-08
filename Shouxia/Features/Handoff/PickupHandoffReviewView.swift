@@ -50,13 +50,13 @@ struct PickupHandoffReviewView: View {
                                 ProgressView()
                                     .controlSize(.small)
                             } else {
-                                Text("收下这 \(package.items.count) 件")
+                                Text("添加到待取（\(package.items.count) 件）")
                             }
                         }
                         .buttonStyle(ShouxiaPrimaryButtonStyle())
                         .disabled(isImporting)
 
-                        Text("内容以发送时为准，双方取件状态不会同步。")
+                        Text("取件状态不会与对方同步。")
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
                             .multilineTextAlignment(.center)

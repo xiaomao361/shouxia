@@ -73,7 +73,7 @@ struct InboxView: View {
                                 Button {
                                     complete(record)
                                 } label: {
-                                    Label("收下", systemImage: "shippingbox.fill")
+                                    Label("已取到", systemImage: "shippingbox.fill")
                                 }
                                 .tint(ShouxiaPalette.breezePressed)
                             }
@@ -112,7 +112,7 @@ struct InboxView: View {
                             Image(systemName: "person.2")
                         }
                         .accessibilityLabel("请人帮取")
-                        .accessibilityHint("选择待取包裹并生成收下交接包")
+                        .accessibilityHint("选择包裹，分享文件或复制取件文字")
                     }
 
                     Button {
@@ -267,7 +267,7 @@ struct InboxView: View {
         let recognizingImage = isRecognizingImage
 
         return VStack(alignment: .leading, spacing: 10) {
-            Text("他人托你取的")
+            Text("添加取件码")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(ShouxiaPalette.supportingInk)
 
@@ -303,7 +303,7 @@ struct InboxView: View {
                                 .controlSize(.small)
                                 .accessibilityLabel("正在识别图片")
                         } else {
-                            Label("识别取件截图", systemImage: "photo.on.rectangle")
+                            Label("从截图添加", systemImage: "photo.on.rectangle")
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -351,7 +351,7 @@ struct InboxView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("为自己的快递开启短信自动收码")
-            .accessibilityHint("打开快捷指令和个人自动化的两阶段设置说明")
+            .accessibilityHint("打开适用于当前系统的短信自动收码设置说明")
 
             Button {
                 automationSetupCardHidden = true
@@ -381,10 +381,10 @@ struct InboxView: View {
                 .frame(width: 112, height: 112)
 
             VStack(spacing: 7) {
-                Text("帮别人取，也能收下")
+                Text("还没有待取包裹")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(ShouxiaPalette.ink)
-                Text("粘贴取件文字，或导入截图。")
+                Text("粘贴取件信息，或选择截图。")
                     .font(.subheadline)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
                     .multilineTextAlignment(.center)
@@ -409,8 +409,8 @@ struct InboxView: View {
                 .foregroundStyle(ShouxiaPalette.breezePressed)
             Text(
                 reduceMotion
-                    ? "向右滑动卡片即可收下。"
-                    : "向右滑，轻轻收下。"
+                    ? "向右滑动，标记为已取到。"
+                    : "右滑标记已取到。"
             )
             .font(.caption)
             .foregroundStyle(ShouxiaPalette.mutedInk)
@@ -428,7 +428,7 @@ struct InboxView: View {
                 .frame(width: 36, height: 36)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("轻轻收下了")
+                    Text("已取到")
                         .font(.subheadline.weight(.semibold))
                     Text(lastCompleted.code)
                         .font(.caption.monospacedDigit())

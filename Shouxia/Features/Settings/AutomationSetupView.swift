@@ -10,6 +10,19 @@ struct AutomationSetupView: View {
         string: "https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a"
     )
 
+    private var usesInlineAutomation: Bool {
+        if #available(iOS 27.0, *) { return true }
+        return false
+    }
+
+    private let introduction = "设置一次，收到取件短信就自动添加。"
+
+    private var troubleshooting: String {
+        usesInlineAutomation
+            ? "1. 启用“信息”触发器。\n2. 短信中包含“取件”。\n3. “获取文本”的输入选“快捷指令输入”。\n4. “保存取件短信”的“短信内容”选上一步的“文本”。\n仅锁屏时不运行：在快捷指令的“信息”按钮 →“隐私”中检查锁定时运行权限。"
+            : "1. 启用自动化，选择“立即运行”。\n2. 短信中包含“取件”。\n3. 运行的是“收下自动收码”。\n4. “获取文本”的输入选“快捷指令输入”，“保存取件短信”的“短信内容”选该文本。"
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -26,7 +39,7 @@ struct AutomationSetupView: View {
                             .font(.title2.weight(.semibold))
                             .foregroundStyle(ShouxiaPalette.ink)
 
-                            Text("先添加快捷指令，再创建信息自动化。设置后，取件短信自动加入待取。")
+                            Text(introduction)
                             .font(.subheadline)
                             .foregroundStyle(ShouxiaPalette.mutedInk)
                             .multilineTextAlignment(.center)
@@ -34,12 +47,12 @@ struct AutomationSetupView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("第一段")
+                            Text("第一步")
                                 .font(.caption2.weight(.bold))
                                 .tracking(1.2)
                                 .foregroundStyle(ShouxiaPalette.apricot)
 
-                            Text("一键添加普通快捷指令")
+                            Text("添加快捷指令")
                                 .font(.headline)
                                 .foregroundStyle(ShouxiaPalette.ink)
 
@@ -53,9 +66,9 @@ struct AutomationSetupView: View {
                                 )
                             }
                             .buttonStyle(ShouxiaPrimaryButtonStyle())
-                            .accessibilityHint("打开苹果快捷指令导入页，仍需确认添加")
+                            .accessibilityHint("打开 iCloud 页面后，确认添加快捷指令")
 
-                            Text("确认名称和两个操作，再点“添加快捷指令”。")
+                            Text("从 iCloud 添加。已能自动收码的用户无需重设。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -71,68 +84,92 @@ struct AutomationSetupView: View {
                                 .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
                         }
 
-                        AutomationSetupSection(
-                            eyebrow: "链接打不开时",
-                            title: "也可以手动创建",
-                            steps: [
-                                AutomationSetupStepContent(
-                                    title: "新建“收下自动收码”",
-                                    detail: "打开快捷指令，在“快捷指令”页新建一个普通快捷指令，并命名为“收下自动收码”。"
-                                ),
-                                AutomationSetupStepContent(
-                                    title: "取得输入文字",
-                                    detail: "添加“从快捷指令输入中获取文本”，让系统把收到的信息转换成文字。"
-                                ),
-                                AutomationSetupStepContent(
-                                    title: "把文字交给收下",
-                                    detail: "添加“保存取件短信”，把它的“短信内容”连接到上一步输出的“文本”，然后保存。"
-                                ),
-                            ]
-                        )
-
-                        AutomationSetupSection(
-                            eyebrow: "第二段",
-                            title: "再建“信息”个人自动化",
-                            steps: [
-                                AutomationSetupStepContent(
-                                    title: "选择“信息”",
-                                    detail: "点底部“自动化”和右上角“+”，选择“信息”；发件人保持“任何发件人”。"
-                                ),
-                                AutomationSetupStepContent(
-                                    title: "设置短信条件",
-                                    detail: "将“信息包含”设为“取件”，选择“立即运行”，然后继续。"
-                                ),
-                                AutomationSetupStepContent(
-                                    title: "运行刚建的快捷指令",
-                                    detail: "选择“运行快捷指令”，再选择“收下自动收码”，最后保存。不要直接选择“保存取件短信”。"
-                                ),
-                            ]
-                        )
+                        if usesInlineAutomation {
+                            AutomationSetupSection(
+                                eyebrow: "第二步 · iOS 27 及以后",
+                                title: "设置收到短信时运行",
+                                steps: [
+                                    AutomationSetupStepContent(
+                                        title: "添加“信息”触发器",
+                                        detail: "编辑“收下自动收码”，在“自动化”中选“信息”。已有信息卡片可跳过。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "设置“信息包含取件”",
+                                        detail: "设为“信息”“包含”“取件”，发件人不限。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "检查两个操作",
+                                        detail: "信息卡片下方保留：获取输入文本 → 保存取件短信“文本”。"
+                                    ),
+                                ]
+                            )
+                        } else {
+                            AutomationSetupSection(
+                                eyebrow: "第二步 · iOS 26 及以前",
+                                title: "新建短信自动化",
+                                steps: [
+                                    AutomationSetupStepContent(
+                                        title: "选择“信息”",
+                                        detail: "在快捷指令中点“自动化”→“+”→“信息”，发件人不限。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "设置短信条件",
+                                        detail: "“信息包含”填“取件”，选择“立即运行”。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "选择“收下自动收码”",
+                                        detail: "添加“运行快捷指令”，选“收下自动收码”并保存。"
+                                    ),
+                                ]
+                            )
+                        }
 
                         VStack(spacing: 12) {
                             Button {
                                 guard let url = URL(string: "shortcuts://") else { return }
                                 openURL(url)
                             } label: {
-                                Label("去创建个人自动化", systemImage: "arrow.up.forward.app")
+                                Label("打开快捷指令", systemImage: "arrow.up.forward.app")
                             }
                             .buttonStyle(ShouxiaPrimaryButtonStyle())
-                            .accessibilityHint("打开后，请点底部的自动化")
+                            .accessibilityHint(usesInlineAutomation
+                                ? "打开后，编辑收下自动收码并检查信息触发器"
+                                : "打开后，请点底部的自动化")
 
                             Label(
-                                "设置后，请用第一条真实取件短信验证",
+                                "收到下一条取件短信后，看看是否自动添加",
                                 systemImage: "hourglass"
                             )
                             .font(.caption.weight(.medium))
                             .foregroundStyle(ShouxiaPalette.mutedInk)
                         }
 
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label("没有自动添加？按这个顺序检查", systemImage: "wrench.and.screwdriver")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(ShouxiaPalette.ink)
+                        DisclosureGroup("链接打不开？手动创建") {
+                            AutomationSetupSection(
+                                eyebrow: "链接打不开时",
+                                title: "也可以手动创建",
+                                steps: [
+                                    AutomationSetupStepContent(
+                                        title: "新建“收下自动收码”",
+                                        detail: "新建快捷指令，命名为“收下自动收码”。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "获取短信文字",
+                                        detail: "添加“获取文本”，输入选“快捷指令输入”。"
+                                    ),
+                                    AutomationSetupStepContent(
+                                        title: "保存到收下",
+                                        detail: "添加“保存取件短信”，“短信内容”选上一步的“文本”，然后保存。"
+                                    ),
+                                ]
+                            )
+                        }
+                        .font(.subheadline)
+                        .padding(16)
+                        .background(ShouxiaPalette.paper, in: RoundedRectangle(cornerRadius: 22))
 
-                            Text("自动化已启用且选择“立即运行” → 正在运行“收下自动收码” → 快捷指令输入已转换成文本 → “短信内容”连接的是该文本变量。")
+                        DisclosureGroup("没有自动添加？") {
+                            Text(troubleshooting)
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -144,7 +181,7 @@ struct AutomationSetupView: View {
                             in: RoundedRectangle(cornerRadius: 22, style: .continuous)
                         )
 
-                        Text("设置后，用一条真实取件短信确认是否生效。仅支持苹果“信息”中的短信和 iMessage，无法读取其他 App 通知。")
+                        Text("适用于苹果“信息”App 中的短信和 iMessage。收下不会读取短信历史或其他 App 通知。")
                             .font(.caption)
                             .foregroundStyle(ShouxiaPalette.softInk)
                             .multilineTextAlignment(.center)

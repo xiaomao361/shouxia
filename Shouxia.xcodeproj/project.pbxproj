@@ -520,7 +520,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -532,7 +532,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.2.4;
+				MARKETING_VERSION = 1.2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
@@ -548,7 +548,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 15;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -560,7 +560,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				MARKETING_VERSION = 1.2.4;
+				MARKETING_VERSION = 1.2.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia;
 				PRODUCT_MODULE_NAME = Shouxia;
 				PRODUCT_NAME = "收下";
@@ -602,12 +602,12 @@
  APPLICATION_EXTENSION_API_ONLY = YES;
  CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
  CODE_SIGN_STYLE = Automatic;
- CURRENT_PROJECT_VERSION = 14;
+ CURRENT_PROJECT_VERSION = 15;
  DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES;
  INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
  LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
- MARKETING_VERSION = 1.2.4;
+ MARKETING_VERSION = 1.2.5;
  PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.widgets;
  PRODUCT_NAME = "$(TARGET_NAME)";
  SKIP_INSTALL = YES;
@@ -618,12 +618,12 @@
  APPLICATION_EXTENSION_API_ONLY = YES;
  CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
  CODE_SIGN_STYLE = Automatic;
- CURRENT_PROJECT_VERSION = 14;
+ CURRENT_PROJECT_VERSION = 15;
  DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES;
  INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
  LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
- MARKETING_VERSION = 1.2.4;
+ MARKETING_VERSION = 1.2.5;
  PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.widgets;
  PRODUCT_NAME = "$(TARGET_NAME)";
  SKIP_INSTALL = YES;

@@ -107,7 +107,7 @@ struct ImageImportReviewView: View {
                 }
                 .scrollIndicators(.hidden)
             }
-            .navigationTitle("确认图片识别结果")
+            .navigationTitle("核对取件码")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
@@ -124,7 +124,7 @@ struct ImageImportReviewView: View {
 
     private var title: String {
         review.candidates.count > 1
-            ? "找到了 \(review.candidates.count) 个不重复的取件码"
+            ? "找到 \(review.candidates.count) 个取件码"
             : "请确认这个取件码"
     }
 
@@ -133,11 +133,11 @@ struct ImageImportReviewView: View {
             let failedDetail = review.failedImageCount > 0
                 ? "，其中 \(review.failedImageCount) 张没有识别成功"
                 : ""
-            return "已合并 \(review.imageCount) 张图片并按取件码去重\(failedDetail)。请选择真正需要收下的取件码。"
+            return "共 \(review.imageCount) 张图片\(failedDetail)，重复码已合并。请勾选要添加的取件码。"
         }
         return review.candidates.count > 1
-            ? "请选择这张图片里真正需要收下的取件码。"
-            : "图片里没有足够明确的标签，请核对后再添加。"
+            ? "请勾选要添加的取件码。"
+            : "取件码可能识别不准，请核对后添加。"
     }
 
     private var normalizedCommonPickupLocation: String? {
@@ -174,7 +174,7 @@ private struct ImageCandidateRow: View {
                     .font(.title3.weight(.bold).monospacedDigit())
                     .foregroundStyle(ShouxiaPalette.ink)
 
-                Text(candidate.location ?? "地点没有识别出来")
+                Text(candidate.location ?? "地点未识别")
                     .font(.caption)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
                     .lineLimit(2)

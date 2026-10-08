@@ -140,9 +140,9 @@ struct PickupWidgetView: View {
             }
             if items.isEmpty {
                 Spacer(minLength: 0)
-                Text(entry.placeKey == nil ? "都收下了" : "此地点暂无待取")
+                Text(entry.placeKey == nil ? "暂无待取" : "此地点暂无待取")
                     .font(.headline)
-                Text(entry.placeKey == nil ? "下一件到来时，再见" : "可编辑组件更换地点")
+                Text(entry.placeKey == nil ? "添加包裹后在这里显示" : "可编辑组件更换地点")
                     .font(.caption).foregroundStyle(ShouxiaPalette.supportingInk)
                 Spacer(minLength: 0)
             } else if family == .systemSmall, let item = items.first {

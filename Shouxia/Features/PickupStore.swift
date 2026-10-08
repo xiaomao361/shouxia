@@ -60,19 +60,19 @@ final class PickupStore {
             records = try await repository.records()
             switch result {
             case let .added(record):
-                notice = .success("已收好取件码 \(record.code)")
+                notice = .success("已添加取件码 \(record.code)")
             case .duplicate:
-                notice = .neutral("这条取件通知已经收过了")
+                notice = .neutral("这条取件信息已添加")
             case let .batch(added, duplicateCount):
-                notice = added.isEmpty ? .neutral("这些取件码已经收过了")
+                notice = added.isEmpty ? .neutral("这些取件码已添加")
                     : .success((duplicateCount > 0
-                        ? "已收好 \(added.count) 个取件码，另有 \(duplicateCount) 个已收过"
-                        : "已收好 \(added.count) 个取件码"))
+                        ? "已添加 \(added.count) 个取件码，\(duplicateCount) 个已存在"
+                        : "已添加 \(added.count) 个取件码"))
             }
         } catch let error as PickupImportError {
             notice = .error(error.localizedDescription)
         } catch {
-            notice = .error("没有收好，再试一次")
+            notice = .error("添加失败，请重试")
         }
     }
 
@@ -89,12 +89,12 @@ final class PickupStore {
             guard !added.isEmpty else { return }
             records = try await repository.records()
             notice = .success(added.count == 1
-                ? "已从剪贴板收好取件码 \(added[0].code)"
-                : "已从剪贴板收好 \(added.count) 个取件码")
+                ? "已添加取件码 \(added[0].code)"
+                : "已添加 \(added.count) 个取件码")
         } catch is PickupImportError {
             // Automatic checks stay quiet when the clipboard is unrelated.
         } catch {
-            notice = .error("剪贴板里的取件信息没有收好")
+            notice = .error("剪贴板导入失败，请重试")
         }
     }
 
@@ -131,18 +131,18 @@ final class PickupStore {
             records = try await repository.records()
             switch (addedCodes.count, duplicateCount) {
             case (1, _):
-                notice = .success("已从图片收好取件码 \(addedCodes[0])")
+                notice = .success("已添加取件码 \(addedCodes[0])")
             case let (count, _) where count > 1:
-                notice = .success("已从图片收好 \(count) 个取件码")
+                notice = .success("已添加 \(count) 个取件码")
             case (0, _):
-                notice = .neutral("这些取件码已经收过了")
+                notice = .neutral("这些取件码已添加")
             default:
-                notice = .error("没有收好，再试一次")
+                notice = .error("添加失败，请重试")
             }
         } catch let error as PickupImportError {
             notice = .error(error.localizedDescription)
         } catch {
-            notice = .error("图片里的取件码没有收好")
+            notice = .error("图片导入失败，请重试")
         }
     }
 
@@ -152,9 +152,9 @@ final class PickupStore {
             records = try await repository.records()
             switch (summary.addedCount, summary.duplicateCount) {
             case let (added, _) where added > 0:
-                notice = .success("已收好对方托取的 \(added) 件包裹")
+                notice = .success("已添加 \(added) 件代取包裹")
             case (0, _):
-                notice = .neutral("这份交接包里的取件信息已经收过了")
+                notice = .neutral("这些代取包裹已添加")
             default:
                 notice = .error("交接包没有导入成功")
             }
@@ -186,7 +186,7 @@ final class PickupStore {
         } catch {
             records = (try? await repository.records()) ?? records
             lastCompleted = nil
-            notice = .error("这件包裹还没有成功收下")
+            notice = .error("未能标记为已取到，请重试")
         }
     }
 

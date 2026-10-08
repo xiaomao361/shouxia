@@ -505,9 +505,9 @@ final class PickupRepositoryTests: XCTestCase {
         await store.importText("取货码9-4-0178", source: .paste)
         await store.importText(multiCodeText, source: .paste)
         XCTAssertEqual(store.records.count, 2)
-        XCTAssertEqual(store.notice, .success("已收好 1 个取件码，另有 1 个已收过"))
+        XCTAssertEqual(store.notice, .success("已添加 1 个取件码，1 个已存在"))
         await store.importText(multiCodeText, source: .paste)
-        XCTAssertEqual(store.notice, .neutral("这些取件码已经收过了"))
+        XCTAssertEqual(store.notice, .neutral("这些取件码已添加"))
 
         let automatic = PickupStore(repository: PickupRepository(fileURL: directory.appendingPathComponent("automatic.json")))
         await automatic.importClipboardAutomatically(multiCodeText)

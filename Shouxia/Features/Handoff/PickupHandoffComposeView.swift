@@ -117,7 +117,7 @@ struct PickupHandoffComposeView: View {
                                         prepareShare()
                                     } label: {
                                         Label(
-                                            "发送并完成交接（\(selectedRecords.count) 件）",
+                                            "发送交接包（\(selectedRecords.count) 件）",
                                             systemImage: "square.and.arrow.up"
                                         )
                                     }
@@ -130,8 +130,8 @@ struct PickupHandoffComposeView: View {
                             }
 
                             Text(shareAsText
-                                ? "复制后发给对方。包裹仍在待取中，取到后请手动收下。仅分享码、地点和平台。"
-                                : "分享成功后移入收下记录，标记“交给别人”。仅分享码、地点和平台。")
+                                ? "复制后粘贴到聊天中。包裹仍在待取中，取到后请标记。只分享码、地点和平台。"
+                                : "发送成功后，包裹移入“收下记录”，标记为“交给别人”。只分享码、地点和平台。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.softInk)
                                 .multilineTextAlignment(.center)
@@ -157,7 +157,7 @@ struct PickupHandoffComposeView: View {
             HandoffActivityView(content: payload.content) { completed, error in
                 sharePayload = nil
                 guard error == nil else {
-                    shareErrorMessage = "系统分享没有成功完成，包裹仍保留在待取列表，请再试一次。"
+                    shareErrorMessage = "发送失败，包裹仍在待取中。请重试。"
                     return
                 }
                 let handedOffRecords = payload.content.recordsToHandOff(completed: completed, error: error)
@@ -165,7 +165,7 @@ struct PickupHandoffComposeView: View {
 
                 Task {
                     guard await store.handOff(handedOffRecords) else {
-                        shareErrorMessage = "交接包已经分享，但本地记录没有成功更新，请再试一次。"
+                        shareErrorMessage = "交接包已发送，但本机记录更新失败。请检查待取列表。"
                         return
                     }
                     dismiss()
