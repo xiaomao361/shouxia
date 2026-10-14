@@ -2,6 +2,77 @@ import XCTest
 @testable import Shouxia
 
 final class PickupImageShareTests: XCTestCase {
+    func testSharedTextKeepsCodesAndPlaceWithoutPrivateRawText() throws {
+        let candidates = try PickupSharedTextParser().candidates(
+            from: "【菜鸟】包裹已到北门驿站，取件码 3-2-4012、829146，电话13812345678，运单98765432109876"
+        )
+        XCTAssertEqual(candidates.map(\.code), ["3-2-4012", "829146"])
+        XCTAssertEqual(candidates.map(\.location), ["北门驿站", "北门驿站"])
+        for candidate in candidates {
+            XCTAssertFalse(candidate.sanitizedImportText.contains("13812345678"))
+            XCTAssertFalse(candidate.sanitizedImportText.contains("98765432109876"))
+        }
+    }
+
+    func testSharedTextNotificationsDoNotBorrowEachOthersPlace() throws {
+        let candidates = try PickupSharedTextParser().candidates(
+            from: "【菜鸟】包裹已到北门驿站，取件码 829146\n【丰巢】快递已到南门快递柜，取件码 654321\n取件码 123456"
+        )
+        XCTAssertEqual(candidates.map(\.location), ["北门驿站", "南门快递柜", nil])
+        XCTAssertEqual(candidates.map(\.platform), ["菜鸟", "丰巢", nil])
+    }
+
+    func testMultilineSingleNotificationKeepsPlace() throws {
+        let candidates = try PickupSharedTextParser().candidates(from: "包裹已到北门驿站\n取件码：AB1234")
+        XCTAssertEqual(candidates.first?.code, "AB1234")
+        XCTAssertEqual(candidates.first?.location, "北门驿站")
+    }
+
+    func testExplicitBareCodeAcceptedWithoutIncidentalNumberFallback() throws {
+        let parser = PickupSharedTextParser()
+        XCTAssertEqual(try parser.candidates(from: "AB1234").first?.code, "AB1234")
+        XCTAssertEqual(try parser.candidates(from: "3-2-4012").first?.code, "3-2-4012")
+        XCTAssertThrowsError(try parser.candidates(from: "会议室 829146，下周见"))
+        XCTAssertThrowsError(try parser.candidates(from: "13812345678"))
+        XCTAssertThrowsError(try parser.candidates(from: "hello"))
+        XCTAssertThrowsError(try parser.candidates(from: String(repeating: "a", count: 65537)))
+    }
+
+    func testSharedTextSourceAndMixedBatchRoundTripWithMinimumFields() async throws {
+        let root = try workspace()
+        let queue = PickupImageShareQueue(directory: root.appendingPathComponent("queue"))
+        let repository = PickupRepository(fileURL: root.appendingPathComponent("pickups.json"))
+        let textItem = PickupImageShareBatch.Item(code: "829146", location: "北门驿站", platform: "菜鸟", source: .sharedText)
+        let imageItem = PickupImageShareBatch.Item(code: "654321", location: nil, platform: nil)
+        try queue.enqueue(.init(items: [textItem, imageItem]))
+        _ = try await repository.receiveSharedImages(from: queue)
+        let records = try await repository.records()
+        XCTAssertEqual(records.first { $0.code == "829146" }?.source, .sharedText)
+        XCTAssertEqual(records.first { $0.code == "654321" }?.source, .imageRecognition)
+        XCTAssertEqual(PickupSource.sharedText.displayName, "文字分享")
+        let decoded = try JSONDecoder().decode([PickupRecord].self, from: Data(contentsOf: root.appendingPathComponent("pickups.json")))
+        XCTAssertEqual(decoded, records)
+        XCTAssertTrue(try queue.pendingFiles().isEmpty)
+    }
+
+    func testLegacyQueueWithoutSourceStillImportsAsImage() throws {
+        let legacy = batch()
+        let data = try JSONEncoder().encode(legacy)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("source"))
+        let decoded = try JSONDecoder().decode(PickupImageShareBatch.self, from: data).validated()
+        XCTAssertEqual(decoded.items.first?.effectiveSource, .imageRecognition)
+        let spoofed = PickupImageShareBatch.Item(code: "829146", location: nil, platform: nil, source: .smsAutomation)
+        XCTAssertThrowsError(try PickupImageShareBatch(items: [spoofed]).validated())
+    }
+
+    func testTextAndImageCandidatesShareOneDuplicatePolicy() throws {
+        let text = try PickupSharedTextParser().candidates(from: "取件码829146")
+        let image = ImagePickupCandidate(code: "829146", location: "北门驿站", platform: "菜鸟", confidence: 0.8, isLabelled: true)
+        let merged = ImagePickupBatchMerger().merge([text, [image]])
+        XCTAssertEqual(merged.count, 1)
+        XCTAssertEqual(merged.first?.location, "北门驿站")
+    }
+
     private func workspace() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

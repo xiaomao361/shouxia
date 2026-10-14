@@ -6,7 +6,7 @@ struct PickupImageShareReceipt: Equatable, Sendable {
     var failedBatchCount = 0
 }
 
-/// Confirmed OCR fields only. The extension never writes the app's record database.
+/// Confirmed minimum fields only. The extension never writes the app's record database.
 struct PickupImageShareBatch: Codable, Equatable, Sendable {
     let version: Int
     let id: UUID
@@ -16,7 +16,18 @@ struct PickupImageShareBatch: Codable, Equatable, Sendable {
         let code: String
         let location: String?
         let platform: String?
+        /// Missing in existing image batches; these remain image-recognition records.
+        let source: PickupSource?
         var id: String { code }
+
+        init(code: String, location: String?, platform: String?, source: PickupSource? = nil) {
+            self.code = code
+            self.location = location
+            self.platform = platform
+            self.source = source
+        }
+
+        var effectiveSource: PickupSource { source ?? .imageRecognition }
 
         var sanitizedText: String {
             ([platform.map { "【\($0)】" }, location.map { "已到\($0)" }, "取件码 \(code)"])
@@ -39,6 +50,7 @@ struct PickupImageShareBatch: Codable, Equatable, Sendable {
             guard (4...24).contains(item.code.count),
                   item.code.range(of: #"^[A-Z0-9]+(?:-[A-Z0-9]+){0,4}$"#, options: .regularExpression) != nil,
                   !(item.code.allSatisfy(\.isNumber) && item.code.count > 8),
+                  [.imageRecognition, .sharedText].contains(item.effectiveSource),
                   validField(item.location, limit: 80), validField(item.platform, limit: 20) else {
                 throw PickupImageShareError.invalidBatch
             }
@@ -59,7 +71,7 @@ enum PickupImageShareError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAppGroup: "暂时无法保存，请改用收下里的“从截图添加”"
-        case .invalidBatch: "取件信息无法保存，请重新选择截图"
+        case .invalidBatch: "取件信息无法保存，请重新分享取件文字或截图"
         case .queueFull: "请先打开收下，接收已保存的取件码后再试"
         case .tooManyImages: "一次最多分享五张图片，请重新选择"
         case .oversizedImage: "这张图片过大，请改用截图再试"

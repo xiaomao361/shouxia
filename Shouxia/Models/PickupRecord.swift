@@ -115,6 +115,7 @@ enum PickupSource: String, Codable, Sendable {
     case paste
     case smsAutomation
     case imageRecognition
+    case sharedText
     case handoff
 
     var displayName: String {
@@ -125,6 +126,8 @@ enum PickupSource: String, Codable, Sendable {
             "短信自动化"
         case .imageRecognition:
             "图片识别"
+        case .sharedText:
+            "文字分享"
         case .handoff:
             "他人托取"
         }

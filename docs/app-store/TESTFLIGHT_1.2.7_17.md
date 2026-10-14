@@ -4,7 +4,7 @@
 
 ## 本次变化
 
-- 从系统图片分享菜单接收一至五张截图，Apple Vision 本机 OCR，核对勾选后保存最小取件字段；不保存原图或完整 OCR 文字。
+- 同一个系统分享入口接收取件文字或一至五张截图，Apple Vision 本机 OCR，核对勾选后保存最小取件字段；不保存原图或完整 OCR 文字。
 - 分享确认后进入本地接收队列，下次打开 App 或回到前台自动加入待取，并刷新小组件与现有实时活动。
 - 沿用已有批次分组、来源标记与去重。取消不保存；部分失败显示遗漏提示；入库失败保留待接收批次。
 - 延续 iOS 16 兼容、小组件和锁屏/灵动岛活动，不新增位置、NFC 或朗读。
@@ -31,8 +31,20 @@
 
 完整的接收队列与失败边界见 [截图分享导入](../SHARE_IMAGE_IMPORT.md)。
 
-## 安装边界
+## 早期安装尝试（历史）
 
-本次在此前已授权的分享开发包覆盖安装范围内尝试更新版本。手机 iPhone 14 Pro / iOS 27.0.1 当前 transport 未提供、tunnel unavailable；devicectl 返回 exit 1 / CoreDeviceError 4016（设备无法满足使用请求）。因此 **1.2.7 (17) 尚未安装**，不得把此前 1.2.6 (16) 的成功读回当作新版安装证据。安装尝试日志 `/tmp/shouxia-127-install.log`；设备状态 `/tmp/shouxia-127-devices.json`。需要手机重新连接后继续，未卸载、未启动 App 或操作分享菜单。
+本次在此前已授权的分享开发包覆盖安装范围内尝试更新版本。手机 iPhone 14 Pro / iOS 27.0.1 当前 transport 未提供、tunnel unavailable；devicectl 返回 exit 1 / CoreDeviceError 4016（设备无法满足使用请求）。因此**该次未安装 1.2.7 (17)**，不得把此前 1.2.6 (16) 的成功读回当作新版安装证据。安装尝试日志 `/tmp/shouxia-127-install.log`；设备状态 `/tmp/shouxia-127-devices.json`。当时需要手机重新连接后继续，未卸载、未启动 App 或操作分享菜单。
 
 用户明确要求暂不提交 TestFlight，本轮无 export/upload，也未提交审核。
+
+## 文字入口补充
+
+候选新增系统文字分享支持，仍用 1.2.7 (17)。不增加首页、模式切换或分享输出选项；只保存所选最小取件字段，主 App 入库后来源显示“文字分享”。图片/文字混合输入共用核对和按码去重。93 项 host 回归及 Simulator 测试源码构建通过；新文字分享流程仍待用户在来源 App 实测。
+
+重点试用：系统备忘录分享一条带码通知；多行不同地点通知；同码先图片后文字/先文字后图片；取消；无关文字或超长文字；回到收下后确认入库。来源 App 没有系统文字分享入口时仍使用既有粘贴，不扩展读取权限。提醒与代取图片卡不在本次范围。TestFlight 和审核均不提交。
+
+### 当前文字/图片分享开发包
+
+93 项 host 回归、Simulator build-for-testing、Debug 通用 iOS 自动签名构建通过。三个实际产物均为 1.2.7 / 17，深度严格签名及 App Group 描述文件匹配通过。包 `/tmp/shouxia-127-text-share-dev/Build/Products/Debug-iphoneos/收下.app`，构建日志 `/tmp/shouxia-127-text-share-dev-build.log`。
+
+手机随后有线连接可用，本次在已有开发包覆盖安装授权内安装成功（devicectl exit 0），应用列表读回 1.2.7 / bundleVersion 17 / builtByDeveloper=true。结果 `/tmp/shouxia-text-share-install-result.json`，读回 `/tmp/shouxia-text-share-installed-apps.json`。未打开 App 或操作分享菜单；新增文字流程仍待用户手动检查。TestFlight 和审核未提交。

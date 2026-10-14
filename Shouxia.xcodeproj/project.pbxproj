@@ -66,6 +66,8 @@
  S10000000000000000000008 = {isa = PBXBuildFile; fileRef = S20000000000000000000003; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
  S10000000000000000000009 = {isa = PBXBuildFile; fileRef = S20000000000000000000004; };
  S1000000000000000000000A = {isa = PBXBuildFile; fileRef = S20000000000000000000005; };
+ S1000000000000000000000B = {isa = PBXBuildFile; fileRef = S20000000000000000000006; };
+ S1000000000000000000000C = {isa = PBXBuildFile; fileRef = S20000000000000000000006; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -137,6 +139,7 @@
  S20000000000000000000003 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = ShouxiaShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
  S20000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = text.xml; path = ShouxiaShare/PrivacyInfo.xcprivacy; sourceTree = SOURCE_ROOT; };
  S20000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaTests/PickupImageShareTests.swift; sourceTree = SOURCE_ROOT; };
+ S20000000000000000000006 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupSharedTextParser.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,6 +168,7 @@
                 S20000000000000000000003,
                 S20000000000000000000004,
                 S20000000000000000000005,
+                S20000000000000000000006,
 
                 F32000000000000000000001 /* SystemCapabilities.swift */,
                 F32000000000000000000002 /* PickupStoreTests.swift */,
@@ -442,6 +446,7 @@
 			buildActionMask = 2147483647;
 			files = (
                 S10000000000000000000001,
+                S1000000000000000000000B,
                 F31000000000000000000001 /* SystemCapabilities.swift in Sources */,
 				B1A00000000000000000008,
 				B1A00000000000000000007,
@@ -498,7 +503,7 @@
 				B1B00000000000000000006,B10000000000000000000004,
 				B1B00000000000000000003,
 				B1B00000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
- S90000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (S10000000000000000000002, S10000000000000000000003, S10000000000000000000004, S10000000000000000000005, S10000000000000000000006, S10000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
+ S90000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (S1000000000000000000000C, S10000000000000000000002, S10000000000000000000003, S10000000000000000000004, S10000000000000000000005, S10000000000000000000006, S10000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */

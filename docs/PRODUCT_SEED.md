@@ -365,3 +365,7 @@ iOS 没有让个人自动化在任意第三方 App 通知到达时触发并取�
 - [Apple: Launch a shortcut from another app](https://support.apple.com/guide/shortcuts/apd163eb9f95/ios)
 - [Apple: What’s new in Shortcuts, WWDC26](https://developer.apple.com/videos/play/wwdc2026/310/)
 - [Apple: SwiftUI PasteButton](https://developer.apple.com/documentation/swiftui/pastebutton)
+
+## 2026-10-14 增量入口与克制边界
+
+用户选择把文字分享加入已实现的系统截图分享入口，复用核对与保存，不增加首页入口和输出选项。代取图片卡先考虑，顾虑是分享方式增多及页面复杂。提醒先衡量整个系统的区间提醒能力，再讨论“晚点提醒”；目前不实现，避免产品臃肿。位置、NFC 与新增朗读不进入当前范围；1.2.7 开发候选暂不提交 TestFlight。
