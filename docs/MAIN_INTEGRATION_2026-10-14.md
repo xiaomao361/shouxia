@@ -38,3 +38,9 @@
 新增分享扩展的 Debug 通用 iOS 自动签名构建通过（`/tmp/shouxia-share-signed-build.log`）。产物 `/tmp/shouxia-share-signed-20261014/Build/Products/Debug-iphoneos/收下.app` 中主 App、分享扩展、小组件均通过 `codesign --verify --deep --strict`；三个签名 entitlement 与 embedded profile 均含 `group.com.zhouwei.shouxia`，application identifier 匹配，描述文件含一个开发设备。版本仍为 1.2.6 / 16，此包用于开发测试，不是此前已上传的包。
 
 截至本记录，手机未安装此开发包，未打开 App 或操作系统分享面板；真实 OCR/分享菜单/取消/部分失败/重复分享/前台与冷启动接收仍待用户操作验收。后续 TestFlight 发布需新的构建号。
+
+## 用户授权后的覆盖安装
+
+2026-10-14 用户明确允许覆盖安装，并选择自己手动检查。已确认通过有线连接的真实设备为 iPhone 14 Pro / iOS 27.0.1，安装上述 Debug 签名包，devicectl 返回 exit 0 / outcome success / bundleID `com.zhouwei.shouxia`；应用列表读回收下 1.2.6、builtByDeveloper=true。未卸载、未打开 App、未操作分享菜单。安装记录 `/tmp/shouxia-share-install.log`、`/tmp/shouxia-share-install-result.json`，应用读回 `/tmp/shouxia-share-installed-apps.json`。
+
+下一步由用户从照片选择取件截图 → 系统分享 → 收下（首次可能在“更多”）→ 核对保存 → 打开收下确认待取。实际分享入口、OCR、取消/重复分享以及原有数据仍待用户反馈；安装成功不代表交互验收通过。
