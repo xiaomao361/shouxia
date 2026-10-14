@@ -30,3 +30,11 @@
 - 整合前主目录内容保存在 stash `3025c782`；完整 Git bundle 备份已恢复到独立裸库，旧原型说明、Swift 文件和新分享扩展配置逐字节读回一致。
 - 原主目录 27 个历史截图/脚本文件恢复并核对哈希；截图脚本仍为本地修改，历史素材仍为未跟踪文件，不纳入功能提交。旧版短信引导/图标草稿由新版主线覆盖，原件仍在 stash 与文件副本中。
 - 本轮完成本地提交与合并，未推送远端；远端 main 在检查时仍为 `038f020`。未安装、上传 TestFlight、提交审核或部署。历史上传的 1.2.6 (16) 不因此次合并改变。
+
+## 后续授权：远端推送与开发签名
+
+用户随后授权推送代码并继续开发。`20a8062` 已推送远端 main，`git ls-remote` 与本地 HEAD 完整 SHA 一致；原有截图脚本/素材本地修改未提交。此次更新仅补记录，不代表发布新版 App。
+
+新增分享扩展的 Debug 通用 iOS 自动签名构建通过（`/tmp/shouxia-share-signed-build.log`）。产物 `/tmp/shouxia-share-signed-20261014/Build/Products/Debug-iphoneos/收下.app` 中主 App、分享扩展、小组件均通过 `codesign --verify --deep --strict`；三个签名 entitlement 与 embedded profile 均含 `group.com.zhouwei.shouxia`，application identifier 匹配，描述文件含一个开发设备。版本仍为 1.2.6 / 16，此包用于开发测试，不是此前已上传的包。
+
+截至本记录，手机未安装此开发包，未打开 App 或操作系统分享面板；真实 OCR/分享菜单/取消/部分失败/重复分享/前台与冷启动接收仍待用户操作验收。后续 TestFlight 发布需新的构建号。

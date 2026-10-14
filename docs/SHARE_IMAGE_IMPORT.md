@@ -27,6 +27,6 @@
 - HCT-2026-09-08-02：已验证结构化地点保留、常用地点来源、跨短信待取码去重、批次重试及完成后新批次复用短码。无数据库迁移。
 - 日志：`/tmp/shouxia-share-host-tests.log`、`/tmp/shouxia-share-build.log`；通用 iOS Release 无签名构建通过，主 App 与分享/小组件扩展均嵌入，版本 1.2.6 / 16，最低 iOS 16；日志 `/tmp/shouxia-share-device-build.log`。
 
-待用户真机检查：分享菜单出现收下、单图和多图识别、取消、部分图片失败、重复分享、主 App 冷启动和前台接收、小组件刷新、暗色与大字布局。新扩展的签名/App Group 配置尚未验证；构建通过不证明目标来源 App 的实际分享行为。
+待用户真机检查：分享菜单出现收下、单图和多图识别、取消、部分图片失败、重复分享、主 App 冷启动和前台接收、小组件刷新、暗色与大字布局。新扩展开发签名/App Group 配置已验证：主 App、分享扩展、小组件均通过深度严格签名检查，三个签名和描述文件均含相同 App Group；开发包 `/tmp/shouxia-share-signed-20261014/Build/Products/Debug-iphoneos/收下.app`，日志 `/tmp/shouxia-share-signed-build.log`。该包尚未安装；签名通过不证明目标来源 App 的实际分享行为。
 
 位置、NFC、额外朗读不在本轮范围，既有基础无障碍支持保留。
