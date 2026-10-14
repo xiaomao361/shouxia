@@ -1,6 +1,6 @@
 # 从系统分享菜单收下文字与截图
 
-2026-10-14 当前开发候选 **1.2.7 (17)**：文字与截图共用现有分享入口，签名开发包已覆盖安装到 iPhone 14 Pro / iOS 27.0.1，应用列表读回 1.2.7 / 17 / builtByDeveloper=true。用户一般试用图片分享反馈正常；新增文字流程仍待用户手动检查。**暂不提交 TestFlight 或审核**。
+2026-10-14 当前开发候选 **1.2.7 (17)**：文字与截图共用现有分享入口，签名开发包已覆盖安装到 iPhone 14 Pro / iOS 27.0.1，应用列表读回 1.2.7 / 17 / builtByDeveloper=true。用户一般试用图片分享反馈正常；文字匹配修正版安装后，用户已确认苹果“信息”共享列表中的收下入口出现。文字解析、保存入库及其他回归尚未收到逐项反馈。**暂不提交 TestFlight 或审核**。
 
 ## 使用与页面边界
 
@@ -38,13 +38,13 @@ App Group `group.com.zhouwei.shouxia` 的 `image-share-inbox-v1` 仍是最小字
 
 日志 `/tmp/shouxia-text-share-host-tests.log`、`/tmp/shouxia-text-share-sim-build.log`、`/tmp/shouxia-127-text-share-dev-build.log`。开发包 `/tmp/shouxia-127-text-share-dev/Build/Products/Debug-iphoneos/收下.app`；安装与读回 `/tmp/shouxia-text-share-install-result.json`、`/tmp/shouxia-text-share-installed-apps.json`。
 
-待用户检查：实际来源 App 的文字分享入口与接收；单条/多条不同地点通知；取消、部分失败、重复分享、文字/图片同码；冷启动/前台接收、原有记录、组件刷新、暗色和大字布局。安装或编译不代表交互验收通过。
+苹果“信息”文字共享入口已由用户确认出现。待用户检查：文字接收与入库、其他来源 App；单条/多条不同地点通知；取消、部分失败、重复分享、文字/图片同码；冷启动/前台接收、原有记录、组件刷新、暗色和大字布局。安装或编译不代表交互验收通过。
 
 此前 1.2.6 分享开发包构建与安装、1.2.7 初次连接失败的证据保留在 [主线整合记录](MAIN_INTEGRATION_2026-10-14.md) 和 [1.2.7 开发测试说明](app-store/TESTFLIGHT_1.2.7_17.md)，不改写已上传旧版事实。代取图片卡与整个系统的区间提醒仍待用户衡量，不实现；位置、NFC 和新增朗读继续排除。
 
 ## 文字分享入口未出现的修正
 
-用户实际反馈：选中文字后点分享，找不到收下；来源 App 和“更多”列表状态尚待说明，不推断已成功。
+用户最初反馈：在苹果“信息”内长按短信共享，“更多”中看不到收下。修正版覆盖安装后，用户回复“有了”，确认入口现在可见；未把这一反馈扩展为完整导入回归通过。
 
 检查发现原激活字典没有 `NSExtensionActivationDictionaryVersion`，按 Apple 文档采用版本 1，要求处理宿主一个 item provider 提供的所有表示类型。若宿主同时提供文字与其他类型，原规则可能筛掉入口。现显式设为版本 2，并使用 `NSExtensionActivationUsesStrictMatching=true`：同一 provider 有可处理的文字或图片表示即可匹配，不扩展网页内容读取、不使用 TRUEPREDICATE。依据 [Apple App Extension Keys](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/AppExtensionKeys.html)。这是已确认的配置遗漏及与现象相符的原因假设，未获得当前来源 App 实际输入类型，不能称为唯一根因。
 
@@ -52,4 +52,4 @@ App Group `group.com.zhouwei.shouxia` 的 `image-share-inbox-v1` 仍是最小字
 
 HCT-2026-09-08-01：仅调整宿主表示类型的匹配默认，实际接收仍限定文字/图片及原有数量/大小/候选校验；未改解析、队列、数据或失效边界，因此不重复全套业务测试。配置与签名检查不证明真实菜单已经出现。
 
-用户下一步：关闭旧分享面板，重新选择文字分享，在 App 图标横排最右端“更多”查找；出现后可在编辑中启用/收藏。仍未出现时提供来源 App 名称与“更多”列表观察。用户拥有 UI 操作，本轮不自动打开、切换或点击来源 App。TestFlight 和审核继续不提交。
+阶段节点：用户确认入口出现后，要求先保存节点，自己考虑下一步更新。当前停止新增功能，不自动打开、切换或点击来源 App；分享接收、保存与重复等完整手动回归可在下次继续。TestFlight 和审核继续不提交。
