@@ -48,3 +48,7 @@
 93 项 host 回归、Simulator build-for-testing、Debug 通用 iOS 自动签名构建通过。三个实际产物均为 1.2.7 / 17，深度严格签名及 App Group 描述文件匹配通过。包 `/tmp/shouxia-127-text-share-dev/Build/Products/Debug-iphoneos/收下.app`，构建日志 `/tmp/shouxia-127-text-share-dev-build.log`。
 
 手机随后有线连接可用，本次在已有开发包覆盖安装授权内安装成功（devicectl exit 0），应用列表读回 1.2.7 / bundleVersion 17 / builtByDeveloper=true。结果 `/tmp/shouxia-text-share-install-result.json`，读回 `/tmp/shouxia-text-share-installed-apps.json`。未打开 App 或操作分享菜单；新增文字流程仍待用户手动检查。TestFlight 和审核未提交。
+
+### 文字分享入口激活匹配修正
+
+用户反馈选中文字分享看不到收下。补齐扩展激活字典 version=2、strict=true，保留 text=true 和图片最多五张；避免支持的文字表示因同一个宿主 provider 同时提供其他类型而被默认版本1筛掉。不扩展网页读取。签名构建与产物规则检查、覆盖安装和1.2.7/17读回通过；具体来源 App 未确认，真实菜单能否出现仍待用户重开分享并检查“更多”。证据与原因边界见 [系统分享导入](../SHARE_IMAGE_IMPORT.md#文字分享入口未出现的修正)。未提交TestFlight或审核。
