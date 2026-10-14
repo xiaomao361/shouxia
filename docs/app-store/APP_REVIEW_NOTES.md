@@ -1,14 +1,18 @@
 # App Review Notes
 
+Current local draft: **1.2.7 (17)**. The screenshot Share extension is new in this candidate. This draft and build have not been submitted to TestFlight or App Review. Prior 1.2.6 (16) upload records remain separate.
+
 ## English
 
 Shouxia (“收下”) is a local-only pickup-code inbox for the person who will actually collect the parcels. A person’s own pickup SMS can enter through a Messages automation, while pickup text or screenshots forwarded by family and friends can be added manually. No account or demo login is required.
 
-The app has three import paths:
+The app has four import paths:
 
 1. Paste: the primary button is Apple's system `PasteButton`. The user may also enable “打开时识别剪贴板” in Import Settings. That option is off by default, checks only after the app enters the foreground and the pasteboard change count has changed, and locally attempts to parse the current text once. Irrelevant text is ignored. iOS may show its system paste-permission prompt; the app never reads the clipboard in the background.
 2. Messages automation: the user first creates or imports a regular shortcut named “收下自动收码”. It converts Shortcut Input to text and explicitly connects that text to the “短信内容” parameter of the “保存取件短信” App Intent. On iOS 27, the user adds a Message automation trigger inside that same shortcut. On iOS 17, 18 and 26, the user creates a separate Messages personal automation that runs it. The app cannot create or inspect the personal automation and does not read message history.
 3. Photo recognition: the user may select up to five logistics screenshots with the system photo picker. Apple Vision performs OCR entirely on device. Candidates are merged into one review and deduplicated by pickup code across images. A single clearly labelled code from one image may be added directly; multiple images, multiple codes, or unlabelled candidates require confirmation. The original images and unrelated OCR text are not stored.
+
+4. Image sharing: from the system share sheet of Photos or another app that exposes image sharing, the user can send up to five screenshots to Shouxia. The Share extension performs OCR on device and asks the user to select and confirm pickup codes. Only selected minimum pickup fields are queued locally in the App Group; images and OCR text are not stored. On the next app launch or foreground activation, the app imports the queue using its existing duplicate protection and then refreshes widgets and Live Activities. The extension does not force-open the app, and saving in the share sheet does not imply an immediate widget refresh.
 
 Import Settings also allows one optional common pickup point. It is used only as a fallback for future imports whose source contains no location, and records visibly distinguish this default from a recognized or user-corrected location. Records imported in the same photo batch can still be collected continuously when no location is available.
 
