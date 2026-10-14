@@ -7,7 +7,7 @@ Shouxia (“收下”) is a local-only pickup-code inbox for the person who will
 The app has three import paths:
 
 1. Paste: the primary button is Apple's system `PasteButton`. The user may also enable “打开时识别剪贴板” in Import Settings. That option is off by default, checks only after the app enters the foreground and the pasteboard change count has changed, and locally attempts to parse the current text once. Irrelevant text is ignored. iOS may show its system paste-permission prompt; the app never reads the clipboard in the background.
-2. Messages automation: the user first creates or imports a regular shortcut named “收下自动收码”. It converts Shortcut Input to text and explicitly connects that text to the “短信内容” parameter of the “保存取件短信” App Intent. On iOS 27, the user adds a Message automation trigger inside that same shortcut. On iOS 26 and earlier, the user creates a separate Messages personal automation that runs it. The app cannot create or inspect the personal automation and does not read message history.
+2. Messages automation: the user first creates or imports a regular shortcut named “收下自动收码”. It converts Shortcut Input to text and explicitly connects that text to the “短信内容” parameter of the “保存取件短信” App Intent. On iOS 27, the user adds a Message automation trigger inside that same shortcut. On iOS 17, 18 and 26, the user creates a separate Messages personal automation that runs it. The app cannot create or inspect the personal automation and does not read message history.
 3. Photo recognition: the user may select up to five logistics screenshots with the system photo picker. Apple Vision performs OCR entirely on device. Candidates are merged into one review and deduplicated by pickup code across images. A single clearly labelled code from one image may be added directly; multiple images, multiple codes, or unlabelled candidates require confirmation. The original images and unrelated OCR text are not stored.
 
 Import Settings also allows one optional common pickup point. It is used only as a fallback for future imports whose source contains no location, and records visibly distinguish this default from a recognized or user-corrected location. Records imported in the same photo batch can still be collected continuously when no location is available.
@@ -16,7 +16,7 @@ The “添加‘收下自动收码’” button in the setup guide opens this Ap
 
 `https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a`
 
-After import, the user must configure the Message trigger manually: inside the shortcut on iOS 27, or in a separate personal automation with “Run Immediately” on iOS 26 and earlier. The app does not claim that this automation can be created silently.
+After import, the user must configure the Message trigger manually: inside the shortcut on iOS 27, or in a separate personal automation with “Run Immediately” on iOS 17, 18 and 26. The app does not claim that this automation can be created silently.
 
 The App Shortcut card that may appear in Shortcuts registers the App Intent action with the system. It does not create the regular shortcut or the Messages personal automation.
 
@@ -45,13 +45,13 @@ All message text and parsed records remain on device. The app contains no advert
 
 系统照片选择器支持一次选择最多五张物流截图；图片只在本机 OCR，随后跨图按取件码去重并统一确认，原图和无关全文不会保存。可选的“常用取件点”只补全以后导入且原文缺少地点的记录，并会显示来源标记；同批图片即使没有地点也可连续取件。
 
-短信自动导入先把“快捷指令输入”转换成文本并连接到“保存取件短信”的“短信内容”。iOS 27 将“信息”触发器放在同一个快捷指令内；iOS 26 及以前由独立的“信息”个人自动化运行该快捷指令。App 无法替用户创建或查询个人自动化，也不会读取短信历史或其他 App 的通知。
+短信自动导入先把“快捷指令输入”转换成文本并连接到“保存取件短信”的“短信内容”。iOS 27 将“信息”触发器放在同一个快捷指令内；iOS 17、18、26由独立的“信息”个人自动化运行该快捷指令。App 无法替用户创建或查询个人自动化，也不会读取短信历史或其他 App 的通知。
 
 App 内“添加‘收下自动收码’”按钮会打开 Apple iCloud 快捷指令分享页：
 
 `https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a`
 
-用户确认导入后，仍需亲自配置“信息”触发器：iOS 27 在同一个快捷指令中添加，iOS 26 及以前创建个人自动化并选择“立即运行”；App 不会声称能够静默创建该自动化。
+用户确认导入后，仍需亲自配置“信息”触发器：iOS 27 在同一个快捷指令中添加，iOS 17、18、26创建个人自动化并选择“立即运行”；App 不会声称能够静默创建该自动化。
 
 ## 1.2.4 (14): widgets, Live Activities and history
 
@@ -69,3 +69,10 @@ History defaults to the last 30 calendar days and offers an All filter. Legacy a
 This update simplifies interface text and provides separate SMS automation instructions for iOS 27 and earlier systems. The original iCloud shortcut link, App Intent action and parameter, local storage format, and parsing behavior remain unchanged. Existing working shortcuts do not need to be recreated. Both systems retain the iCloud installation entry.
 
 中文：本次主要简化文案并更新 iOS 27 设置说明，保留 iOS 26 步骤及原 iCloud 安装入口。已有正常使用的快捷指令无需重设。1.2.5 (15) 已上传 TestFlight，尚未提交正式审核。
+
+
+## 1.2.6 (16) draft: iOS 16 compatibility
+
+Minimum deployment target: iOS 16.0. This candidate was uploaded to TestFlight on October 13, 2026; Apple accepted it for processing. It has not been submitted for App Store review. iOS 16 Messages automation requires confirmation when triggered; the app displays only the instructions for the running OS. iOS 16 widgets display all pending items without location/privacy configuration; iOS 17+ retains the existing configuration. Lock-screen widgets show counts only. Live Activities require iOS 16.1+; Dynamic Island also requires compatible hardware. On 16.0 the app explains the requirement instead of presenting a toggle. No data format, App Intent parameter or parsing changes.
+
+中文：1.2.6 (16) 新增 iOS 16 兼容和对应确认运行说明；2026-10-13 已上传 TestFlight，Apple 已接收并开始处理，尚未提交正式审核。引导只展示当前系统的步骤；基础小组件与实时活动按系统能力提供。2026-10-12 用户报告此前 1.2.5 已提交审核，结果未独立核查。

@@ -15,7 +15,12 @@ struct SettingsView: View {
                         Label("导入设置", systemImage: "shippingbox.and.arrow.backward")
                     }
                     NavigationLink {
-                        PickupActivityPreferencesView()
+                        if #available(iOS 16.1, *) {
+                            PickupActivityPreferencesView()
+                        } else {
+                            Text("锁屏与灵动岛展示需要 iOS 16.1 或更高版本。")
+                                .padding().navigationTitle("锁屏与灵动岛")
+                        }
                     } label: {
                         Label("锁屏与灵动岛", systemImage: "lock.iphone")
                     }
@@ -39,7 +44,7 @@ struct SettingsView: View {
             }
         }
         .tint(ShouxiaPalette.breezePressed)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 }
 
@@ -141,17 +146,18 @@ struct AboutView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 
 }
 
 
+@available(iOS 16.1, *)
 private struct PickupActivityPreferencesView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @State private var isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled
-    @State private var activity = PickupLiveActivityController.shared
+    @ObservedObject private var activity = PickupLiveActivityController.shared
 
     var body: some View {
         Form {
@@ -188,7 +194,7 @@ private struct PickupActivityPreferencesView: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(ShouxiaPalette.breezePressed)
         .onAppear { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase) { phase in
             if phase == .active { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
         }
     }

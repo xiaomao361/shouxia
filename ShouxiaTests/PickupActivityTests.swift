@@ -1,7 +1,46 @@
+import Combine
 import XCTest
 @testable import Shouxia
 
 final class PickupActivityTests: XCTestCase {
+    @MainActor
+    func testUnsupportedSystemIsDistinctFromPermissionDeniedAndDoesNotStart() async throws {
+        let c = try await makeContext(); defer { c.cleanup() }
+        c.client.isSupported = false
+        c.controller.setEnabled(true)
+        await c.controller.waitUntilIdle()
+        XCTAssertEqual(c.client.starts, 0)
+        XCTAssertNil(c.controller.session)
+        XCTAssertEqual(c.controller.message, "锁屏与灵动岛展示需要 iOS 16.1 或更高版本")
+        XCTAssertEqual(c.defaults.dictionary(forKey: "pickupActivityDiagnostic.v1")?["status"] as? String, "unsupportedSystem")
+        let records = try await c.repository.records()
+        XCTAssertFalse(records.isEmpty)
+    }
+
+    @MainActor
+    func testActivityStatusPublishesAfterStartingAndDisabling() async throws {
+        let c = try await makeContext(); defer { c.cleanup() }
+        var messages: [String?] = []
+        let subscription = c.controller.$message.sink { messages.append($0) }
+        c.controller.setEnabled(true)
+        await c.controller.waitUntilIdle()
+        XCTAssertTrue(messages.contains("正在显示待取信息"))
+        c.controller.setEnabled(false)
+        await c.controller.waitUntilIdle()
+        XCTAssertNil(messages.last!)
+        withExtendedLifetime(subscription) {}
+    }
+
+    func testGuidanceSelectsOneFlowAtSystemBoundaries() {
+        XCTAssertEqual(SMSAutomationFlow.resolve(majorVersion: 16), .confirmationRequired)
+        for version in [17, 18, 26] {
+            XCTAssertEqual(SMSAutomationFlow.resolve(majorVersion: version), .personalAutomation)
+        }
+        XCTAssertEqual(SMSAutomationFlow.resolve(majorVersion: 27), .inlineAutomation)
+        XCTAssertTrue(SMSAutomationFlow.resolve(majorVersion: 16).verification.contains("确认"))
+        XCTAssertFalse(SMSAutomationFlow.resolve(majorVersion: 27).introduction.contains("确认"))
+    }
+
     func testStateUsesAllPendingIncludesNewArrivalsAndAlwaysShowsCode() {
         let now = Date()
         var first = record("1111", time: now)
@@ -158,6 +197,7 @@ final class PickupActivityTests: XCTestCase {
 }
 
 @MainActor private final class FakeActivityClient: PickupActivityClient {
+    var isSupported = true
     var isAuthorized = true
     var canStart = true
     var activeSessionIDs: [UUID] = []

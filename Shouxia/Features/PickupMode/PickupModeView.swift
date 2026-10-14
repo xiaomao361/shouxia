@@ -5,7 +5,7 @@ struct PickupModeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
 
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
     let onComplete: (PickupRecord) -> Void
     let groupRecordIDs: [UUID]
     @State private var selectedRecordID: UUID
@@ -76,7 +76,7 @@ struct PickupModeView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("取件台")
                     .font(.title3.weight(.semibold))
-                    .fontDesign(.rounded)
+                    .shouxiaRoundedFont()
                     .foregroundStyle(ShouxiaPalette.ink)
 
                 Text(groupDescription)

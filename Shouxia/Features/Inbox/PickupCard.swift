@@ -25,7 +25,7 @@ struct PickupCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(record.locationDisplayName)
                         .font(.subheadline.weight(.semibold))
-                        .fontDesign(.rounded)
+                        .shouxiaRoundedFont()
                         .foregroundStyle(ShouxiaPalette.ink)
                         .lineLimit(1)
 

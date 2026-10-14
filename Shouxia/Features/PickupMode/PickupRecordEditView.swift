@@ -9,7 +9,7 @@ struct PickupRecordEditView: View {
     @Environment(\.dismiss) private var dismiss
 
     let record: PickupRecord
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
     @State private var code: String
     @State private var location: String
     @State private var validationMessage: String?
@@ -74,7 +74,7 @@ struct PickupRecordEditView: View {
             .onAppear { focusedField = .code }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 
     private func save() {

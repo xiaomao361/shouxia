@@ -4,7 +4,7 @@ struct PickupHandoffReviewView: View {
     @Environment(\.dismiss) private var dismiss
 
     let package: PickupHandoffPackage
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
     @State private var isImporting = false
 
     var body: some View {
@@ -76,7 +76,7 @@ struct PickupHandoffReviewView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 }
 

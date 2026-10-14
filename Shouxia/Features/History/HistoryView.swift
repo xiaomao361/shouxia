@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
     @Environment(\.dismiss) private var dismiss
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
     @State private var range: PickupHistoryRange = .recent
     @State private var recordToDelete: PickupRecord?
 
@@ -20,15 +20,14 @@ struct HistoryView: View {
                 Text(message).font(.caption).foregroundStyle(.red).padding(.horizontal)
             }
             if store.loadFailed {
-                ContentUnavailableView("暂时无法读取记录", systemImage: "exclamationmark.triangle",
-                                       description: Text("请稍后重新打开收下。"))
+                ShouxiaEmptyState(title: "暂时无法读取记录", systemImage: "exclamationmark.triangle",
+                                  description: "请稍后重新打开收下。")
             } else if visibleRecords.isEmpty {
-                ContentUnavailableView {
-                    Label(store.historyRecords.isEmpty ? "还没有收下记录" : "最近 30 天没有记录",
-                          systemImage: "clock.arrow.circlepath")
-                } description: {
-                    Text(store.historyRecords.isEmpty ? "取完的包裹会留在这里。" : "切换“全部”查看更早的记录。")
-                }
+                ShouxiaEmptyState(
+                    title: store.historyRecords.isEmpty ? "还没有收下记录" : "最近 30 天没有记录",
+                    systemImage: "clock.arrow.circlepath",
+                    description: store.historyRecords.isEmpty ? "取完的包裹会留在这里。" : "切换“全部”查看更早的记录。"
+                )
                 .foregroundStyle(ShouxiaPalette.mutedInk)
             } else {
                 List {
@@ -61,7 +60,7 @@ struct HistoryView: View {
             }
         }
         .background(ShouxiaBackground())
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
         .navigationTitle("收下记录")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -132,7 +131,7 @@ private struct RecordRow: View {
 
             Text(record.code)
                 .font(.title2.weight(.bold))
-                .fontDesign(.rounded)
+                .shouxiaRoundedFont()
                 .foregroundStyle(ShouxiaPalette.ink)
                 .textSelection(.enabled)
                 .accessibilityLabel("取件码 \(record.code)")

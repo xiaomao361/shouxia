@@ -1,13 +1,12 @@
 import Foundation
-import Observation
+import Combine
 
 @MainActor
-@Observable
-final class PickupStore {
-    private(set) var records: [PickupRecord] = []
-    private(set) var notice: Notice?
-    private(set) var lastCompleted: PickupRecord?
-    private(set) var loadFailed = false
+final class PickupStore: ObservableObject {
+    @Published private(set) var records: [PickupRecord] = []
+    @Published private(set) var notice: Notice?
+    @Published private(set) var lastCompleted: PickupRecord?
+    @Published private(set) var loadFailed = false
 
     private let repository: PickupRepository
 
@@ -35,13 +34,17 @@ final class PickupStore {
         do {
             records = try await repository.records()
             loadFailed = false
+            #if os(iOS)
             PickupLiveActivityController.shared.refresh()
+            #endif
             if await repository.surfaceRefreshFailed {
                 notice = .error("取件信息已保存，小组件暂时无法更新")
             }
         } catch {
             loadFailed = true
+            #if os(iOS)
             PickupLiveActivityController.shared.refresh()
+            #endif
             notice = .error("暂时无法读取本地取件信息")
         }
     }
@@ -74,6 +77,30 @@ final class PickupStore {
         } catch {
             notice = .error("添加失败，请重试")
         }
+    }
+
+    func receiveSharedImages(defaultLocation: String? = nil) async {
+        #if os(iOS)
+        guard !loadFailed else { return }
+        do {
+            let receipt = try await repository.receiveSharedImages(
+                from: PickupImageShareQueue.shared(), defaultLocation: defaultLocation
+            )
+            records = try await repository.records()
+            if receipt.failedBatchCount > 0 {
+                notice = .error("已添加 \(receipt.addedCount) 个取件码，另有 \(receipt.failedBatchCount) 批分享未能接收，已保留供重试")
+            } else if receipt.addedCount > 0 {
+                notice = .success("已从分享添加 \(receipt.addedCount) 个取件码")
+            } else if receipt.duplicateCount > 0 {
+                notice = .neutral("分享的取件码已在收下中")
+            }
+            if await repository.surfaceRefreshFailed {
+                notice = .error("取件信息已保存，小组件暂时无法更新")
+            }
+        } catch {
+            notice = .error("暂时无法接收分享的取件码，请稍后重新打开收下")
+        }
+        #endif
     }
 
     func importClipboardAutomatically(

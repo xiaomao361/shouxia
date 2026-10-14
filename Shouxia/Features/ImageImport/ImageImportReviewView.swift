@@ -13,7 +13,7 @@ struct ImageImportReviewView: View {
     @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
 
     let review: ImageImportReview
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
 
     @State private var selectedIDs: Set<String>
     @State private var isSaving = false
@@ -119,7 +119,7 @@ struct ImageImportReviewView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 
     private var title: String {

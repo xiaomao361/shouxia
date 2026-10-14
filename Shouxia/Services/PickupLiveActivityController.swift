@@ -3,10 +3,11 @@ import ActivityKit
 import UIKit
 #endif
 import Foundation
-import Observation
+import Combine
 
 @MainActor
 protocol PickupActivityClient: AnyObject {
+    var isSupported: Bool { get }
     var isAuthorized: Bool { get }
     var canStart: Bool { get }
     var activeSessionIDs: [UUID] { get }
@@ -15,21 +16,51 @@ protocol PickupActivityClient: AnyObject {
     func end() async
 }
 
+extension PickupActivityClient {
+    var isSupported: Bool { true }
+}
+
 #if os(iOS)
+@MainActor
+private final class UnsupportedPickupActivityClient: PickupActivityClient {
+    var isSupported: Bool { false }
+    var isAuthorized: Bool { false }
+    var canStart: Bool { false }
+    var activeSessionIDs: [UUID] { [] }
+    func start(session: PickupActivitySession, state: PickupActivityContent) throws {
+        throw UnsupportedActivityError.systemVersion
+    }
+    func update(session: PickupActivitySession, state: PickupActivityContent) async {}
+    func end() async {}
+    private enum UnsupportedActivityError: Error { case systemVersion }
+}
+
+@available(iOS 16.1, *)
 @MainActor
 final class SystemPickupActivityClient: PickupActivityClient {
     var isAuthorized: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
     var canStart: Bool { UIApplication.shared.applicationState == .active }
     var activeSessionIDs: [UUID] {
         Activity<PickupActivityAttributes>.activities.filter {
-            $0.activityState == .active || $0.activityState == .stale
+            Self.isDisplayable($0.activityState)
         }.map(\.attributes.sessionID)
     }
 
+    private nonisolated static func isDisplayable(_ state: ActivityState) -> Bool {
+        if state == .active { return true }
+        if #available(iOS 16.2, *) { return state == .stale }
+        return false
+    }
+
     func start(session: PickupActivitySession, state: PickupActivityContent) throws {
-        _ = try Activity<PickupActivityAttributes>.request(
-            attributes: PickupActivityAttributes(sessionID: session.id, expiresAt: session.expiresAt),
-            content: ActivityContent(state: state, staleDate: session.expiresAt), pushType: nil)
+        let attributes = PickupActivityAttributes(sessionID: session.id, expiresAt: session.expiresAt)
+        if #available(iOS 16.2, *) {
+            _ = try Activity<PickupActivityAttributes>.request(attributes: attributes,
+                content: ActivityContent(state: state, staleDate: session.expiresAt), pushType: nil)
+        } else {
+            _ = try Activity<PickupActivityAttributes>.request(attributes: attributes,
+                contentState: state, pushType: nil)
+        }
     }
 
     func update(session: PickupActivitySession, state: PickupActivityContent) async {
@@ -42,14 +73,21 @@ final class SystemPickupActivityClient: PickupActivityClient {
         guard let activity = Activity<PickupActivityAttributes>.activities.first(where: {
             $0.attributes.sessionID == session.id
         }) else { return }
-        await activity.update(ActivityContent(state: state, staleDate: session.expiresAt))
+        if #available(iOS 16.2, *) {
+            await activity.update(ActivityContent(state: state, staleDate: session.expiresAt))
+        } else {
+            await activity.update(using: state)
+        }
     }
 
     private nonisolated static func endActivities() async {
         for activity in Activity<PickupActivityAttributes>.activities {
-            guard activity.activityState == .active || activity.activityState == .stale else { continue }
-            await activity.end(ActivityContent(state: .finished, staleDate: nil),
-                               dismissalPolicy: .immediate)
+            guard isDisplayable(activity.activityState) else { continue }
+            if #available(iOS 16.2, *) {
+                await activity.end(ActivityContent(state: .finished, staleDate: nil), dismissalPolicy: .immediate)
+            } else {
+                await activity.end(using: .finished, dismissalPolicy: .immediate)
+            }
         }
     }
 }
@@ -58,15 +96,19 @@ final class SystemPickupActivityClient: PickupActivityClient {
 /// The setting persists independently of the system's limited activity lifetime.
 /// Repository changes update existing activities; new ones require a foreground app.
 @MainActor
-@Observable
-final class PickupLiveActivityController {
+final class PickupLiveActivityController: ObservableObject {
     #if os(iOS)
-    static let shared = PickupLiveActivityController(client: SystemPickupActivityClient())
+    static let shared: PickupLiveActivityController = {
+        if #available(iOS 16.1, *) {
+            return PickupLiveActivityController(client: SystemPickupActivityClient())
+        }
+        return PickupLiveActivityController(client: UnsupportedPickupActivityClient())
+    }()
     #endif
-    private(set) var isEnabled: Bool
-    private(set) var session: PickupActivitySession?
-    private(set) var isBusy = false
-    private(set) var message: String?
+    @Published private(set) var isEnabled: Bool
+    @Published private(set) var session: PickupActivitySession?
+    @Published private(set) var isBusy = false
+    @Published private(set) var message: String?
     private let client: any PickupActivityClient
     private let repository: PickupRepository
     private let defaults: UserDefaults
@@ -131,6 +173,13 @@ final class PickupLiveActivityController {
                 clearSession()
                 await client.end()
                 if currentRevision == revision { message = nil }
+            } else if !client.isSupported {
+                clearSession()
+                await client.end()
+                if currentRevision == revision {
+                    message = "锁屏与灵动岛展示需要 iOS 16.1 或更高版本"
+                    recordDiagnostic("unsupportedSystem")
+                }
             } else if !client.isAuthorized {
                 clearSession()
                 await client.end()

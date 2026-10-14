@@ -13,7 +13,7 @@ struct PickupCodePage: View {
                     HStack(spacing: 7) {
                         Text(record.locationDisplayName)
                             .font(.title2.weight(.semibold))
-                            .fontDesign(.rounded)
+                            .shouxiaRoundedFont()
                             .foregroundStyle(ShouxiaPalette.ink)
                             .multilineTextAlignment(.center)
                             .lineLimit(2)

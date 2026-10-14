@@ -133,7 +133,7 @@ struct ShouxiaPrimaryButtonStyle: ButtonStyle {
             Spacer(minLength: 0)
         }
             .font(.headline)
-            .fontDesign(.rounded)
+            .shouxiaRoundedFont()
             .foregroundStyle(ShouxiaPalette.actionInk)
             .frame(maxWidth: .infinity, minHeight: 56)
             .background(
@@ -163,7 +163,7 @@ struct ShouxiaSecondaryButtonStyle: ButtonStyle {
             Spacer(minLength: 0)
         }
         .font(.headline)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
         .foregroundStyle(ShouxiaPalette.ink)
         .frame(maxWidth: .infinity, minHeight: 56)
         .background(
@@ -195,7 +195,7 @@ struct ShouxiaImportButtonStyle: ButtonStyle {
             Spacer(minLength: 0)
         }
         .font(.headline)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
         .foregroundStyle(ShouxiaPalette.ink)
         .frame(maxWidth: .infinity, minHeight: 50)
         .background(
@@ -305,5 +305,36 @@ struct ShouxiaMark: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .accessibilityHidden(true)
+    }
+}
+
+// Keep the existing rounded design on 16.1+, and system typography on 16.0.
+extension View {
+    @ViewBuilder func shouxiaRoundedFont() -> some View {
+        if #available(iOS 16.1, *) { self.fontDesign(.rounded) }
+        else { self }
+    }
+}
+
+struct ShouxiaEmptyState: View {
+    let title: String
+    let systemImage: String
+    let description: String
+
+    var body: some View {
+        Group {
+            if #available(iOS 17.0, *) {
+                ContentUnavailableView(title, systemImage: systemImage, description: Text(description))
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: systemImage).font(.system(size: 40)).accessibilityHidden(true)
+                    Text(title).font(.title3.weight(.semibold))
+                    Text(description).font(.subheadline).multilineTextAlignment(.center)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .foregroundStyle(ShouxiaPalette.mutedInk)
     }
 }

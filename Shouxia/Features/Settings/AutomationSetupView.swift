@@ -10,17 +10,14 @@ struct AutomationSetupView: View {
         string: "https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a"
     )
 
-    private var usesInlineAutomation: Bool {
-        if #available(iOS 27.0, *) { return true }
-        return false
-    }
-
-    private let introduction = "设置一次，收到取件短信就自动添加。"
+    private let flow = SMSAutomationFlow.current
+    private var usesInlineAutomation: Bool { flow == .inlineAutomation }
+    private var introduction: String { flow.introduction }
 
     private var troubleshooting: String {
         usesInlineAutomation
             ? "1. 启用“信息”触发器。\n2. 短信中包含“取件”。\n3. “获取文本”的输入选“快捷指令输入”。\n4. “保存取件短信”的“短信内容”选上一步的“文本”。\n仅锁屏时不运行：在快捷指令的“信息”按钮 →“隐私”中检查锁定时运行权限。"
-            : "1. 启用自动化，选择“立即运行”。\n2. 短信中包含“取件”。\n3. 运行的是“收下自动收码”。\n4. “获取文本”的输入选“快捷指令输入”，“保存取件短信”的“短信内容”选该文本。"
+            : "1. 启用自动化，\(flow.requiresConfirmation ? "收到短信后确认运行" : "选择“立即运行”")。\n2. 短信中包含“取件”。\n3. 运行的是“收下自动收码”。\n4. “获取文本”的输入选“快捷指令输入”，“保存取件短信”的“短信内容”选该文本。"
     }
 
     var body: some View {
@@ -86,7 +83,7 @@ struct AutomationSetupView: View {
 
                         if usesInlineAutomation {
                             AutomationSetupSection(
-                                eyebrow: "第二步 · iOS 27 及以后",
+                                eyebrow: "第二步",
                                 title: "设置收到短信时运行",
                                 steps: [
                                     AutomationSetupStepContent(
@@ -105,7 +102,7 @@ struct AutomationSetupView: View {
                             )
                         } else {
                             AutomationSetupSection(
-                                eyebrow: "第二步 · iOS 26 及以前",
+                                eyebrow: "第二步",
                                 title: "新建短信自动化",
                                 steps: [
                                     AutomationSetupStepContent(
@@ -114,7 +111,9 @@ struct AutomationSetupView: View {
                                     ),
                                     AutomationSetupStepContent(
                                         title: "设置短信条件",
-                                        detail: "“信息包含”填“取件”，选择“立即运行”。"
+                                        detail: flow.requiresConfirmation
+                                            ? "“信息包含”填“取件”。此系统收到短信后需要确认运行。"
+                                            : "“信息包含”填“取件”，选择“立即运行”。"
                                     ),
                                     AutomationSetupStepContent(
                                         title: "选择“收下自动收码”",
@@ -137,7 +136,7 @@ struct AutomationSetupView: View {
                                 : "打开后，请点底部的自动化")
 
                             Label(
-                                "收到下一条取件短信后，看看是否自动添加",
+                                flow.verification,
                                 systemImage: "hourglass"
                             )
                             .font(.caption.weight(.medium))
@@ -168,7 +167,7 @@ struct AutomationSetupView: View {
                         .padding(16)
                         .background(ShouxiaPalette.paper, in: RoundedRectangle(cornerRadius: 22))
 
-                        DisclosureGroup("没有自动添加？") {
+                        DisclosureGroup(flow.requiresConfirmation ? "确认后没有添加？" : "没有自动添加？") {
                             Text(troubleshooting)
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.mutedInk)
@@ -213,7 +212,7 @@ struct AutomationSetupView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 }
 

@@ -180,6 +180,35 @@ actor PickupRepository {
         )
     }
 
+    /// Each package commits atomically before acknowledgement. Retry identity survives
+    /// completion and avoids re-adding a package if acknowledgement previously failed.
+    func receiveSharedImages(
+        from queue: PickupImageShareQueue,
+        defaultLocation: String? = nil
+    ) throws -> PickupImageShareReceipt {
+        var receipt = PickupImageShareReceipt()
+        for file in try queue.pendingFiles() {
+            do {
+                let batch = try queue.read(file)
+                let parsed = try batch.items.map { item in
+                    let identity = try parser.parse("取件码 \(item.code)\n分享批次 \(batch.id.uuidString)")
+                    return ParsedPickup(rawText: item.sanitizedText, code: item.code,
+                                        location: item.location, platform: item.platform,
+                                        fingerprint: identity.fingerprint)
+                }
+                let result = try importParsedPickups(parsed, source: .imageRecognition,
+                                                    importBatchID: batch.id, defaultLocation: defaultLocation)
+                receipt.addedCount += result.addedRecords.count
+                receipt.duplicateCount += batch.items.count - result.addedRecords.count
+                try queue.acknowledge(file)
+            } catch {
+                // Keep unreadable/uncommitted packages, continue independent valid ones.
+                receipt.failedBatchCount += 1
+            }
+        }
+        return receipt
+    }
+
     func complete(id: UUID) throws -> PickupRecord? {
         var records = try loadRecords()
         guard let index = records.firstIndex(where: { $0.id == id }) else {

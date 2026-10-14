@@ -512,7 +512,7 @@ final class PickupRepositoryTests: XCTestCase {
         let automatic = PickupStore(repository: PickupRepository(fileURL: directory.appendingPathComponent("automatic.json")))
         await automatic.importClipboardAutomatically(multiCodeText)
         XCTAssertEqual(automatic.records.count, 2)
-        XCTAssertEqual(automatic.notice, .success("已从剪贴板收好 2 个取件码"))
+        XCTAssertEqual(automatic.notice, .success("已添加 2 个取件码"))
 
         let images = PickupStore(repository: PickupRepository(fileURL: directory.appendingPathComponent("images.json")))
         let candidates = try ImagePickupExtractor().candidates(from: [
@@ -520,7 +520,7 @@ final class PickupRepositoryTests: XCTestCase {
         ])
         await images.importImageCandidates(candidates)
         XCTAssertEqual(Set(images.records.map(\.code)), Set(["9-4-0178", "5-1-2889"]))
-        XCTAssertEqual(images.notice, .success("已从图片收好 2 个取件码"))
+        XCTAssertEqual(images.notice, .success("已添加 2 个取件码"))
     }
 
     @MainActor
@@ -532,7 +532,7 @@ final class PickupRepositoryTests: XCTestCase {
         try Data("blocker".utf8).write(to: blocker)
         let store = PickupStore(repository: PickupRepository(fileURL: blocker.appendingPathComponent("pickups.json")))
         await store.importText(multiCodeText, source: .paste)
-        XCTAssertEqual(store.notice, .error("没有收好，再试一次"))
+        XCTAssertEqual(store.notice, .error("添加失败，请重试"))
         XCTAssertTrue(store.records.isEmpty)
     }
 

@@ -10,7 +10,7 @@ struct InboxView: View {
     @AppStorage("automaticClipboardImportEnabled") private var automaticClipboardImportEnabled = false
     @AppStorage("commonPickupLocation") private var commonPickupLocation = ""
     @AppStorage("lastProcessedPasteboardChangeCount") private var lastProcessedPasteboardChangeCount = -1
-    @State private var store = PickupStore()
+    @StateObject private var store = PickupStore()
     @State private var presentedSheet: PresentedSheet?
     @State private var selectedPickup: PickupRecord?
     @State private var completingID: UUID?
@@ -168,6 +168,7 @@ struct InboxView: View {
             }
             .task {
                 await store.load()
+                await store.receiveSharedImages(defaultLocation: commonPickupLocation)
                 hideAutomationSetupAfterSMSImport()
                 clipboardCheckRequestID &+= 1
             }
@@ -177,19 +178,20 @@ struct InboxView: View {
                 guard !Task.isCancelled else { return }
                 await importClipboardIfNeeded()
             }
-            .onChange(of: store.pendingRecords.count) { _, count in
+            .onChange(of: store.pendingRecords.count) { count in
                 moodCopy = InboxMoodCopy.random(for: count, excluding: moodCopy)
             }
-            .onChange(of: selectedPhotos) { _, items in
+            .onChange(of: selectedPhotos) { items in
                 guard !items.isEmpty else { return }
                 Task {
                     await recognizeImages(from: items)
                 }
             }
-            .onChange(of: scenePhase) { _, phase in
+            .onChange(of: scenePhase) { phase in
                 guard phase == .active else { return }
                 Task {
                     await store.load()
+                    await store.receiveSharedImages(defaultLocation: commonPickupLocation)
                     hideAutomationSetupAfterSMSImport()
                     clipboardCheckRequestID &+= 1
                 }
@@ -215,7 +217,7 @@ struct InboxView: View {
             }
         }
         .tint(ShouxiaPalette.mutedInk)
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
     }
 
     private enum PresentedSheet: Identifiable {
@@ -337,7 +339,7 @@ struct InboxView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(ShouxiaPalette.ink)
 
-                    Text("设置后，取件短信自动加入待取。")
+                    Text(SMSAutomationFlow.current.inboxDescription)
                     .font(.caption)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
                 }

@@ -34,6 +34,7 @@ struct PickupPlaceQuery: EntityQuery {
     }
 }
 
+@available(iOS 17.0, *)
 struct PickupWidgetConfiguration: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "待取包裹"
     static let description = IntentDescription("选择取件地点，以及是否显示取件码。")
@@ -48,30 +49,34 @@ struct PickupWidgetEntry: TimelineEntry {
     let hideCodes: Bool
 }
 
-struct PickupWidgetProvider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> PickupWidgetEntry {
-        PickupWidgetEntry(date: Date(), snapshot: .preview, placeKey: nil, hideCodes: false)
+// Both OS configurations consume the same failure and expiry policy.
+private enum PickupWidgetTimeline {
+    static func entry(placeKey: String? = nil, hideCodes: Bool = false) -> PickupWidgetEntry {
+        let snapshot: PickupSurfaceSnapshot
+        do { snapshot = try readSnapshot() }
+        catch { snapshot = .unavailable() }
+        return PickupWidgetEntry(date: Date(), snapshot: snapshot, placeKey: placeKey, hideCodes: hideCodes)
     }
-
-    func snapshot(for configuration: PickupWidgetConfiguration, in context: Context) async -> PickupWidgetEntry {
-        entry(configuration)
-    }
-
-    func timeline(for configuration: PickupWidgetConfiguration, in context: Context) async -> Timeline<PickupWidgetEntry> {
-        let current = entry(configuration)
+    static func make(_ current: PickupWidgetEntry) -> Timeline<PickupWidgetEntry> {
         let expiry = current.snapshot.updatedAt.addingTimeInterval(PickupSurfaceSnapshot.maximumAge)
         let expired = PickupWidgetEntry(date: expiry, snapshot: .unavailable(at: expiry),
                                        placeKey: current.placeKey, hideCodes: current.hideCodes)
         return Timeline(entries: expiry > current.date ? [current, expired] : [current],
                         policy: .after(Date().addingTimeInterval(60 * 60)))
     }
+}
 
-    private func entry(_ configuration: PickupWidgetConfiguration) -> PickupWidgetEntry {
-        let snapshot: PickupSurfaceSnapshot
-        do { snapshot = try readSnapshot() }
-        catch { snapshot = .unavailable() }
-        return PickupWidgetEntry(date: Date(), snapshot: snapshot,
-                                 placeKey: configuration.place?.locationKey, hideCodes: configuration.hideCodes)
+@available(iOS 17.0, *)
+struct PickupWidgetProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> PickupWidgetEntry {
+        PickupWidgetEntry(date: Date(), snapshot: .preview, placeKey: nil, hideCodes: false)
+    }
+    func snapshot(for configuration: PickupWidgetConfiguration, in context: Context) async -> PickupWidgetEntry {
+        PickupWidgetTimeline.entry(placeKey: configuration.place?.locationKey, hideCodes: configuration.hideCodes)
+    }
+    func timeline(for configuration: PickupWidgetConfiguration, in context: Context) async -> Timeline<PickupWidgetEntry> {
+        PickupWidgetTimeline.make(PickupWidgetTimeline.entry(placeKey: configuration.place?.locationKey,
+                                                            hideCodes: configuration.hideCodes))
     }
 }
 
@@ -98,14 +103,7 @@ struct PickupWidgetView: View {
             }
         }
         .widgetURL(PickupSurfaceLink.url(id: isAccessory || !available ? nil : items.first?.id))
-        .containerBackground(for: .widget) {
-            if isAccessory {
-                Color.clear
-            } else {
-                LinearGradient(colors: [ShouxiaPalette.warmPaper, ShouxiaPalette.paper],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-            }
-        }
+        .modifier(PickupWidgetBackground(isAccessory: isAccessory))
     }
 
     @ViewBuilder private var accessory: some View {
@@ -186,7 +184,7 @@ struct PickupWidgetView: View {
                 footer(shown: visibleItems.count)
             }
         }
-        .fontDesign(.rounded)
+        .shouxiaRoundedFont()
         .foregroundStyle(ShouxiaPalette.ink)
     }
 
@@ -245,6 +243,26 @@ struct PickupSurfaceCode: View {
     }
 }
 
+private struct PickupWidgetBackground: ViewModifier {
+    let isAccessory: Bool
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            content.containerBackground(for: .widget) { background }
+        } else {
+            content.background(background)
+        }
+    }
+    @ViewBuilder private var background: some View {
+        if isAccessory {
+            Color.clear
+        } else {
+            LinearGradient(colors: [ShouxiaPalette.warmPaper, ShouxiaPalette.paper],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+}
+
+@available(iOS 17.0, *)
 struct PickupWidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: "PickupWidget", intent: PickupWidgetConfiguration.self,
@@ -257,26 +275,68 @@ struct PickupWidget: Widget {
     }
 }
 
-@main
-struct ShouxiaWidgets: WidgetBundle {
-    var body: some Widget {
-        PickupWidget()
-        PickupLiveActivity()
+struct PickupLegacyWidgetProvider: TimelineProvider {
+    func placeholder(in context: Context) -> PickupWidgetEntry {
+        PickupWidgetEntry(date: Date(), snapshot: .preview, placeKey: nil, hideCodes: false)
+    }
+    func getSnapshot(in context: Context, completion: @escaping (PickupWidgetEntry) -> Void) {
+        completion(PickupWidgetTimeline.entry())
+    }
+    func getTimeline(in context: Context, completion: @escaping (Timeline<PickupWidgetEntry>) -> Void) {
+        completion(PickupWidgetTimeline.make(PickupWidgetTimeline.entry()))
     }
 }
 
+struct PickupLegacyWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "PickupWidget", provider: PickupLegacyWidgetProvider()) { entry in
+            PickupWidgetView(entry: entry)
+        }
+        .configurationDisplayName("待取包裹")
+        .description("显示全部待取包裹；锁屏仅显示件数。")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryInline, .accessoryRectangular])
+    }
+}
+
+// Choose the bundle at launch; WidgetBundleBuilder cannot express an if/else.
+@main
+struct ShouxiaWidgets {
+    static func main() {
+        if #available(iOSApplicationExtension 17.0, *) { ModernPickupWidgets.main() }
+        else if #available(iOSApplicationExtension 16.1, *) { LegacyActivityWidgets.main() }
+        else { LegacyPickupWidgets.main() }
+    }
+}
+
+@available(iOS 17.0, *)
+private struct ModernPickupWidgets: WidgetBundle {
+    var body: some Widget { PickupWidget(); PickupLiveActivity() }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct LegacyActivityWidgets: WidgetBundle {
+    var body: some Widget { PickupLegacyWidget(); PickupLiveActivity() }
+}
+
+private struct LegacyPickupWidgets: WidgetBundle {
+    var body: some Widget { PickupLegacyWidget() }
+}
+
+@available(iOS 17.0, *)
 #Preview("小号", as: .systemSmall) {
     PickupWidget()
 } timeline: {
     PickupWidgetEntry(date: .now, snapshot: .preview, placeKey: nil, hideCodes: false)
 }
 
+@available(iOS 17.0, *)
 #Preview("中号隐藏码", as: .systemMedium) {
     PickupWidget()
 } timeline: {
     PickupWidgetEntry(date: .now, snapshot: .preview, placeKey: nil, hideCodes: true)
 }
 
+@available(iOS 17.0, *)
 #Preview("锁屏件数", as: .accessoryCircular) {
     PickupWidget()
 } timeline: {

@@ -5,7 +5,7 @@ struct PickupHandoffComposeView: View {
     @Environment(\.dismiss) private var dismiss
 
     let records: [PickupRecord]
-    let store: PickupStore
+    @ObservedObject var store: PickupStore
     @State private var selectedIDs: Set<UUID>
     @State private var sharePayload: HandoffSharePayload?
     @State private var shareErrorMessage: String?
