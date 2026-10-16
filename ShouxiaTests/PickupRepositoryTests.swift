@@ -2,6 +2,28 @@ import XCTest
 @testable import Shouxia
 
 final class PickupRepositoryTests: XCTestCase {
+    func testLocationConflictDoesNotBecomeAnAutomaticCommonDefault() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = PickupRepository(fileURL: root.appendingPathComponent("records.json"))
+        let result = try await repository.importText("已到北门驿站，已到南门便利店，取件码1234", source: .smsAutomation,
+                                                     defaultLocation: "常用驿站")
+        XCTAssertNil(result.addedRecords.first?.location)
+        XCTAssertNil(result.addedRecords.first?.locationSource)
+    }
+
+    func testSMSAutomationDoesNotTreatBareLoginDigitsAsPickupCode() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let repository = PickupRepository(fileURL: root.appendingPathComponent("records.json"))
+        do {
+            _ = try await repository.importText("829146", source: .smsAutomation)
+            XCTFail("Automatic SMS requires pickup context")
+        } catch let error as PickupImportError { XCTAssertEqual(error, .missingCode) }
+        let records = try await repository.records()
+        XCTAssertTrue(records.isEmpty)
+    }
+
     func testPickupLocationMatchingTrimsWhitespaceAndRejectsMissingLocation() {
         let first = makeRecord(location: " 北门驿站 ")
         let sameLocation = makeRecord(location: "北门驿站")
@@ -136,7 +158,7 @@ final class PickupRepositoryTests: XCTestCase {
         XCTAssertNil(restored?.archivedAt)
     }
 
-    func testActivePickupCodeDeduplicatesAcrossDifferentInputText() async throws {
+    func testMissingContextDoesNotDiscardAnotherObservation() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let repository = PickupRepository(fileURL: directory.appendingPathComponent("pickups.json"))
@@ -147,11 +169,11 @@ final class PickupRepositoryTests: XCTestCase {
         )
         let second = try await repository.importText("829146", source: .paste)
 
-        guard case .added = first, case .duplicate = second else {
-            return XCTFail("The same active pickup code should only create one record")
+        guard case .added = first, case .added = second else {
+            return XCTFail("Missing context must not silently discard an observation")
         }
         let activeRecords = try await repository.records()
-        XCTAssertEqual(activeRecords.count, 1)
+        XCTAssertEqual(activeRecords.count, 2)
     }
 
     func testCompletedPickupCodeCanBeReusedByANewNotification() async throws {
@@ -451,7 +473,7 @@ final class PickupRepositoryTests: XCTestCase {
         try JSONEncoder().encode([legacy]).write(to: fileURL)
         let repository = PickupRepository(fileURL: fileURL)
         let result = try await repository.importText(multiCodeText, source: .paste)
-        guard case let .batch(added, duplicates) = result else { return XCTFail("Expected a batch") }
+        guard case let .batch(added, duplicates, _) = result else { return XCTFail("Expected a batch") }
         XCTAssertEqual(added.map(\.code), ["5-1-2889"])
         XCTAssertEqual(duplicates, 1)
         let records = try await repository.records()
@@ -502,7 +524,7 @@ final class PickupRepositoryTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         let repository = PickupRepository(fileURL: directory.appendingPathComponent("manual.json"))
         let store = PickupStore(repository: repository)
-        await store.importText("取货码9-4-0178", source: .paste)
+        await store.importText("【中通】已到老六号楼（新4号楼）二单元106妈妈驿站，取货码9-4-0178", source: .paste)
         await store.importText(multiCodeText, source: .paste)
         XCTAssertEqual(store.records.count, 2)
         XCTAssertEqual(store.notice, .success("已添加 1 个取件码，1 个已存在"))

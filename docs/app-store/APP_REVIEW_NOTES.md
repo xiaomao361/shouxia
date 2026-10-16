@@ -1,6 +1,6 @@
 # App Review Notes
 
-Current local draft: **1.2.7 (17)**. The screenshot Share extension is new in this candidate. This draft and build have not been submitted to TestFlight or App Review. Prior 1.2.6 (16) upload records remain separate.
+Current local review notes: **1.2.7 (23)**. Uploaded on October 15, 2026. On October 16, the user reported submission of version 1.2.7 for App Store review; approval and the live store version have not been independently checked. These local notes have not been compared with the text entered in App Store Connect. Prior build records below remain historical.
 
 ## English
 
@@ -9,8 +9,8 @@ Shouxia (“收下”) is a local-only pickup-code inbox for the person who will
 The app has four import paths:
 
 1. Paste: the primary button is Apple's system `PasteButton`. The user may also enable “打开时识别剪贴板” in Import Settings. That option is off by default, checks only after the app enters the foreground and the pasteboard change count has changed, and locally attempts to parse the current text once. Irrelevant text is ignored. iOS may show its system paste-permission prompt; the app never reads the clipboard in the background.
-2. Messages automation: the user first creates or imports a regular shortcut named “收下自动收码”. It converts Shortcut Input to text and explicitly connects that text to the “短信内容” parameter of the “保存取件短信” App Intent. On iOS 27, the user adds a Message automation trigger inside that same shortcut. On iOS 17, 18 and 26, the user creates a separate Messages personal automation that runs it. The app cannot create or inspect the personal automation and does not read message history.
-3. Photo recognition: the user may select up to five logistics screenshots with the system photo picker. Apple Vision performs OCR entirely on device. Candidates are merged into one review and deduplicated by pickup code across images. A single clearly labelled code from one image may be added directly; multiple images, multiple codes, or unlabelled candidates require confirmation. The original images and unrelated OCR text are not stored.
+2. Messages automation: the user first creates or imports a regular shortcut named “收下自动收码”. It converts Shortcut Input to text and explicitly connects that text to the “短信内容” parameter of the “保存取件短信” App Intent. On iOS 27, the user adds a Message automation trigger inside that same shortcut. On iOS 17, 18 and 26, the user creates a separate Messages personal automation that runs it. On iOS 16, the personal automation requires confirmation when triggered. The app cannot create or inspect the personal automation and does not read message history.
+3. Photo recognition: the user may select up to five logistics screenshots with the system photo picker. Apple Vision performs OCR entirely on device. Candidates are merged into one review and deduplicated by code, location and courier/pickup-service context across images. A single clearly labelled, high-confidence code with a known location from one image may be added directly; other results go through review. Ordinary candidates are selected by default and can be deselected. Truncated codes and conflicting locations require correction; alternative codes require a choice. Codes and locations can be corrected on the review page before saving. The original images and unrelated OCR text are not stored.
 
 4. Text and image sharing: from the system share sheet of an app that exposes text or image sharing, the user can send pickup text or up to five screenshots to Shouxia. The Share extension parses text or performs OCR on device and asks the user to select and confirm pickup codes. Only selected minimum pickup fields are queued locally in the App Group; images and OCR text are not stored. On the next app launch or foreground activation, the app imports the queue using its existing duplicate protection and then refreshes widgets and Live Activities. The extension does not force-open the app, and saving in the share sheet does not imply an immediate widget refresh.
 
@@ -47,7 +47,7 @@ All message text and parsed records remain on device. The app contains no advert
 
 审核员可以复制上面的演示文本，打开 App 后点击系统“粘贴”按钮，检查解析、去重、轻点卡片进入大字取件模式、滑动完成、撤销、最近 30 天／全部历史、设为待取和永久删除。也可以在“导入设置”中主动开启“打开时识别剪贴板”；此选项默认关闭，仅在 App 进入前台且剪贴板发生变化后读取一次，iOS 可能显示系统粘贴授权提示，无关内容会被静默忽略，后台不会读取。
 
-系统照片选择器支持一次选择最多五张物流截图；图片只在本机 OCR，随后跨图按取件码去重并统一确认，原图和无关全文不会保存。可选的“常用取件点”只补全以后导入且原文缺少地点的记录，并会显示来源标记；同批图片即使没有地点也可连续取件。
+系统分享菜单也可接收取件文字或最多五张截图，核对保存后在下次打开App时加入待取。系统照片选择器支持一次选择最多五张物流截图；图片只在本机 OCR，随后按取件码、地点及快递信息跨图去重；单图单个高置信且地点明确的结果可直接添加，其余结果进入核对页，支持保存前更正，原图和无关全文不会保存。可选的“常用取件点”只补全以后导入且原文缺少地点的记录，并会显示来源标记；同批图片即使没有地点也可连续取件。
 
 短信自动导入先把“快捷指令输入”转换成文本并连接到“保存取件短信”的“短信内容”。iOS 27 将“信息”触发器放在同一个快捷指令内；iOS 17、18、26由独立的“信息”个人自动化运行该快捷指令。App 无法替用户创建或查询个人自动化，也不会读取短信历史或其他 App 的通知。
 
@@ -65,18 +65,18 @@ Open Settings → 锁屏与灵动岛 and enable the switch to show pending picku
 
 History defaults to the last 30 calendar days and offers an All filter. Legacy archived records remain visible; restore to pending and confirmed permanent deletion are supported. No automatic deletion or archive action is offered. Automatic clipboard import also remains off by default.
 
-中文：主页齿轮进入设置。小组件由用户在系统中添加；实时活动需在“锁屏与灵动岛”手动开启，默认关闭。收下记录支持最近 30 天／全部、设为待取与确认删除，旧归档数据保留。上述功能已在 1.2.4 正式版提供；当前 1.2.5 审核说明仍为草稿。
+中文：主页齿轮进入设置。小组件由用户在系统中添加；实时活动需在“锁屏与灵动岛”手动开启，默认关闭。收下记录支持最近 30 天／全部、设为待取与确认删除，旧归档数据保留。上述功能已在 1.2.4 正式版提供；此段为 1.2.4 历史功能说明。
 
 
 ## 1.2.5 (15): clearer setup and copy
 
 This update simplifies interface text and provides separate SMS automation instructions for iOS 27 and earlier systems. The original iCloud shortcut link, App Intent action and parameter, local storage format, and parsing behavior remain unchanged. Existing working shortcuts do not need to be recreated. Both systems retain the iCloud installation entry.
 
-中文：本次主要简化文案并更新 iOS 27 设置说明，保留 iOS 26 步骤及原 iCloud 安装入口。已有正常使用的快捷指令无需重设。1.2.5 (15) 已上传 TestFlight，尚未提交正式审核。
+中文：本次主要简化文案并更新 iOS 27 设置说明，保留 iOS 26 步骤及原 iCloud 安装入口。已有正常使用的快捷指令无需重设。1.2.5 (15) 已上传 TestFlight；2026-10-12 用户报告已提交正式审核，结果未独立核查。
 
 
 ## 1.2.6 (16) draft: iOS 16 compatibility
 
-Minimum deployment target: iOS 16.0. This candidate was uploaded to TestFlight on October 13, 2026; Apple accepted it for processing. It has not been submitted for App Store review. iOS 16 Messages automation requires confirmation when triggered; the app displays only the instructions for the running OS. iOS 16 widgets display all pending items without location/privacy configuration; iOS 17+ retains the existing configuration. Lock-screen widgets show counts only. Live Activities require iOS 16.1+; Dynamic Island also requires compatible hardware. On 16.0 the app explains the requirement instead of presenting a toggle. No data format, App Intent parameter or parsing changes.
+Minimum deployment target: iOS 16.0. This candidate was uploaded to TestFlight on October 13, 2026; Apple accepted it for processing. On October 14, 2026, the user confirmed submission for App Store review; the review outcome has not been independently checked. iOS 16 Messages automation requires confirmation when triggered; the app displays only the instructions for the running OS. iOS 16 widgets display all pending items without location/privacy configuration; iOS 17+ retains the existing configuration. Lock-screen widgets show counts only. Live Activities require iOS 16.1+; Dynamic Island also requires compatible hardware. On 16.0 the app explains the requirement instead of presenting a toggle. No data format, App Intent parameter or parsing changes.
 
-中文：1.2.6 (16) 新增 iOS 16 兼容和对应确认运行说明；2026-10-13 已上传 TestFlight，Apple 已接收并开始处理，尚未提交正式审核。引导只展示当前系统的步骤；基础小组件与实时活动按系统能力提供。2026-10-12 用户报告此前 1.2.5 已提交审核，结果未独立核查。
+中文：1.2.6 (16) 新增 iOS 16 兼容和对应确认运行说明；2026-10-13 已上传 TestFlight，Apple 已接收并开始处理，2026-10-14 用户确认已提交正式审核，等待结果，尚未独立核查。引导只展示当前系统的步骤；基础小组件与实时活动按系统能力提供。2026-10-12 用户报告此前 1.2.5 已提交审核，结果未独立核查。

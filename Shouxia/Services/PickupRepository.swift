@@ -47,7 +47,7 @@ actor PickupRepository {
         importBatchID: UUID? = nil,
         defaultLocation: String? = nil
     ) throws -> PickupImportResult {
-        let parsed = try parser.parseAll(text)
+        let parsed = try parser.parseAll(text, requiresLabel: source == .smsAutomation)
         return try importParsedPickups(
             parsed,
             source: source,
@@ -71,6 +71,20 @@ actor PickupRepository {
         )
     }
 
+    /// Reviewed fields are data, not a new SMS to parse. Validate all items before one commit.
+    func importImageCandidates(_ candidates: [ImagePickupCandidate], defaultLocation: String? = nil) throws -> PickupImportResult {
+        guard !candidates.isEmpty else { throw PickupImportError.missingCode }
+        try PickupCandidateReview.validate(candidates)
+        let parsed = candidates.map { candidate in
+            ParsedPickup(rawText: candidate.sanitizedImportText, code: candidate.code,
+                         location: candidate.location, platform: candidate.platform,
+                         fingerprint: parser.fingerprint(for: candidate.sanitizedImportText),
+                         unresolvedNotificationCount: candidate.unresolvedNotificationCount,
+                         locationRequiresConfirmation: candidate.locationRequiresConfirmation)
+        }
+        return try importParsedPickups(parsed, source: .imageRecognition, importBatchID: UUID(), defaultLocation: defaultLocation)
+    }
+
     private func importParsedPickups(
         _ parsed: [ParsedPickup],
         source: PickupSource,
@@ -85,8 +99,9 @@ actor PickupRepository {
         }
         let added = results.flatMap(\.addedRecords)
         if !added.isEmpty { try save(records) }
-        if results.count == 1 { return results[0] }
-        return .batch(added: added, duplicateCount: results.count - added.count)
+        let unresolvedCount = parsed.map(\.unresolvedNotificationCount).max() ?? 0
+        if results.count == 1, unresolvedCount == 0 { return results[0] }
+        return .batch(added: added, duplicateCount: results.count - added.count, unresolvedCount: unresolvedCount)
     }
 
     private func importParsedPickup(
@@ -98,6 +113,7 @@ actor PickupRepository {
     ) -> PickupImportResult {
         if let existing = duplicateRecord(
             code: parsed.code,
+            location: parsed.location, platform: parsed.platform,
             fingerprint: parsed.fingerprint,
             in: records
         ) {
@@ -110,10 +126,10 @@ actor PickupRepository {
             guard !location.isEmpty, location.count <= 80 else { return nil }
             return location
         }
-        let location = parsed.location ?? fallbackLocation
+        let location = parsed.location ?? (parsed.locationRequiresConfirmation ? nil : fallbackLocation)
         let locationSource: PickupLocationSource? = if parsed.location != nil {
             .recognized
-        } else if fallbackLocation != nil {
+        } else if fallbackLocation != nil && !parsed.locationRequiresConfirmation {
             .commonDefault
         } else {
             nil
@@ -146,6 +162,7 @@ actor PickupRepository {
         for item in package.items {
             if duplicateRecord(
                 code: item.code,
+                location: item.location, platform: item.platform,
                 fingerprint: item.importFingerprint,
                 in: records
             ) != nil {
@@ -192,10 +209,16 @@ actor PickupRepository {
                 let batch = try queue.read(file)
                 var records = try loadRecords()
                 let parsed = try batch.items.map { item in
-                    let identity = try parser.parse("取件码 \(item.code)\n分享批次 \(batch.id.uuidString)")
+                    let identity = parser.fingerprint(for: "取件码 \(item.code)\n分享批次 \(batch.id.uuidString)\n分享条目 \(item.id)")
+                    // Version-1 batches written by 1.2.7(17) used code-only retry identity.
+                    // Those batches guaranteed one item per code. Preserve retry suppression
+                    // even after the old record has been completed or its location edited.
+                    let legacy = parser.fingerprint(for: "取件码 \(item.code)\n分享批次 \(batch.id.uuidString)")
+                    let legacyMatch = batch.items.filter { $0.code == item.code }.count == 1
+                        && records.contains { $0.fingerprint == legacy }
                     return ParsedPickup(rawText: item.sanitizedText, code: item.code,
                                         location: item.location, platform: item.platform,
-                                        fingerprint: identity.fingerprint)
+                                        fingerprint: legacyMatch ? legacy : identity)
                 }
                 let results = zip(parsed, batch.items).map { pickup, item in
                     importParsedPickup(pickup, source: item.effectiveSource, importBatchID: batch.id,
@@ -386,6 +409,8 @@ actor PickupRepository {
 
     private func duplicateRecord(
         code: String,
+        location: String?,
+        platform: String?,
         fingerprint: String,
         in records: [PickupRecord]
     ) -> PickupRecord? {
@@ -395,7 +420,8 @@ actor PickupRepository {
             }
             return !record.isCompleted
                 && !record.isArchived
-                && record.code.caseInsensitiveCompare(code) == .orderedSame
+                && PickupIdentity.key(code: record.code, location: record.location, platform: record.platform)
+                    == PickupIdentity.key(code: code, location: location, platform: platform)
         }
     }
 

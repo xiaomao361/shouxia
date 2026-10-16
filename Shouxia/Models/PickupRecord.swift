@@ -162,28 +162,51 @@ struct ParsedPickup: Equatable, Sendable {
     let location: String?
     let platform: String?
     let fingerprint: String
+    var unresolvedNotificationCount = 0
+    var locationRequiresConfirmation = false
 }
 
 enum PickupImportResult: Equatable, Sendable {
     case added(PickupRecord)
     case duplicate(PickupRecord)
-    case batch(added: [PickupRecord], duplicateCount: Int)
+    case batch(added: [PickupRecord], duplicateCount: Int, unresolvedCount: Int = 0)
 
     var addedRecords: [PickupRecord] {
         switch self {
         case let .added(record): [record]
         case .duplicate: []
-        case let .batch(added, _): added
+        case let .batch(added, _, _): added
         }
     }
+
+    var unresolvedCount: Int {
+        if case let .batch(_, _, count) = self { return count }
+        return 0
+    }
+
+    var partialMessage: String? {
+        guard case let .batch(added, duplicates, unresolved) = self, unresolved > 0 else { return nil }
+        var parts: [String] = []
+        if !added.isEmpty { parts.append("已添加 \(added.count) 个取件码") }
+        if duplicates > 0 { parts.append("\(duplicates) 个取件码已存在") }
+        parts.append("另有 \(unresolved) 条通知未找到明确取件码，请单独核对")
+        return parts.joined(separator: "；")
+    }
+
 }
 
 enum PickupImportError: LocalizedError, Equatable {
     case emptyText
     case missingCode
+    case tooLong
+    case ambiguousCode
 
     var errorDescription: String? {
         switch self {
+        case .ambiguousCode:
+            "取件码存在备选或截断，请核对后粘贴单独的完整取件码"
+        case .tooLong:
+            "文字太长，请只选择取件通知再试"
         case .emptyText:
             "剪贴板里没有可用文字"
         case .missingCode:

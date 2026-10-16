@@ -3,8 +3,34 @@ import SwiftUI
 struct PickupCodePage: View {
     let record: PickupRecord
     let onEdit: () -> Void
+    @ScaledMetric(relativeTo: .largeTitle) private var largeCodeSize: CGFloat = 78
+    @ScaledMetric(relativeTo: .title) private var compactCodeSize: CGFloat = 44
 
     var body: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                content.frame(minHeight: proxy.size.height)
+            }
+        }
+        .background(
+            ShouxiaPalette.paper.opacity(0.96),
+            in: RoundedRectangle(cornerRadius: 32, style: .continuous)
+        )
+        .overlay(alignment: .topLeading) {
+            Circle()
+                .fill(ShouxiaPalette.accent(for: record))
+                .frame(width: 10, height: 10)
+                .padding(24)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
+        }
+        .shadow(color: ShouxiaPalette.shadow.opacity(0.08), radius: 26, y: 12)
+        .padding(.vertical, 24)
+        .accessibilityElement(children: .contain)
+    }
+    private var content: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 30)
 
@@ -16,8 +42,7 @@ struct PickupCodePage: View {
                             .shouxiaRoundedFont()
                             .foregroundStyle(ShouxiaPalette.ink)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.72)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         Image(systemName: "pencil.circle")
                             .font(.subheadline)
@@ -25,12 +50,7 @@ struct PickupCodePage: View {
                     }
 
                     if let platform = record.platform {
-                        Text(platform)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(ShouxiaPalette.mutedInk)
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 6)
-                            .background(ShouxiaPalette.skyWash, in: Capsule())
+                        ShouxiaBrandBadge(brand: PickupDirectory.displayLabel(for: platform))
                     }
 
                     if record.locationSource == .commonDefault {
@@ -51,15 +71,23 @@ struct PickupCodePage: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(ShouxiaPalette.mutedInk)
 
-                Text(record.code)
-                    .font(.system(size: 78, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .tracking(1.2)
-                    .foregroundStyle(ShouxiaPalette.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.34)
-                    .textSelection(.enabled)
-                    .accessibilityLabel("取件码 \(record.code)")
+                ViewThatFits(in: .horizontal) {
+                    Text(record.code)
+                        .font(.system(size: largeCodeSize, weight: .bold, design: .rounded))
+                        .fixedSize()
+                    Text(record.code)
+                        .font(.system(size: compactCodeSize, weight: .bold, design: .rounded))
+                        .fixedSize()
+                    Text(record.code)
+                        .font(.title.weight(.bold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+                .foregroundStyle(ShouxiaPalette.ink)
+                .textSelection(.enabled)
+                .accessibilityLabel("取件码 \(record.code)")
+
             }
             .frame(maxWidth: .infinity)
 
@@ -72,22 +100,6 @@ struct PickupCodePage: View {
             Spacer(minLength: 30)
         }
         .padding(.horizontal, 24)
-        .background(
-            ShouxiaPalette.paper.opacity(0.96),
-            in: RoundedRectangle(cornerRadius: 32, style: .continuous)
-        )
-        .overlay(alignment: .topLeading) {
-            Circle()
-                .fill(ShouxiaPalette.accent(for: record))
-                .frame(width: 10, height: 10)
-                .padding(24)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
-        }
-        .shadow(color: ShouxiaPalette.ink.opacity(0.08), radius: 26, y: 12)
-        .padding(.vertical, 24)
-        .accessibilityElement(children: .contain)
     }
+
 }

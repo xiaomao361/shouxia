@@ -1,0 +1,17 @@
+{
+  "head": "96dcd6190342c060678ec94eb729bdc62f2c832d",
+  "source_sha256": {
+    "Shouxia/Services/PickupParser.swift": "63af24c2741d4a0e53c46bf06e1e8e5c898e8fd9207869e3e1920026870650e7",
+    "Shouxia/Models/PickupRecord.swift": "c36954a8549494d2192f3b2d828874bac09f0159948c895abc87d86a5de3a851",
+    "Shared/PickupSharedTextParser.swift": "033c59fd0c884db3ab48239d17cdab08db32773748d51ec60b31fa1af6f0562e",
+    "Shared/PickupImageShareQueue.swift": "522378e2afa3ad8938236366a89b5a3f1f1d21ff0f0eaa4527077e0c971aa91c",
+    "Shouxia/Services/ImagePickupRecognizer.swift": "2567d5886e718d1fa26996a6dd90fb1debfe086372102f5cbc4fd3e590118714"
+  },
+  "extracted_image_pure_sha256": "599de6e8f6e17b9de2d87cec8d5ff02a1531bc632baa01926c7d0a652060732b",
+  "compiler": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0",
+  "date": "2026-10-15",
+  "scope": "macOS native Swift, current parser/shared-text/image-extractor pure logic; UIKit image loader and iOS app not executed",
+  "image_input": "manually supplied lines from corpus, confidence=0.92; coordinates only supplied for C22, not an OCR accuracy benchmark",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+  "ocr_probe_scope": "macOS Vision URL handler, three original public S02 images, no UI, no original OCR text retained; 1 succeeded, 2 e5rt errors"
+}

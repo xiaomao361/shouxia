@@ -27,12 +27,15 @@ struct SavePickupMessageIntent: AppIntent {
                 )
             )
             await PickupLiveActivityController.shared.refreshAndWait()
+            if let message = result.partialMessage {
+                return .result(dialog: IntentDialog(stringLiteral: message))
+            }
             switch result {
             case let .added(record):
                 return .result(dialog: "已添加取件码 \(record.code)")
             case .duplicate:
                 return .result(dialog: "这条取件短信已添加")
-            case let .batch(added, duplicateCount):
+            case let .batch(added, duplicateCount, _):
                 let message = added.isEmpty ? "这些取件码已添加"
                     : (duplicateCount > 0
                         ? "已添加 \(added.count) 个取件码，\(duplicateCount) 个已存在"

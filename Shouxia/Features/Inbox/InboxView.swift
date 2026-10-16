@@ -3,6 +3,7 @@ import SwiftUI
 import UIKit
 
 struct InboxView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
@@ -273,7 +274,7 @@ struct InboxView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(ShouxiaPalette.supportingInk)
 
-            HStack(spacing: 10) {
+            importActionsLayout {
                 PasteButton(payloadType: String.self) { strings in
                     Task {
                         await store.importText(
@@ -315,6 +316,12 @@ struct InboxView: View {
                 .accessibilityHint("从相册一次选择最多五张取件截图")
             }
         }
+    }
+
+    private var importActionsLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 10))
     }
 
     private var automationSetupCard: some View {
@@ -361,7 +368,7 @@ struct InboxView: View {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(ShouxiaPalette.softInk)
-                    .frame(width: 30, height: 42)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("隐藏短信自动收码设置入口")
@@ -408,7 +415,7 @@ struct InboxView: View {
     private var completionHint: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: reduceMotion ? "figure.roll" : "hand.draw.fill")
-                .foregroundStyle(ShouxiaPalette.breezePressed)
+                .foregroundStyle(ShouxiaPalette.accentInk)
             Text(
                 reduceMotion
                     ? "向右滑动，标记为已取到。"
@@ -445,7 +452,8 @@ struct InboxView: View {
                 .buttonStyle(.bordered)
             }
             .padding(.horizontal, 14)
-            .frame(height: 64)
+            .padding(.vertical, 12)
+            .frame(minHeight: 64)
             .background(
                 ShouxiaPalette.warmPaper.opacity(0.96),
                 in: RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -454,7 +462,7 @@ struct InboxView: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(ShouxiaPalette.cardHighlight, lineWidth: 1)
             }
-            .shadow(color: ShouxiaPalette.ink.opacity(0.12), radius: 22, y: 8)
+            .shadow(color: ShouxiaPalette.shadow.opacity(0.12), radius: 22, y: 8)
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -659,11 +667,11 @@ struct InboxView: View {
     private func noticeColor(for notice: PickupStore.Notice) -> Color {
         switch notice {
         case .success:
-            ShouxiaPalette.breezePressed
+            ShouxiaPalette.accentInk
         case .neutral:
             ShouxiaPalette.mutedInk
         case .error:
-            ShouxiaPalette.apricot
+            ShouxiaPalette.warningInk
         }
     }
 }

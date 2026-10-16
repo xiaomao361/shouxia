@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-15",
+  "samples": 44,
+  "template_families": 37,
+  "sample_types": {
+    "public_real": 7,
+    "published_template": 2,
+    "vendor_template": 3,
+    "vendor_format": 1,
+    "open_source_fixture": 4,
+    "synthetic": 27
+  },
+  "source_entries": 28,
+  "executable_samples": 43,
+  "entrypoint_calls": 169,
+  "ocr_probe_records": 3,
+  "pre_existing_files_checked": 37,
+  "pre_existing_files_changed": [],
+  "parser_source_hashes_match": true,
+  "errors": [],
+  "scope": "Data structure and provenance pointers; field evidence offsets; executable coverage; existing file preservation. No claim of independent gold review, iOS acceptance or algorithm improvement.",
+  "broken_local_markdown_links": [],
+  "artifact_sha256": {
+    "BASELINE.md": "98380747f8dc5593b5abbceb76d77e61e3ddf8837c4808e9a507a4e21e98e947",
+    "README.md": "5b612a47ccfae0c8aeb8affcad07134703965d4a6a313330846ef634247900ad",
+    "REPRODUCE.md": "d65fbf166d75fcf9e0ec1a8ff5526fe513951db3ace1d8e3d797f8961157e599",
+    "RESEARCH.md": "dde684d1fecde6d423977d3182ea7eafd131e2ef4674b4a7b1fdc378fe1ea13c",
+    "SAMPLES.md": "bef7e0032fcdce932110af66c86d06c2ae49d898e67880758428da4830a152cf",
+    "SOURCES.md": "29f57804ee79a5f93a9a50febcd2565d87feb7559535183af9269542ee50a234",
+    "THIRD_PARTY_NOTICES.md": "b5a40b493cc3679a41369d8cf0cbf5dd08a52b366e5ce8a23844f275d5f4fd31",
+    "baseline-environment.json": "5b11200110eb583de3a628b5bc06b078fd8431b01e69a00edb2f7b25c91400b0",
+    "baseline-results.jsonl": "ccf0178fe483e748c83e563e3c9f067edf81c65863b3083db126e63dd3af17fc",
+    "ocr-probe.jsonl": "d6c9af1c5f2e968254264f9a3749b5d334e714c15965c911878ae7a67d037de0",
+    "samples.jsonl": "a5676dbc02f42f0b39f1f2f4d99562af320e0fde813e83ee1406c2b35845c3a9",
+    "sources.json": "76cd3c8499e1272ff9f7fb0facb377b7bfcc8651c1790246921a50ed9a26ba05"
+  }
+}

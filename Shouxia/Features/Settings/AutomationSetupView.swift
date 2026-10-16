@@ -47,7 +47,7 @@ struct AutomationSetupView: View {
                             Text("第一步")
                                 .font(.caption2.weight(.bold))
                                 .tracking(1.2)
-                                .foregroundStyle(ShouxiaPalette.apricot)
+                                .foregroundStyle(ShouxiaPalette.warningInk)
 
                             Text("添加快捷指令")
                                 .font(.headline)
@@ -232,7 +232,7 @@ private struct AutomationSetupSection: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(eyebrow)
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(ShouxiaPalette.breezePressed)
+                    .foregroundStyle(ShouxiaPalette.accentInk)
                 Text(title)
                     .font(.headline)
                     .foregroundStyle(ShouxiaPalette.ink)

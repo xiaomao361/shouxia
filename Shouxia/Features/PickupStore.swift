@@ -66,12 +66,13 @@ final class PickupStore: ObservableObject {
                 notice = .success("已添加取件码 \(record.code)")
             case .duplicate:
                 notice = .neutral("这条取件信息已添加")
-            case let .batch(added, duplicateCount):
+            case let .batch(added, duplicateCount, _):
                 notice = added.isEmpty ? .neutral("这些取件码已添加")
                     : .success((duplicateCount > 0
                         ? "已添加 \(added.count) 个取件码，\(duplicateCount) 个已存在"
                         : "已添加 \(added.count) 个取件码"))
             }
+            if let message = result.partialMessage { notice = .error(message) }
         } catch let error as PickupImportError {
             notice = .error(error.localizedDescription)
         } catch {
@@ -87,15 +88,13 @@ final class PickupStore: ObservableObject {
                 from: PickupImageShareQueue.shared(), defaultLocation: defaultLocation
             )
             records = try await repository.records()
-            if receipt.failedBatchCount > 0 {
-                notice = .error("已添加 \(receipt.addedCount) 个取件码，另有 \(receipt.failedBatchCount) 批分享未能接收，已保留供重试")
-            } else if receipt.addedCount > 0 {
-                notice = .success("已从分享添加 \(receipt.addedCount) 个取件码")
-            } else if receipt.duplicateCount > 0 {
-                notice = .neutral("分享的取件码已在收下中")
-            }
-            if await repository.surfaceRefreshFailed {
-                notice = .error("取件信息已保存，小组件暂时无法更新")
+            let refreshFailed = await repository.surfaceRefreshFailed
+            if let message = receipt.message(surfaceRefreshFailed: refreshFailed) {
+                if receipt.failedBatchCount > 0 || refreshFailed {
+                    notice = .error(message)
+                } else {
+                    notice = receipt.addedCount > 0 ? .success(message) : .neutral(message)
+                }
             }
         } catch {
             notice = .error("暂时无法接收分享的取件码，请稍后重新打开收下")
@@ -113,8 +112,9 @@ final class PickupStore: ObservableObject {
                 defaultLocation: defaultLocation
             ) else { return }
             let added = result.addedRecords
-            guard !added.isEmpty else { return }
+            guard !added.isEmpty || result.unresolvedCount > 0 else { return }
             records = try await repository.records()
+            if let message = result.partialMessage { notice = .error(message); return }
             notice = .success(added.count == 1
                 ? "已添加取件码 \(added[0].code)"
                 : "已添加 \(added.count) 个取件码")
@@ -125,34 +125,21 @@ final class PickupStore: ObservableObject {
         }
     }
 
+    @discardableResult
     func importImageCandidates(
         _ candidates: [ImagePickupCandidate],
         defaultLocation: String? = nil
-    ) async {
-        guard !candidates.isEmpty else { return }
+    ) async -> Bool {
+        guard !candidates.isEmpty else { return false }
 
         do {
-            var addedCodes: [String] = []
-            var duplicateCount = 0
-            var seenCodes: Set<String> = []
-            let importBatchID = UUID()
-
-            for candidate in candidates where seenCodes.insert(candidate.code).inserted {
-                let result = try await repository.importText(
-                    candidate.sanitizedImportText,
-                    source: .imageRecognition,
-                    importBatchID: importBatchID,
-                    defaultLocation: defaultLocation
-                )
-                switch result {
-                case let .added(record):
-                    addedCodes.append(record.code)
-                case .duplicate:
-                    duplicateCount += 1
-                case let .batch(added, duplicates):
-                    addedCodes.append(contentsOf: added.map(\.code))
-                    duplicateCount += duplicates
-                }
+            let result = try await repository.importImageCandidates(candidates, defaultLocation: defaultLocation)
+            let addedCodes = result.addedRecords.map(\.code)
+            let duplicateCount: Int
+            switch result {
+            case .added: duplicateCount = 0
+            case .duplicate: duplicateCount = 1
+            case let .batch(_, count, _): duplicateCount = count
             }
 
             records = try await repository.records()
@@ -166,10 +153,22 @@ final class PickupStore: ObservableObject {
             default:
                 notice = .error("添加失败，请重试")
             }
+            let unresolved = candidates.map(\.unresolvedNotificationCount).max() ?? 0
+            if unresolved > 0 {
+                let saved = addedCodes.isEmpty ? "\(duplicateCount) 个取件码已存在"
+                    : "已添加 \(addedCodes.count) 个取件码"
+                notice = .error("\(saved)；另有 \(unresolved) 条通知未找到明确取件码，请单独核对")
+            }
+            return true
+        } catch let error as PickupCandidateReviewError {
+            notice = .error(error.localizedDescription)
+            return false
         } catch let error as PickupImportError {
             notice = .error(error.localizedDescription)
+            return false
         } catch {
             notice = .error("图片导入失败，请重试")
+            return false
         }
     }
 

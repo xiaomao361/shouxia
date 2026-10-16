@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-15",
+  "version": "1.2.7",
+  "build": "17 unchanged; increment before distribution",
+  "host_tests": [
+    "129",
+    "0"
+  ],
+  "research_inputs": 43,
+  "research_calls": 169,
+  "research_excluded_ambiguous_code_calls": [
+    {
+      "sample": "C14",
+      "entry": "manual"
+    },
+    {
+      "sample": "C14",
+      "entry": "automatic"
+    },
+    {
+      "sample": "C14",
+      "entry": "shared_text"
+    },
+    {
+      "sample": "C14",
+      "entry": "image_lines"
+    }
+  ],
+  "research_annotation_differences": [
+    {
+      "sample": "C22",
+      "entry": "manual",
+      "issues": [
+        "known location"
+      ]
+    },
+    {
+      "sample": "C22",
+      "entry": "automatic",
+      "issues": [
+        "known location"
+      ]
+    },
+    {
+      "sample": "C22",
+      "entry": "shared_text",
+      "issues": [
+        "known location"
+      ]
+    }
+  ],
+  "review_inputs": 7,
+  "review_calls": 28,
+  "review_expectation_failures": [],
+  "release_build": true,
+  "simulator_build_for_testing": true,
+  "ui_operations": false,
+  "ios_runtime_tests": false,
+  "new_real_ocr": false,
+  "initial_files_checked": 237,
+  "intentional_initial_file_changes": [
+    "ShouxiaTests/PickupStoreTests.swift",
+    "ShouxiaShare/ShareViewController.swift",
+    "Shouxia/Services/PickupRepository.swift",
+    "Shouxia/Services/ImagePickupRecognizer.swift",
+    "Shared/PickupSharedTextParser.swift",
+    "ShouxiaTests/PickupRepositoryTests.swift",
+    "Shouxia/Services/PickupParser.swift",
+    "Shouxia/Features/ImageImport/ImageImportReviewView.swift",
+    "scripts/replay_pickup_samples.sh",
+    "Shouxia/Models/PickupRecord.swift",
+    "ShouxiaTests/PickupImageShareTests.swift",
+    "Shared/PickupRecognitionCore.swift",
+    "Shouxia/Features/PickupStore.swift",
+    "README.md",
+    "Shouxia.xcodeproj/project.pbxproj",
+    "ShouxiaTests/PickupParserTests.swift",
+    "docs/recognition/1.2.7/IMPLEMENTATION.md"
+  ],
+  "unexpected_initial_file_changes": [],
+  "source_sha256": {
+    "README.md": "5e5b9190edafa1c95faaf3d9ecb514992f3f850da1e18d24fe1c52116430e26e",
+    "Shared/PickupCandidateEditView.swift": "cbf3fcd773c9963c64bf81e2f8e4917c453caaccb79b419698540f8f2ae2cefc",
+    "Shared/PickupRecognitionCore.swift": "7dcb734c27535d802139e70ac841e7daf5ecac60b505010880c836e2d268811c",
+    "Shared/PickupSharedTextParser.swift": "9009b65e82c3cdd6711a4a7f48a004ffa623c13731fb32e2efa7b48403b3ae33",
+    "Shouxia.xcodeproj/project.pbxproj": "5dbd42ab395b70c560ad150ecb429ebab42020c723c03fcfeea39af348ca3a5f",
+    "Shouxia/Features/ImageImport/ImageImportReviewView.swift": "f2f5c214b3a785a45b497632b98e94f304b59b1bf0b1334acc141ff772c26c5b",
+    "Shouxia/Features/PickupStore.swift": "32b4b596e03ef33ad7c85e2c51a4675ab0edca2dd2b28034f20eae8013a2b856",
+    "Shouxia/Models/PickupRecord.swift": "0e7b719b05b879853e738a0258e58d22af0447db1f11d523524030656d561f8f",
+    "Shouxia/Services/ImagePickupRecognizer.swift": "853359778548cd1341ddf452beeee7c7273a0adb4a93d97da596ddef8da3ecba",
+    "Shouxia/Services/PickupParser.swift": "689014c3b1d13ded2029e99e5cf815882e172825ac6182e21931f859c5b7c890",
+    "Shouxia/Services/PickupRepository.swift": "ea5b0406a0399d9ae3701afa18093ba3b6e4d3683413daf8d8994994bf28801c",
+    "ShouxiaShare/ShareViewController.swift": "2a91da4308391b3c5f39f0e3965024f09348a32ee64118ad9cecf191e0c1f82a",
+    "ShouxiaTests/PickupImageShareTests.swift": "29338ff2f8d500dd5d3e057713f00cb407c09b306977295e0590c31e6c49ccdd",
+    "ShouxiaTests/PickupParserTests.swift": "6ff969aa612f14664c174d1be443d266f8ef8189e39edf9e9ced65bc1bd49c71",
+    "ShouxiaTests/PickupRepositoryTests.swift": "09ecf0a73be96b9bf351c3fefc568210c8e3ab63bb1697bd386eac6390ff3fd2",
+    "ShouxiaTests/PickupStoreTests.swift": "d73ed062e64bc0219c6a7936c9914087dab71d756c08253d9c6fa605203d2da9",
+    "docs/recognition/1.2.7/IMPLEMENTATION.md": "9a20367ab47f99d42329e49f89fc9fe83d88044a7d4b7f1d149967847a970ac8",
+    "scripts/replay_pickup_samples.sh": "6e4845837cbc5b2b62bdcc9f70bc7fda1f3f6e87319513b846e970cd2321583e"
+  },
+  "limits": [
+    "All samples were observed during development, not independent holdout or user distribution.",
+    "C22 pure-text location remains missing; image path uses public fixture geometry, not a newly verified original image.",
+    "UI editing/cancel/retry model tested and source compiled; actual buttons, VoiceOver, layout and iPhone OCR not exercised.",
+    "XCTest SDK minimum17 vs test target16 warning remains; no iOS16 runtime claim."
+  ],
+  "logs": [
+    "/tmp/shouxia-review-fix-tests.log",
+    "/tmp/shouxia-127-review-fix-release.log",
+    "/tmp/shouxia-127-review-fix-sim.log"
+  ]
+}

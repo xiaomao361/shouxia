@@ -13,7 +13,7 @@ let package = Package(name: "ShouxiaSurfaceCore", platforms: [.macOS(.v14)], tar
     .testTarget(name: "ShouxiaTests", dependencies: ["Shouxia"])
 ])
 SWIFT
-for file in Shouxia/Models/PickupRecord.swift Shouxia/Models/PickupHandoffPackage.swift Shouxia/Services/PickupParser.swift Shouxia/Services/PickupRepository.swift Shouxia/Services/PickupLiveActivityController.swift Shared/PickupSurfaceSnapshot.swift Shared/PickupActivitySession.swift Shared/SystemCapabilities.swift Shared/PickupImageShareQueue.swift Shared/PickupSharedTextParser.swift Shouxia/Models/PickupShareText.swift Shouxia/Features/PickupStore.swift; do
+for file in Shouxia/Models/PickupRecord.swift Shouxia/Models/PickupHandoffPackage.swift Shouxia/Services/PickupParser.swift Shouxia/Services/PickupRepository.swift Shouxia/Services/PickupLiveActivityController.swift Shared/PickupSurfaceSnapshot.swift Shared/PickupActivitySession.swift Shared/SystemCapabilities.swift Shared/PickupImageShareQueue.swift Shared/PickupSharedTextParser.swift Shared/PickupRecognitionCore.swift Shouxia/Models/PickupShareText.swift Shouxia/Features/PickupStore.swift; do
     cp "$repo_root/$file" "$test_root/Sources/Shouxia/"
 done
 for file in PickupSurfaceTests PickupActivityTests PickupRepositoryTests PickupShareTextTests PickupStoreTests PickupImageShareTests; do

@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-15",
+  "version": "1.2.7",
+  "configured_build": "17, unchanged; increment before next distribution",
+  "executable_samples": 43,
+  "entrypoint_calls": 169,
+  "annotation_comparable_calls": 165,
+  "excluded_calls": [
+    {
+      "sample": "C14",
+      "entry": "manual",
+      "reason": "ambiguous code annotation"
+    },
+    {
+      "sample": "C14",
+      "entry": "automatic",
+      "reason": "ambiguous code annotation"
+    },
+    {
+      "sample": "C14",
+      "entry": "shared_text",
+      "reason": "ambiguous code annotation"
+    },
+    {
+      "sample": "C14",
+      "entry": "image_lines",
+      "reason": "ambiguous code annotation"
+    }
+  ],
+  "comparison_mismatches": [
+    {
+      "sample": "C22",
+      "entry": "manual",
+      "mismatches": [
+        "known location"
+      ],
+      "actual": [
+        {
+          "code": "3-7-4162",
+          "location": null,
+          "platform": null,
+          "unresolvedNotificationCount": 0
+        }
+      ]
+    },
+    {
+      "sample": "C22",
+      "entry": "automatic",
+      "mismatches": [
+        "known location"
+      ],
+      "actual": [
+        {
+          "code": "3-7-4162",
+          "location": null,
+          "platform": null,
+          "unresolvedNotificationCount": 0
+        }
+      ]
+    },
+    {
+      "sample": "C22",
+      "entry": "shared_text",
+      "mismatches": [
+        "known location"
+      ],
+      "actual": [
+        {
+          "code": "3-7-4162",
+          "isHighConfidence": false,
+          "isLabelled": true,
+          "location": null,
+          "platform": null,
+          "unresolvedNotificationCount": 0
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "Shared/PickupRecognitionCore.swift": "8dadadb20f97fdc4ea63626388e6e4f3ac45463fcd13f38a02240aef63225414",
+    "Shared/PickupImageShareQueue.swift": "bb6582dd832eaf13af89374e70cfef07140e70cbf37c15d77e25e8db8d1f2ed2",
+    "Shared/PickupSharedTextParser.swift": "97b364aafaf00694fe2cfa9529034ea71eb8aaea3da06d40b7b4c16a0e2d004f",
+    "Shouxia/Models/PickupRecord.swift": "bf5232245b30bb9112899b46bb5d6562797a3e924a21f0d9e8bec8b5f9b11d35",
+    "Shouxia/Services/PickupParser.swift": "a532e64080cec5b7fc86dd1f08ac50a7380b929f179966f784b9921d5eb57056",
+    "Shouxia/Services/ImagePickupRecognizer.swift": "8a307a3120fdc86dbf0bb9a9ccde2be0bd16f6de6c9f36d52f546bba66992faf",
+    "Shouxia/Services/PickupRepository.swift": "afb6706468776d1ce0678cc315f341fc0c6d8c3db09679babe2a8ecd41fe52cc",
+    "Shouxia/Features/PickupStore.swift": "7c7a227a5c593a73b92d465c692d0cf9cbbb514e030e2dc4caa6de70b00c3202",
+    "Shouxia/Features/ImageImport/ImageImportReviewView.swift": "58fc32a7e1f4ad74fa86c200e0f253d95ca4a2f7459390a99e6085ebe8d1cbe6",
+    "Shouxia/Intents/SavePickupMessageIntent.swift": "f0a29a6a56537ad17b574e165d0f0bd6c672382f0a408fa11e2e4dd772c27d0c",
+    "ShouxiaShare/ShareViewController.swift": "f1f98a148762435c3c7b6dd1987171cf51985fcc60cfe1c6bdb4ae9bbe09dd0e",
+    "ShouxiaTests/PickupParserTests.swift": "c36cbe9f3f5eb4043ff8dfbbf7de05b111ee4ba2894b26171e428670dbb5e845",
+    "ShouxiaTests/PickupRepositoryTests.swift": "06a67bfbfe30e5689659d47e08d5d99d2d7579bbcede99bfbb1c78441449c261",
+    "ShouxiaTests/PickupImageShareTests.swift": "40bc4f34a587142082effc0bbe492d2c8d6f7ec720b8b5c848dfb3fbb348dbb6",
+    "ShouxiaTests/PickupStoreTests.swift": "bef9fa87c79266bae14059974e0d264c95369932f48f13b181ea60854c68770d",
+    "Shouxia.xcodeproj/project.pbxproj": "f5497179a86cb0553d89dbc46ed3d667bd60cad062bceafdb49a69326f2e2cea",
+    "scripts/test_surface_core.sh": "17a2cc12e1fb709d5a556498a2f0acc5f80d9c97c014fcca5c623c7745cbf94b",
+    "scripts/replay_pickup_samples.sh": "89d604ee15996348e9e0f26b0cffc0a212d00d11afb882b3bef6cf1eab38ae35"
+  },
+  "checks": {
+    "host_tests": [
+      "113",
+      "0"
+    ],
+    "ios_release_build": true,
+    "simulator_test_source_build": true,
+    "ios_tests_executed": false,
+    "ui_operated": false,
+    "new_live_ocr_probe": false
+  },
+  "logs": [
+    "/tmp/shouxia-core-tests.log",
+    "/tmp/shouxia-127-core-release.log",
+    "/tmp/shouxia-127-core-sim.log"
+  ],
+  "initial_files_checked": 242,
+  "initial_files_changed_intentionally": [
+    "README.md",
+    "ShouxiaShare/ShareViewController.swift",
+    "Shouxia.xcodeproj/project.pbxproj",
+    "Shared/PickupSharedTextParser.swift",
+    "Shared/PickupImageShareQueue.swift",
+    "ShouxiaTests/PickupRepositoryTests.swift",
+    "ShouxiaTests/PickupParserTests.swift",
+    "ShouxiaTests/PickupStoreTests.swift",
+    "ShouxiaTests/PickupImageShareTests.swift",
+    "scripts/test_surface_core.sh",
+    "docs/app-store/TESTFLIGHT_1.2.7_17.md",
+    "Shouxia/Features/PickupStore.swift",
+    "Shouxia/Models/PickupRecord.swift",
+    "Shouxia/Intents/SavePickupMessageIntent.swift",
+    "Shouxia/Services/PickupParser.swift",
+    "Shouxia/Services/PickupRepository.swift",
+    "Shouxia/Services/ImagePickupRecognizer.swift",
+    "Shouxia/Features/ImageImport/ImageImportReviewView.swift"
+  ],
+  "unexpected_initial_file_changes": [],
+  "scope": "Development-observed and synthetic research sample replay; no blind holdout, real user distribution, iOS runtime, or OCR accuracy claim. C22 geometry-backed image adapter differs from original baseline minX/midY-only projection."
+}

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+ F41000000000000000000003 = {isa = PBXBuildFile; fileRef = F42000000000000000000002; };
+ F41000000000000000000004 = {isa = PBXBuildFile; fileRef = F42000000000000000000002; };
+ F41000000000000000000001 = {isa = PBXBuildFile; fileRef = F42000000000000000000001; };
+ F41000000000000000000002 = {isa = PBXBuildFile; fileRef = F42000000000000000000001; };
         F31000000000000000000003 = {isa = PBXBuildFile; fileRef = F32000000000000000000002; };
         F31000000000000000000001 = {isa = PBXBuildFile; fileRef = F32000000000000000000001; };
         F31000000000000000000002 = {isa = PBXBuildFile; fileRef = F32000000000000000000001; };
@@ -87,6 +91,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+ F42000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupCandidateEditView.swift; sourceTree = SOURCE_ROOT; };
+ F42000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/PickupRecognitionCore.swift; sourceTree = SOURCE_ROOT; };
         F32000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShouxiaTests/PickupStoreTests.swift; sourceTree = SOURCE_ROOT; };
         F32000000000000000000001 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/SystemCapabilities.swift; sourceTree = SOURCE_ROOT; };
 		F20000000000000000000001 /* AppIcon-1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "AppIcon-1024.png"; path = "Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"; sourceTree = "<group>"; };
@@ -164,6 +170,7 @@
 			isa = PBXGroup;
 			children = (
                 S20000000000000000000001,
+                F42000000000000000000001, F42000000000000000000002,
                 S20000000000000000000002,
                 S20000000000000000000003,
                 S20000000000000000000004,
@@ -456,6 +463,7 @@
 				A10000000000000000000001 /* ShouxiaApp.swift in Sources */,
 				A10000000000000000000002 /* PickupRecord.swift in Sources */,
 				A10000000000000000000003 /* PickupParser.swift in Sources */,
+                F41000000000000000000001, F41000000000000000000003,
 				A10000000000000000000004 /* PickupRepository.swift in Sources */,
 				A10000000000000000000005 /* PickupStore.swift in Sources */,
 				A10000000000000000000006 /* InboxView.swift in Sources */,
@@ -503,7 +511,7 @@
 				B1B00000000000000000006,B10000000000000000000004,
 				B1B00000000000000000003,
 				B1B00000000000000000001,); runOnlyForDeploymentPostprocessing = 0; };
- S90000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (S1000000000000000000000C, S10000000000000000000002, S10000000000000000000003, S10000000000000000000004, S10000000000000000000005, S10000000000000000000006, S10000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
+ S90000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (S1000000000000000000000C, S10000000000000000000002, S10000000000000000000003, S10000000000000000000004, S10000000000000000000005, F41000000000000000000002, F41000000000000000000004, S10000000000000000000006, S10000000000000000000007, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -564,7 +572,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -592,7 +600,7 @@
 				ASSETCATALOG_COMPILER_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 23;
 				DEVELOPMENT_TEAM = A5L4GGX82X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -646,7 +654,7 @@
  APPLICATION_EXTENSION_API_ONLY = YES;
  CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
  CODE_SIGN_STYLE = Automatic;
- CURRENT_PROJECT_VERSION = 17;
+ CURRENT_PROJECT_VERSION = 23;
  DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES;
  INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
@@ -662,7 +670,7 @@
  APPLICATION_EXTENSION_API_ONLY = YES;
  CODE_SIGN_ENTITLEMENTS = ShouxiaWidgets/ShouxiaWidgets.entitlements;
  CODE_SIGN_STYLE = Automatic;
- CURRENT_PROJECT_VERSION = 17;
+ CURRENT_PROJECT_VERSION = 23;
  DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES;
  INFOPLIST_FILE = ShouxiaWidgets/Info.plist;
@@ -676,7 +684,7 @@
  }; name = Release; };
  SC0000000000000000000001 = {isa = XCBuildConfiguration; buildSettings = {
  APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = ShouxiaShare/ShouxiaShare.entitlements;
- CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 17; DEVELOPMENT_TEAM = A5L4GGX82X;
+ CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 23; DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = ShouxiaShare/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0;
  LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
  MARKETING_VERSION = 1.2.7; PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.share;
@@ -684,7 +692,7 @@
  }; name = Debug; };
  SC0000000000000000000002 = {isa = XCBuildConfiguration; buildSettings = {
  APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_ENTITLEMENTS = ShouxiaShare/ShouxiaShare.entitlements;
- CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 17; DEVELOPMENT_TEAM = A5L4GGX82X;
+ CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 23; DEVELOPMENT_TEAM = A5L4GGX82X;
  GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = ShouxiaShare/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0;
  LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );
  MARKETING_VERSION = 1.2.7; PRODUCT_BUNDLE_IDENTIFIER = com.zhouwei.shouxia.share;

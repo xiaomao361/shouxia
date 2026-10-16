@@ -69,6 +69,12 @@ final class PickupShareTextTests: XCTestCase {
         XCTAssertTrue(content.recordsToHandOff(completed: true, error: shareError).isEmpty)
     }
 
+    func testShareTextDistinguishesServiceBrandWithoutRewritingStoredBrand() {
+        let item = record("1234", location: "北门驿站", platform: "兔喜")
+        XCTAssertTrue(PickupShareText.make(records: [item]).contains("取件服务 · 兔喜"))
+        XCTAssertEqual(item.platform, "兔喜")
+    }
+
     private var shareError: NSError { NSError(domain: "ShareTest", code: 1) }
 
     private func record(

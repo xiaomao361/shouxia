@@ -1,0 +1,287 @@
+[
+  {
+    "id": "S01",
+    "title": "三师市监处罚〔2023〕145号，第1页",
+    "url": "https://www.xjbtnss.gov.cn/mobile/xwzx/scjg/202312/W020231212429282974164.pdf",
+    "type": "public_real",
+    "access": "direct_pdf_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2023-12",
+    "note": "web工具超时；直接HTTP 200、pypdf读取第1页。只使用短信引文，非法律分析。两条只换码的通知同家族。"
+  },
+  {
+    "id": "S02",
+    "title": "一条快捷指令同步多家快递短信，三张公开配图",
+    "url": "https://post.smzdm.com/p/a96mn807/",
+    "type": "public_real",
+    "access": "direct_html_and_images_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2024-01",
+    "note": "web工具失败；HTTP 200读取HTML并逐张目视核验兔喜、妈妈驿站、菜鸟图。作者展示的真实通知，真实性仅到作者自述/图像层。项目不存原图。",
+    "image_urls": [
+      "https://am.zdmimg.com/202401/16/65a681e8a88641323.jpg_e1080.jpg",
+      "https://am.zdmimg.com/202401/16/65a681e83630c500.jpg_e1080.jpg",
+      "https://am.zdmimg.com/202401/16/65a68261eac537896.jpg_e1080.jpg"
+    ]
+  },
+  {
+    "id": "S03",
+    "title": "妈妈驿站运单后五位取件讨论，主帖短信",
+    "url": "https://www.v2ex.com/t/1159521",
+    "type": "public_real",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2025-09",
+    "note": "主帖已自行用XX遮住地点及链接；只用主帖短信，不采纳评论中的品牌归属或原因推测。"
+  },
+  {
+    "id": "S04",
+    "title": "（2023）鲁0323知民初88号判决书转载中的邮政取件短信",
+    "url": "https://zh.wikisource.org/zh-hans/山东省沂源县人民法院（2023）鲁0323知民初88号民事判决书",
+    "type": "public_real",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2023",
+    "note": "维基文库转载司法文书，未取得法院同源正文；保留二手转录来源限制。己到原字保留；两条同模板只换码，收一条。"
+  },
+  {
+    "id": "S05",
+    "title": "老人遭遇取件难，报道引用的丰巢短信",
+    "url": "https://m.app.dawuhanapp.com/p/66334.html",
+    "type": "public_real",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2018-12-25",
+    "note": "新闻引文已掩码；不从周边报道补入短信里没有的承运商。"
+  },
+  {
+    "id": "S06",
+    "title": "南京航空航天大学学生服务：菜鸟取件指南",
+    "url": "https://www.sohu.com/a/190322811_349991",
+    "type": "published_template",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2017-09-07",
+    "note": "页面明确称短信模板；自提柜与货架两种。配图web读取失败，不声称看过这些图片。"
+  },
+  {
+    "id": "S07",
+    "title": "短信宝物流通知文案",
+    "url": "https://www.smsbao.com/words/238.html",
+    "type": "vendor_template",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2017-08-04",
+    "note": "短信服务商示例，不是丰巢官方规范或真实投递凭据；原码被星号遮挡。"
+  },
+  {
+    "id": "S08",
+    "title": "互亿无线：取货码短信通知模板",
+    "url": "https://www.ihuyi.com/muban/detail/4240.html",
+    "type": "vendor_template",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "短信服务商XX占位模板，不是承运商正式统一模板。"
+  },
+  {
+    "id": "S09",
+    "title": "互亿无线：通知客户取件模板",
+    "url": "https://www.ihuyi.com/muban/detail/4229.html",
+    "type": "vendor_template",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "取出柜子的反例：旧地点不能自动当作当前取件地点。仅保留短摘录及语义摘要。"
+  },
+  {
+    "id": "S10",
+    "title": "快宝驿站：取件码设置规则",
+    "url": "https://www.kuaidihelp.com/kdy/356.html",
+    "type": "vendor_format",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2026-06-10",
+    "note": "支持字母货架、日期、手机/单号尾号组合的证据；页面对段数的文字和示例有不一致，不将三段当硬限制。营销比例不采纳。"
+  },
+  {
+    "id": "S11",
+    "title": "shareven/parcel柜号单元样本",
+    "url": "https://github.com/shareven/parcel/blob/d7e4c974ffd1e4de2da9291df0d295856cd89818/app/src/test/java/com/xxxx/parcel/SmsParserLockerNumberTest.kt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "MIT，提交固定；测试字符串，不称真实短信。附许可证。"
+  },
+  {
+    "id": "S12",
+    "title": "pickup-code-app/parcel-split-prefix",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/app/src/test/resources/corpus/parcel-split-prefix.txt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "GPL-3.0仓库；作者声明同形脱敏。原始图片未取得，真实来源声明未独立复核；不移植代码。本地仅短文本/结构或改写对照。"
+  },
+  {
+    "id": "S13",
+    "title": "pickup-code-app/addr-5g-column",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/app/src/test/resources/corpus/addr-5g-column.txt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "GPL-3.0仓库；作者声明同形脱敏。原始图片未取得，真实来源声明未独立复核；不移植代码。本地仅短文本/结构或改写对照。"
+  },
+  {
+    "id": "S14",
+    "title": "pickup-code-app/real-multicode-brands",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/app/src/test/resources/corpus/real-multicode-brands.txt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "GPL-3.0仓库；作者声明同形脱敏。原始图片未取得，真实来源声明未独立复核；不移植代码。本地仅短文本/结构或改写对照。"
+  },
+  {
+    "id": "S15",
+    "title": "pickup-code-app/multi-code-window-overlap",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/app/src/test/resources/corpus/multi-code-window-overlap.txt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "GPL-3.0仓库；作者声明同形脱敏。原始图片未取得，真实来源声明未独立复核；不移植代码。本地仅短文本/结构或改写对照。"
+  },
+  {
+    "id": "S16",
+    "title": "pickup-code-app/parcel-tuxi-digit-dash",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/app/src/test/resources/corpus/parcel-tuxi-digit-dash.txt",
+    "type": "open_source_fixture",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "GPL-3.0仓库；作者声明同形脱敏。原始图片未取得，真实来源声明未独立复核；不移植代码。本地仅短文本/结构或改写对照。"
+  },
+  {
+    "id": "S17",
+    "title": "pickup-code-app语料格式及脱敏说明",
+    "url": "https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/docs/CORPUS.md",
+    "type": "method_reference",
+    "access": "github_raw_read",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "说明期望值需人工确认、脱敏应保留形态；不沿用作者准确率。"
+  },
+  {
+    "id": "S18",
+    "title": "Apple WWDC19：Text Recognition in Vision",
+    "url": "https://developer.apple.com/videos/play/wwdc2019/234/",
+    "type": "apple_documentation",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2019",
+    "note": "on-device、语言纠正可能损伤码、候选及boundingBox。"
+  },
+  {
+    "id": "S19",
+    "title": "Apple WWDC21：Extract document data using Vision",
+    "url": "https://developer.apple.com/videos/play/wwdc2021/10041/",
+    "type": "apple_documentation",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2021",
+    "note": "查询支持语言，中文accurate模式语言优先级；演讲示例不是当前所有系统的性能保证。"
+  },
+  {
+    "id": "S20",
+    "title": "Apple VNRecognizeTextRequest",
+    "url": "https://developer.apple.com/documentation/vision/vnrecognizetextrequest",
+    "type": "apple_documentation",
+    "access": "web_shell_and_index",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "正文页面为JS壳；API成员由搜索索引及本机SDK交叉核对，不将壳当完整文档。"
+  },
+  {
+    "id": "S21",
+    "title": "Apple topCandidates",
+    "url": "https://developer.apple.com/documentation/vision/vnrecognizedtextobservation/topcandidates(_:)",
+    "type": "apple_documentation",
+    "access": "web_shell_and_index",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "索引说明候选上限10；实际可少于请求值。正文JS壳。"
+  },
+  {
+    "id": "S22",
+    "title": "厦门大学后勤：2026新生快递收寄攻略",
+    "url": "https://hqjt.xmu.edu.cn/info/1023/285382.htm",
+    "type": "context_only",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2026-08-21",
+    "note": "官方同一站点服务多个承运商的实例；不是短信样本，不能计入承运商模板覆盖。"
+  },
+  {
+    "id": "S23",
+    "title": "中国邮政智能包裹柜自提服务采购",
+    "url": "https://www.chinapost.com.cn/cn/report/2412/18339-1.htm",
+    "type": "context_only",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2024-12-20",
+    "note": "柜方系统发码、邮政投件的角色分离证据；没有具体短信。"
+  },
+  {
+    "id": "S24",
+    "title": "浙江在线：便利店快递代收",
+    "url": "https://zjnews.zjol.com.cn/zjnews/hznews/201711/t20171129_5858066.shtml",
+    "type": "context_only",
+    "access": "web_open",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2017-11-29",
+    "note": "报道四位码与便利店取件，但没有完整短信；不能冒充便利店真实短信fixture。"
+  },
+  {
+    "id": "S25",
+    "title": "申通代理点取件提醒报道",
+    "url": "https://www2.cqcb.com/headline/2020-10-29/3190371.html",
+    "type": "context_only",
+    "access": "web_open_image_failed",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2020-10-29",
+    "note": "文本说有凭证、单号、地点等；未读取其截图，故不采样短信。"
+  },
+  {
+    "id": "S26",
+    "title": "人民日报转载：门卫室代收",
+    "url": "https://www.sdcourt.gov.cn/lylsqfy/367109/367114/7948206/index.html",
+    "type": "search_lead",
+    "access": "web_timeout",
+    "retrieved_at": "2026-10-15",
+    "published_at": "2021-11-19",
+    "note": "搜索有摘要，直接打开超时；不纳入已核验样本。"
+  },
+  {
+    "id": "S27",
+    "title": "51CTO快捷指令文章",
+    "url": "https://blog.51cto.com/u_17648568/14540362",
+    "type": "search_lead",
+    "access": "web_empty",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "搜索有递管家通知，但打开正文0行、来源链未核验，不作真实样本。"
+  },
+  {
+    "id": "LOCAL",
+    "title": "本轮人工构造的边界用例",
+    "url": null,
+    "type": "synthetic",
+    "access": "authored",
+    "retrieved_at": "2026-10-15",
+    "published_at": null,
+    "note": "由研究者构造；只证明代码面对该输入的行为，不证明实际分布。"
+  }
+]

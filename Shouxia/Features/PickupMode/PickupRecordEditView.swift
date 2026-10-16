@@ -38,7 +38,7 @@ struct PickupRecordEditView: View {
                     if let validationMessage {
                         Label(validationMessage, systemImage: "exclamationmark.circle")
                             .font(.caption)
-                            .foregroundStyle(ShouxiaPalette.apricot)
+                            .foregroundStyle(ShouxiaPalette.warningInk)
                             .accessibilityLabel("保存失败，\(validationMessage)")
                     }
                 }

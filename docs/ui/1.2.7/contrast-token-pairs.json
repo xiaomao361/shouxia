@@ -1,0 +1,161 @@
+{
+  "scope": "opaque sRGB token pairs only; not rendered screenshots or system controls",
+  "pairs": [
+    {
+      "foreground": "ink",
+      "background": "canvas",
+      "light": 11.5,
+      "dark": 16.27
+    },
+    {
+      "foreground": "ink",
+      "background": "paper",
+      "light": 12.06,
+      "dark": 14.35
+    },
+    {
+      "foreground": "ink",
+      "background": "warmPaper",
+      "light": 11.24,
+      "dark": 14.26
+    },
+    {
+      "foreground": "ink",
+      "background": "skyWash",
+      "light": 10.34,
+      "dark": 11.78
+    },
+    {
+      "foreground": "mutedInk",
+      "background": "canvas",
+      "light": 5.57,
+      "dark": 9.57
+    },
+    {
+      "foreground": "mutedInk",
+      "background": "paper",
+      "light": 5.84,
+      "dark": 8.44
+    },
+    {
+      "foreground": "mutedInk",
+      "background": "warmPaper",
+      "light": 5.44,
+      "dark": 8.39
+    },
+    {
+      "foreground": "mutedInk",
+      "background": "skyWash",
+      "light": 5.01,
+      "dark": 6.93
+    },
+    {
+      "foreground": "supportingInk",
+      "background": "canvas",
+      "light": 5.16,
+      "dark": 7.99
+    },
+    {
+      "foreground": "supportingInk",
+      "background": "paper",
+      "light": 5.41,
+      "dark": 7.04
+    },
+    {
+      "foreground": "supportingInk",
+      "background": "warmPaper",
+      "light": 5.04,
+      "dark": 7.0
+    },
+    {
+      "foreground": "supportingInk",
+      "background": "skyWash",
+      "light": 4.63,
+      "dark": 5.78
+    },
+    {
+      "foreground": "softInk",
+      "background": "canvas",
+      "light": 5.07,
+      "dark": 7.78
+    },
+    {
+      "foreground": "softInk",
+      "background": "paper",
+      "light": 5.32,
+      "dark": 6.86
+    },
+    {
+      "foreground": "softInk",
+      "background": "warmPaper",
+      "light": 4.96,
+      "dark": 6.81
+    },
+    {
+      "foreground": "softInk",
+      "background": "skyWash",
+      "light": 4.56,
+      "dark": 5.63
+    },
+    {
+      "foreground": "accentInk",
+      "background": "canvas",
+      "light": 5.67,
+      "dark": 10.3
+    },
+    {
+      "foreground": "accentInk",
+      "background": "paper",
+      "light": 5.95,
+      "dark": 9.08
+    },
+    {
+      "foreground": "accentInk",
+      "background": "warmPaper",
+      "light": 5.54,
+      "dark": 9.02
+    },
+    {
+      "foreground": "accentInk",
+      "background": "skyWash",
+      "light": 5.1,
+      "dark": 7.46
+    },
+    {
+      "foreground": "warningInk",
+      "background": "canvas",
+      "light": 5.94,
+      "dark": 9.41
+    },
+    {
+      "foreground": "warningInk",
+      "background": "paper",
+      "light": 6.23,
+      "dark": 8.3
+    },
+    {
+      "foreground": "warningInk",
+      "background": "warmPaper",
+      "light": 5.8,
+      "dark": 8.25
+    },
+    {
+      "foreground": "warningInk",
+      "background": "skyWash",
+      "light": 5.34,
+      "dark": 6.82
+    },
+    {
+      "foreground": "actionInk",
+      "background": "breeze",
+      "light": 8.32,
+      "dark": 5.41
+    },
+    {
+      "foreground": "actionInk",
+      "background": "breezePressed",
+      "light": 7.09,
+      "dark": 4.78
+    }
+  ]
+}

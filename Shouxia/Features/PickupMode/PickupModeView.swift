@@ -67,7 +67,7 @@ struct PickupModeView: View {
         .tint(ShouxiaPalette.ink)
         .sheet(item: $editingRecord) { record in
             PickupRecordEditView(record: record, store: store)
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -150,10 +150,10 @@ struct PickupModeView: View {
         if let lastCompleted = store.lastCompleted {
             HStack(spacing: 10) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(ShouxiaPalette.breezePressed)
+                    .foregroundStyle(ShouxiaPalette.accentInk)
                 Text("已取到 \(lastCompleted.code)")
                     .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("撤销") {
                     undoLastCompletion(lastCompleted)
@@ -161,14 +161,14 @@ struct PickupModeView: View {
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(ShouxiaPalette.ink)
                 .padding(.horizontal, 14)
-                .frame(minHeight: 36)
+                .frame(minHeight: 44)
                 .background(ShouxiaPalette.paper, in: Capsule())
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 44)
-            .foregroundStyle(ShouxiaPalette.paper)
+            .foregroundStyle(ShouxiaPalette.ink)
             .background(
-                ShouxiaPalette.ink,
+                ShouxiaPalette.skyWash,
                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
             .accessibilityElement(children: .contain)
@@ -183,24 +183,26 @@ struct PickupModeView: View {
     private var pageStatus: some View {
         VStack(spacing: 9) {
             if records.count > 1 {
-                HStack(spacing: 7) {
-                    ForEach(records) { record in
-                        Capsule()
-                            .fill(
-                                record.id == selectedRecordID
-                                    ? ShouxiaPalette.apricot
-                                    : ShouxiaPalette.softInk.opacity(0.22)
-                            )
-                            .frame(
-                                width: record.id == selectedRecordID ? 22 : 7,
-                                height: 7
-                            )
+                if records.count <= 7 {
+                    HStack(spacing: 7) {
+                        ForEach(records) { record in
+                            Capsule()
+                                .fill(
+                                    record.id == selectedRecordID
+                                        ? ShouxiaPalette.apricot
+                                        : ShouxiaPalette.softInk.opacity(0.22)
+                                )
+                                .frame(
+                                    width: record.id == selectedRecordID ? 22 : 7,
+                                    height: 7
+                                )
+                        }
                     }
+                    .animation(
+                        reduceMotion ? nil : ShouxiaMotion.threshold,
+                        value: selectedRecordID
+                    )
                 }
-                .animation(
-                    reduceMotion ? nil : ShouxiaMotion.threshold,
-                    value: selectedRecordID
-                )
 
                 Text("第 \(selectedIndex + 1) 个，共 \(records.count) 个 · 左右滑动切换")
                     .font(.caption)
@@ -211,6 +213,8 @@ struct PickupModeView: View {
                     .foregroundStyle(ShouxiaPalette.supportingInk)
             }
         }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(minHeight: 46)
     }
 

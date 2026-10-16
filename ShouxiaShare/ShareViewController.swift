@@ -24,14 +24,12 @@ final class ShareViewController: UIViewController {
 
 @MainActor
 final class PickupShareModel: ObservableObject {
-    enum Phase { case loading, review, saving, saved, failed }
+    enum Phase { case loading, review, saving, saved, failed, cancelled }
     @Published var phase: Phase = .loading
-    @Published var candidates: [ImagePickupCandidate] = []
-    @Published var selectedCodes: Set<String> = []
+    @Published var review = PickupCandidateReview()
     @Published var message = ""
-    @Published var failedImageCount = 0
-    @Published var failedTextCount = 0
-    private var sources: [ImagePickupCandidate: PickupSource] = [:]
+    @Published var recognitionIssues: [String] = []
+    private var sources: [String: PickupSource] = [:]
     private let context: NSExtensionContext?
 
     init(context: NSExtensionContext?) { self.context = context }
@@ -61,41 +59,55 @@ final class PickupShareModel: ObservableObject {
             return
         }
         var groups: [[ImagePickupCandidate]] = []
+        var failures: [String] = []
         for provider in imageProviders {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, phase == .loading else { return }
             do {
                 let data = try await imageData(from: provider)
+                guard !Task.isCancelled, phase == .loading else { return }
                 let thumbnail = try await Self.downsample(data)
+                guard !Task.isCancelled, phase == .loading else { return }
                 let lines = try await ImageTextRecognizer().recognize(in: thumbnail)
                 let found = try ImagePickupExtractor().candidates(from: lines)
+                guard !Task.isCancelled, phase == .loading else { return }
                 groups.append(found)
-                for candidate in found { sources[candidate] = .imageRecognition }
+                for candidate in found { sources[candidate.id] = .imageRecognition }
             } catch {
-                failedImageCount += 1
+                guard !Task.isCancelled, phase == .loading else { return }
+                failures.append(PickupShareFeedback.recognitionFailure(error, isImage: true))
             }
         }
         for provider in textProviders {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, phase == .loading else { return }
             do {
                 let text = try await sharedText(from: provider)
                 let found = try PickupSharedTextParser().candidates(from: text)
+                guard !Task.isCancelled, phase == .loading else { return }
                 groups.append(found)
-                for candidate in found { sources[candidate] = .sharedText }
+                for candidate in found { sources[candidate.id] = .sharedText }
             } catch {
-                failedTextCount += 1
+                guard !Task.isCancelled, phase == .loading else { return }
+                failures.append(PickupShareFeedback.recognitionFailure(error, isImage: false))
             }
         }
         for text in inlineTexts {
+            guard !Task.isCancelled, phase == .loading else { return }
             do {
                 let found = try PickupSharedTextParser().candidates(from: text)
+                guard !Task.isCancelled, phase == .loading else { return }
                 groups.append(found)
-                for candidate in found { sources[candidate] = .sharedText }
+                for candidate in found { sources[candidate.id] = .sharedText }
             } catch {
-                failedTextCount += 1
+                guard !Task.isCancelled, phase == .loading else { return }
+                failures.append(PickupShareFeedback.recognitionFailure(error, isImage: false))
             }
         }
-        candidates = ImagePickupBatchMerger().merge(groups)
-        selectedCodes = Set(candidates.map(\.code))
+        guard !Task.isCancelled, phase == .loading else { return }
+        recognitionIssues = PickupShareFeedback.groupedFailures(failures)
+        let candidates = ImagePickupBatchMerger().merge(groups)
+        review = PickupCandidateReview(candidates: candidates, sources: sources)
+        let unresolved = candidates.map(\.unresolvedNotificationCount).max() ?? 0
+        if unresolved > 0 { recognitionIssues.append("另有 \(unresolved) 条通知未找到明确取件码，请单独核对") }
         if candidates.isEmpty {
             phase = .failed
             message = "没有找到可用的取件码，请分享完整取件通知、单独的取件码或清晰截图"
@@ -104,26 +116,41 @@ final class PickupShareModel: ObservableObject {
         }
     }
 
+    func setSelected(_ selected: Bool, id: UUID) {
+        guard phase == .review else { return }
+        review.setSelected(selected, id: id)
+        message = ""
+    }
+
     func save() {
         guard phase == .review else { return }
-        let items = candidates.filter { selectedCodes.contains($0.code) }.map {
-            PickupImageShareBatch.Item(code: $0.code, location: $0.location, platform: $0.platform,
-                                      source: sources[$0] ?? .imageRecognition)
-        }
-        guard !items.isEmpty else { return }
-        phase = .saving
+        message = ""
         do {
+            let selected = try review.validatedSelection()
+            guard !selected.isEmpty else { return }
+            let items = selected.map { item in
+                PickupImageShareBatch.Item(code: item.candidate.code, location: item.candidate.location,
+                                           platform: item.candidate.platform, source: item.source)
+            }
+            phase = .saving
             try PickupImageShareQueue.shared().enqueue(PickupImageShareBatch(items: items))
             message = "已保存 \(items.count) 个取件码，下次打开收下时自动加入待取"
             phase = .saved
-        } catch {
+        } catch let error as PickupCandidateReviewError {
             message = error.localizedDescription
+            phase = .review
+        } catch {
+            message = PickupShareFeedback.saveFailure(error)
             phase = .review
         }
     }
 
     func finish() { context?.completeRequest(returningItems: nil) }
-    func cancel() { context?.cancelRequest(withError: CocoaError(.userCancelled)) }
+    func cancel() {
+        guard phase != .saved && phase != .saving else { return }
+        phase = .cancelled
+        context?.cancelRequest(withError: CocoaError(.userCancelled))
+    }
 
     private func sharedText(from provider: NSItemProvider) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
@@ -164,7 +191,9 @@ final class PickupShareModel: ObservableObject {
 }
 
 private struct PickupShareView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var model: PickupShareModel
+    @State private var editingItem: PickupCandidateReview.Item?
 
     var body: some View {
         NavigationStack {
@@ -177,44 +206,59 @@ private struct PickupShareView: View {
                             ProgressView(model.phase == .loading ? "正在识别取件信息" : "正在保存")
                                 .padding(.top, 36)
                         case .review:
-                            Text("找到 \(model.candidates.count) 个取件码")
+                            Text("核对取件信息")
                                 .font(.title2.weight(.semibold))
-                            if model.failedImageCount + model.failedTextCount > 0 {
-                                Text("有 \(model.failedImageCount + model.failedTextCount) 项内容没有识别成功，请检查是否遗漏")
-                                    .foregroundStyle(ShouxiaPalette.supportingInk)
+                            if !model.recognitionIssues.isEmpty {
+                                Text("部分内容未识别，请核对是否遗漏")
+                                    .font(.subheadline.weight(.semibold))
+                                recognitionIssues
                             }
-                            ForEach(model.candidates) { candidate in
-                                Toggle(isOn: Binding(
-                                    get: { model.selectedCodes.contains(candidate.code) },
-                                    set: { selected in
-                                        if selected { model.selectedCodes.insert(candidate.code) }
-                                        else { model.selectedCodes.remove(candidate.code) }
+                            ForEach(model.review.items) { item in
+                                reviewRowLayout {
+                                    Toggle(isOn: Binding(
+                                        get: { item.selected },
+                                        set: { model.setSelected($0, id: item.id) }
+                                    )) {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Text(item.candidate.code).font(.title3.bold().monospacedDigit())
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            Text(item.candidate.location ?? "地点未识别")
+                                                .font(.subheadline).foregroundStyle(ShouxiaPalette.supportingInk)
+                                            if let brand = item.candidate.platform {
+                                                ShouxiaBrandBadge(brand: PickupDirectory.displayLabel(for: brand))
+                                            }
+                                            if let hint = item.candidate.confirmationHint {
+                                                Label(hint, systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(ShouxiaPalette.warningInk)
+                                            }
+                                        }
                                     }
-                                )) {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text(candidate.code).font(.title3.bold().monospacedDigit())
-                                        Text(candidate.location ?? "地点未识别")
-                                            .font(.subheadline).foregroundStyle(ShouxiaPalette.supportingInk)
-                                    }
+                                    .disabled(item.candidate.reviewIssue == .truncated || item.candidate.locationRequiresConfirmation)
+                                    .accessibilityLabel("取件码 \(item.candidate.code)，\(item.candidate.location ?? "地点未识别")")
+                                    .accessibilityHint(item.candidate.confirmationHint ?? "取消选择后不会添加这条取件信息")
+                                    Button("更正") { editingItem = item }
+                                        .frame(minWidth: 44, minHeight: 44)
+                                        .accessibilityLabel("更正取件码 \(item.candidate.code) 的信息")
                                 }
                                 .padding(16)
                                 .background(ShouxiaPalette.paper, in: RoundedRectangle(cornerRadius: 20))
-                                .accessibilityLabel("取件码 \(candidate.code)，\(candidate.location ?? "地点未识别")")
                             }
-                            Text("只保存选中的取件信息，不保存原图或分享原文。下次打开收下时加入待取，地点缺失时使用当时的常用取件点。")
+                            Text("保存后打开收下，所选内容会加入待取。不保存原图或分享原文。")
                                 .font(.caption).foregroundStyle(ShouxiaPalette.supportingInk)
-                            if !model.message.isEmpty { Text(model.message).foregroundStyle(.red) }
-                            Button("保存 \(model.selectedCodes.count) 个取件码", action: model.save)
+                            if !model.message.isEmpty { Text(model.message).foregroundStyle(ShouxiaPalette.warningInk) }
+                            Button(model.review.selectedCount == 0 ? "请先选择取件码" : "保存 \(model.review.selectedCount) 个取件码", action: model.save)
                                 .buttonStyle(ShouxiaPrimaryButtonStyle())
-                                .disabled(model.selectedCodes.isEmpty)
+                                .disabled(model.review.selectedCount == 0)
                         case .saved:
                             Image(systemName: "checkmark.circle.fill").font(.largeTitle)
-                                .foregroundStyle(ShouxiaPalette.breezePressed)
+                                .foregroundStyle(ShouxiaPalette.accentInk)
                             Text(model.message)
                             Button("完成", action: model.finish).buttonStyle(ShouxiaPrimaryButtonStyle())
                         case .failed:
                             Text(model.message)
-                            Button("返回", action: model.cancel).buttonStyle(ShouxiaPrimaryButtonStyle())
+                            recognitionIssues
+                            Button("关闭", action: model.cancel).buttonStyle(ShouxiaPrimaryButtonStyle())
+                        case .cancelled:
+                            EmptyView()
                         }
                     }
                     .foregroundStyle(ShouxiaPalette.ink)
@@ -224,15 +268,33 @@ private struct PickupShareView: View {
             .navigationTitle("收下")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if model.phase != .saved && model.phase != .saving {
+                if model.phase != .saved && model.phase != .saving && model.phase != .cancelled {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("取消", action: model.cancel)
                     }
                 }
             }
         }
-        .tint(ShouxiaPalette.breezePressed)
+        .sheet(item: $editingItem) { item in
+            PickupCandidateEditView(item: item, review: $model.review)
+        }
+        .tint(ShouxiaPalette.accentInk)
         .shouxiaRoundedFont()
         .task { await model.recognize() }
+    }
+
+    private var reviewRowLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 8))
+    }
+
+    private var recognitionIssues: some View {
+        ForEach(model.recognitionIssues, id: \.self) { issue in
+            Text(issue)
+                .font(.subheadline)
+                .foregroundStyle(ShouxiaPalette.supportingInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }

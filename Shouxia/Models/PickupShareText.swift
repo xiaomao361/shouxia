@@ -23,7 +23,7 @@ enum PickupShareText {
             let codes = group.records.map { record in
                 var line = "取件码：\(record.code)"
                 if let platform = record.platform.map(singleLine), !platform.isEmpty {
-                    line += "（\(platform)）"
+                    line += "（\(PickupDirectory.displayLabel(for: platform))）"
                 }
                 if record.locationSource == .commonDefault, record.normalizedLocation != nil {
                     line += " · 常用取件点，请确认"

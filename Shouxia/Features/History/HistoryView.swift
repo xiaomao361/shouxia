@@ -17,7 +17,7 @@ struct HistoryView: View {
             .padding()
 
             if case let .error(message) = store.notice {
-                Text(message).font(.caption).foregroundStyle(.red).padding(.horizontal)
+                Text(message).font(.caption).foregroundStyle(ShouxiaPalette.warningInk).padding(.horizontal)
             }
             if store.loadFailed {
                 ShouxiaEmptyState(title: "暂时无法读取记录", systemImage: "exclamationmark.triangle",
@@ -26,7 +26,7 @@ struct HistoryView: View {
                 ShouxiaEmptyState(
                     title: store.historyRecords.isEmpty ? "还没有收下记录" : "最近 30 天没有记录",
                     systemImage: "clock.arrow.circlepath",
-                    description: store.historyRecords.isEmpty ? "取完的包裹会留在这里。" : "切换“全部”查看更早的记录。"
+                    description: store.historyRecords.isEmpty ? "已取到或已交给别人的包裹会留在这里。" : "切换“全部”查看更早的记录。"
                 )
                 .foregroundStyle(ShouxiaPalette.mutedInk)
             } else {
@@ -105,41 +105,28 @@ private struct RecordRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(record.location ?? "地点待确认")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(ShouxiaPalette.ink)
-                    .lineLimit(1)
-                Spacer()
-                if record.isHandedOff {
-                    Text("交给别人")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(ShouxiaPalette.breezePressed)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(ShouxiaPalette.skyWash, in: Capsule())
-                }
-                if let platform = record.platform {
-                    Text(platform)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(ShouxiaPalette.mutedInk)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(ShouxiaPalette.skyWash, in: Capsule())
-                }
-            }
+            ShouxiaLocationHeader(location: record.locationDisplayName, brand: record.platform.map { PickupDirectory.displayLabel(for: $0) },
+                                  status: record.isHandedOff ? "交给别人" : nil)
 
             Text(record.code)
-                .font(.title2.weight(.bold))
+                .font(.title2.weight(.bold).monospacedDigit())
                 .shouxiaRoundedFont()
                 .foregroundStyle(ShouxiaPalette.ink)
                 .textSelection(.enabled)
                 .accessibilityLabel("取件码 \(record.code)")
 
-            VStack(alignment: .leading, spacing: 4) {
-                dateLine("录入", date: record.createdAt)
-                if let completedAt = record.completedAt {
-                    dateLine(record.isHandedOff ? "已交给别人" : "已取到", date: completedAt)
+            ViewThatFits(in: .horizontal) {
+                Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 6) {
+                    dateLine("录入", date: record.createdAt)
+                    if let completedAt = record.completedAt {
+                        dateLine(record.isHandedOff ? "已交给别人" : "已取到", date: completedAt)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    stackedDate("录入", date: record.createdAt)
+                    if let completedAt = record.completedAt {
+                        stackedDate(record.isHandedOff ? "已交给别人" : "已取到", date: completedAt)
+                    }
                 }
             }
             .font(.caption)
@@ -163,17 +150,25 @@ private struct RecordRow: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(ShouxiaPalette.line, lineWidth: 1)
         }
-        .shadow(color: ShouxiaPalette.ink.opacity(0.045), radius: 10, y: 5)
+        .shadow(color: ShouxiaPalette.shadow.opacity(0.045), radius: 10, y: 5)
         .accessibilityElement(children: .combine)
     }
 
     private func dateLine(_ label: String, date: Date) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .frame(width: 30, alignment: .leading)
-            Text(date, format: .dateTime.year().month().day().hour().minute())
+        GridRow(alignment: .firstTextBaseline) {
+            Text(label).fixedSize()
+            Text(date.formatted(date: .numeric, time: .shortened)).fixedSize()
         }
     }
+
+    private func stackedDate(_ label: String, date: Date) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).fixedSize(horizontal: false, vertical: true)
+            Text(date.formatted(date: .numeric, time: .shortened))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
 }
 
 private struct RecordSection: Identifiable {

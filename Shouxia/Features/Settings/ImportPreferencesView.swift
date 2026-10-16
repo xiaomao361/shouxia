@@ -31,13 +31,13 @@ struct ImportPreferencesView: View {
                 if let validationMessage {
                     Label(validationMessage, systemImage: "exclamationmark.circle")
                         .font(.caption)
-                        .foregroundStyle(ShouxiaPalette.apricot)
+                        .foregroundStyle(ShouxiaPalette.warningInk)
                         .accessibilityLabel("保存失败，\(validationMessage)")
                 }
             } header: {
                 Text("常用取件点")
             } footer: {
-                Text("新添加的包裹没有地点时，使用这里填写的地点。")
+                Text("仅用于新记录缺少地点时；地点有歧义则需先更正。")
             }
 
             Section {

@@ -43,7 +43,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .tint(ShouxiaPalette.breezePressed)
+        .tint(ShouxiaPalette.accentInk)
         .shouxiaRoundedFont()
     }
 }
@@ -112,7 +112,7 @@ struct AboutView: View {
                         PrivacyRow(
                             icon: "person.2",
                             title: "分享由你决定",
-                            detail: "只分享所选取件码、地点和平台，不含短信原文。"
+                            detail: "只分享所选取件码、地点及快递信息，不含短信原文。"
                         )
                         PrivacyDivider()
                         PrivacyRow(
@@ -192,7 +192,7 @@ private struct PickupActivityPreferencesView: View {
         }
         .navigationTitle("锁屏与灵动岛")
         .navigationBarTitleDisplayMode(.inline)
-        .tint(ShouxiaPalette.breezePressed)
+        .tint(ShouxiaPalette.accentInk)
         .onAppear { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
         .onChange(of: scenePhase) { phase in
             if phase == .active { isAllowed = ActivityAuthorizationInfo().areActivitiesEnabled }
@@ -210,7 +210,7 @@ private struct PrivacyRow: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(ShouxiaPalette.breezePressed)
+                .foregroundStyle(ShouxiaPalette.accentInk)
                 .frame(width: 30, height: 30)
 
             VStack(alignment: .leading, spacing: 4) {

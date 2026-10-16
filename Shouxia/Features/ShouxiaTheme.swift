@@ -6,14 +6,17 @@ enum ShouxiaPalette {
     static let paper = adaptive(light: 0xFFFDFC, dark: 0x192429)
     static let warmPaper = adaptive(light: 0xFFF3ED, dark: 0x2A211E)
     static let ink = adaptive(light: 0x263746, dark: 0xEEF5F6)
+    static let shadow = adaptive(light: 0x263746, dark: 0x000000)
     static let actionInk = adaptive(light: 0x263746, dark: 0x08110E)
-    static let mutedInk = adaptive(light: 0x657985, dark: 0xB0C0C5)
-    static let supportingInk = adaptive(light: 0x607480, dark: 0x9EB0B6)
-    static let softInk = adaptive(light: 0x8A9AA3, dark: 0x84979D)
+    static let mutedInk = adaptive(light: 0x526773, dark: 0xB0C0C5)
+    static let supportingInk = adaptive(light: 0x586C78, dark: 0x9EB0B6)
+    static let softInk = adaptive(light: 0x5A6D78, dark: 0x9AAEB5)
     static let breeze = adaptive(light: 0xB7DDD2, dark: 0x4C9583)
     static let breezePressed = adaptive(light: 0x9FCFC2, dark: 0x478B7B)
     static let skyWash = adaptive(light: 0xDDEFF6, dark: 0x1C3440)
     static let mist = adaptive(light: 0xE8E2EF, dark: 0x332D3D)
+    static let accentInk = adaptive(light: 0x326D5D, dark: 0x8BD2BC)
+    static let warningInk = adaptive(light: 0x9B4728, dark: 0xF3AB8B)
     static let apricot = adaptive(light: 0xF1A17D, dark: 0xE48A67)
     static let line = adaptive(
         light: 0x263746,
@@ -72,6 +75,65 @@ enum ShouxiaPalette {
     }
 }
 
+/// Keep short headers compact; give long places and role labels their own rows.
+struct ShouxiaLocationHeader: View {
+    let location: String
+    let brand: String?
+    var status: String? = nil
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                locationText.fixedSize()
+                Spacer(minLength: 0)
+                badges.fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                locationText
+                    .fixedSize(horizontal: false, vertical: true)
+                badges
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var locationText: some View {
+        Text(location)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(ShouxiaPalette.ink)
+    }
+
+    private var badges: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { badgeContents }.fixedSize()
+            VStack(alignment: .leading, spacing: 6) { badgeContents }
+        }
+    }
+
+    @ViewBuilder private var badgeContents: some View {
+        if let status {
+            Text(status)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(ShouxiaPalette.accentInk)
+        }
+        if let brand { ShouxiaBrandBadge(brand: brand) }
+    }
+}
+
+struct ShouxiaBrandBadge: View {
+    let brand: String
+
+    var body: some View {
+        Text(brand)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(ShouxiaPalette.mutedInk)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(ShouxiaPalette.skyWash, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
 enum ShouxiaMotion {
     static let press = Animation.easeOut(duration: 0.14)
     static let threshold = Animation.spring(duration: 0.28, bounce: 0.16)
@@ -126,10 +188,15 @@ struct ShouxiaBackground: View {
 }
 
 struct ShouxiaPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             configuration.label
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             Spacer(minLength: 0)
         }
             .font(.headline)
@@ -145,12 +212,13 @@ struct ShouxiaPrimaryButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
             .offset(y: configuration.isPressed ? 1 : 0)
             .shadow(
-                color: ShouxiaPalette.ink.opacity(
+                color: ShouxiaPalette.shadow.opacity(
                     configuration.isPressed ? 0.04 : 0.075
                 ),
                 radius: configuration.isPressed ? 5 : 14,
                 y: configuration.isPressed ? 2 : 7
             )
+            .opacity(isEnabled ? 1 : 0.45)
             .animation(ShouxiaMotion.press, value: configuration.isPressed)
     }
 }
@@ -160,6 +228,10 @@ struct ShouxiaSecondaryButtonStyle: ButtonStyle {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             configuration.label
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             Spacer(minLength: 0)
         }
         .font(.headline)
@@ -179,7 +251,7 @@ struct ShouxiaSecondaryButtonStyle: ButtonStyle {
         .scaleEffect(configuration.isPressed ? 0.99 : 1)
         .offset(y: configuration.isPressed ? 1 : 0)
         .shadow(
-            color: ShouxiaPalette.ink.opacity(configuration.isPressed ? 0.025 : 0.055),
+            color: ShouxiaPalette.shadow.opacity(configuration.isPressed ? 0.025 : 0.055),
             radius: configuration.isPressed ? 4 : 11,
             y: configuration.isPressed ? 1 : 5
         )
@@ -192,6 +264,10 @@ struct ShouxiaImportButtonStyle: ButtonStyle {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             configuration.label
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             Spacer(minLength: 0)
         }
         .font(.headline)
@@ -211,7 +287,7 @@ struct ShouxiaImportButtonStyle: ButtonStyle {
         .scaleEffect(configuration.isPressed ? 0.99 : 1)
         .offset(y: configuration.isPressed ? 1 : 0)
         .shadow(
-            color: ShouxiaPalette.ink.opacity(configuration.isPressed ? 0.025 : 0.055),
+            color: ShouxiaPalette.shadow.opacity(configuration.isPressed ? 0.025 : 0.055),
             radius: configuration.isPressed ? 4 : 11,
             y: configuration.isPressed ? 1 : 5
         )

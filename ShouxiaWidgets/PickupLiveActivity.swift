@@ -4,14 +4,14 @@ import WidgetKit
 
 @available(iOSApplicationExtension 16.1, *)
 struct PickupLiveActivity: Widget {
-    private let cream = Color(red: 1, green: 0.956, blue: 0.925)
-    private let ink = Color(red: 0.149, green: 0.216, blue: 0.275)
+    private let cream = ShouxiaPalette.warmPaper
+    private let ink = ShouxiaPalette.ink
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PickupActivityAttributes.self) { context in
             PickupActivityView(context: context, onLockScreen: true)
                 .padding(16)
-                .background(LinearGradient(colors: [cream, Color(red: 1, green: 0.992, blue: 0.988)],
+                .background(LinearGradient(colors: [cream, ShouxiaPalette.paper],
                                            startPoint: .topLeading, endPoint: .bottomTrailing))
                 .activityBackgroundTint(cream)
                 .activitySystemActionForegroundColor(ink)
@@ -52,8 +52,8 @@ struct PickupLiveActivity: Widget {
 private struct PickupActivityView: View {
     let context: ActivityViewContext<PickupActivityAttributes>
     let onLockScreen: Bool
-    private var ink: Color { onLockScreen ? Color(red: 0.149, green: 0.216, blue: 0.275) : .white }
-    private var secondaryInk: Color { onLockScreen ? Color(red: 0.36, green: 0.43, blue: 0.47) : .white.opacity(0.75) }
+    private var ink: Color { onLockScreen ? ShouxiaPalette.ink : .white }
+    private var secondaryInk: Color { onLockScreen ? ShouxiaPalette.supportingInk : .white.opacity(0.75) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

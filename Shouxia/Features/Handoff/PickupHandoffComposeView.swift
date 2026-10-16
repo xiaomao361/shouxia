@@ -117,7 +117,7 @@ struct PickupHandoffComposeView: View {
                                         prepareShare()
                                     } label: {
                                         Label(
-                                            "发送交接包（\(selectedRecords.count) 件）",
+                                            "分享交接包（\(selectedRecords.count) 件）",
                                             systemImage: "square.and.arrow.up"
                                         )
                                     }
@@ -130,8 +130,8 @@ struct PickupHandoffComposeView: View {
                             }
 
                             Text(shareAsText
-                                ? "复制后粘贴到聊天中。包裹仍在待取中，取到后请标记。只分享码、地点和平台。"
-                                : "发送成功后，包裹移入“收下记录”，标记为“交给别人”。只分享码、地点和平台。")
+                                ? "复制后粘贴到聊天中。包裹仍在待取中，取到后请标记。只分享取件码、地点及快递信息。"
+                                : "完成系统分享后，包裹会标记为“交给别人”，移入“收下记录”。只分享取件码、地点及快递信息。")
                                 .font(.caption)
                                 .foregroundStyle(ShouxiaPalette.softInk)
                                 .multilineTextAlignment(.center)
@@ -157,7 +157,7 @@ struct PickupHandoffComposeView: View {
             HandoffActivityView(content: payload.content) { completed, error in
                 sharePayload = nil
                 guard error == nil else {
-                    shareErrorMessage = "发送失败，包裹仍在待取中。请重试。"
+                    shareErrorMessage = "分享未完成，包裹仍在待取中。请重试。"
                     return
                 }
                 let handedOffRecords = payload.content.recordsToHandOff(completed: completed, error: error)
@@ -165,7 +165,7 @@ struct PickupHandoffComposeView: View {
 
                 Task {
                     guard await store.handOff(handedOffRecords) else {
-                        shareErrorMessage = "交接包已发送，但本机记录更新失败。请检查待取列表。"
+                        shareErrorMessage = "交接包已分享，但本机记录更新失败。请检查待取列表。"
                         return
                     }
                     dismiss()
@@ -180,7 +180,7 @@ struct PickupHandoffComposeView: View {
                 set: { if !$0 { shareErrorMessage = nil } }
             )
         ) {
-            Button("好", role: .cancel) {}
+            Button("关闭", role: .cancel) {}
         } message: {
             Text(shareErrorMessage ?? "请再试一次。")
         }

@@ -6,6 +6,7 @@ struct PickupHandoffReviewView: View {
     let package: PickupHandoffPackage
     @ObservedObject var store: PickupStore
     @State private var isImporting = false
+    @State private var importError: String?
 
     var body: some View {
         NavigationStack {
@@ -37,11 +38,24 @@ struct PickupHandoffReviewView: View {
                             }
                         }
 
+                        if let importError {
+                            Label(importError, systemImage: "exclamationmark.circle")
+                                .font(.subheadline)
+                                .foregroundStyle(ShouxiaPalette.warningInk)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityLabel("添加失败，\(importError)")
+                        }
+
                         Button {
                             Task {
                                 isImporting = true
+                                importError = nil
                                 if await store.importHandoffPackage(package) {
                                     dismiss()
+                                } else if case let .error(message)? = store.notice {
+                                    importError = message
+                                } else {
+                                    importError = "暂时无法添加，请重试。"
                                 }
                                 isImporting = false
                             }
@@ -91,30 +105,24 @@ struct HandoffSelectionRow: View {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
                 .foregroundStyle(
-                    isSelected ? ShouxiaPalette.breezePressed : ShouxiaPalette.softInk
+                    isSelected ? ShouxiaPalette.accentInk : ShouxiaPalette.softInk
                 )
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(code)
                     .font(.title3.weight(.bold).monospacedDigit())
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(ShouxiaPalette.ink)
 
                 Text(location ?? "地点待确认")
                     .font(.caption)
                     .foregroundStyle(ShouxiaPalette.mutedInk)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let brand = platform {
+                    ShouxiaBrandBadge(brand: PickupDirectory.displayLabel(for: brand))
+                }
             }
-
-            Spacer(minLength: 8)
-
-            if let platform {
-                Text(platform)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(ShouxiaPalette.mutedInk)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(ShouxiaPalette.skyWash, in: Capsule())
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
         .background(

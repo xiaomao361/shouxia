@@ -7,6 +7,8 @@ struct RecognizedTextLine: Equatable, Sendable {
     let confidence: Float
     let minX: Double
     let midY: Double
+    var width: Double = 0
+    var height: Double = 0
 }
 
 struct ImagePickupCandidate: Equatable, Hashable, Identifiable, Sendable {
@@ -15,9 +17,14 @@ struct ImagePickupCandidate: Equatable, Hashable, Identifiable, Sendable {
     let platform: String?
     let confidence: Float
     let isLabelled: Bool
+    var unresolvedNotificationCount = 0
+    var reviewIssue: PickupReviewIssue? = nil
+    var alternativeGroup: String? = nil
+    var userConfirmed = false
+    var locationRequiresConfirmation = false
 
     var id: String {
-        [code, location ?? "", platform ?? ""].joined(separator: "|")
+        PickupIdentity.key(code: code, location: location, platform: platform)
     }
 
     var sanitizedImportText: String {
@@ -32,28 +39,142 @@ struct ImagePickupCandidate: Equatable, Hashable, Identifiable, Sendable {
         return parts.joined(separator: "，")
     }
 
+    // Review is an opt-out batch workflow. OCR confidence and missing location
+    // remain visible hints, not reasons to make the user select every parcel.
+    var shouldSelectByDefault: Bool {
+        reviewIssue == nil && !locationRequiresConfirmation
+            && (alternativeGroup == nil || userConfirmed)
+    }
+
+    var confirmationHint: String? {
+        if locationRequiresConfirmation { return "取件地点有歧义，请先点“更正”核对" }
+        if let reviewIssue { return reviewIssue.message }
+        if confidence < 0.8 { return "文字可能不清晰，请核对取件码" }
+        if !isLabelled { return "请核对取件码" }
+        if location == nil { return "请补充或确认取件地点" }
+        return nil
+    }
+
     var isHighConfidence: Bool {
-        isLabelled && confidence >= 0.35 && location != nil
+        !locationRequiresConfirmation && reviewIssue == nil && isLabelled && confidence >= 0.8 && location != nil
+    }
+}
+
+/// One review model for the app and share extension. IDs survive edits; source does too.
+struct PickupCandidateReview: Sendable {
+    struct Item: Identifiable, Equatable, Sendable {
+        let id: UUID
+        var candidate: ImagePickupCandidate
+        let source: PickupSource
+        var selected: Bool
+    }
+    private(set) var items: [Item]
+
+    init(candidates: [ImagePickupCandidate] = [], sources: [String: PickupSource] = [:]) {
+        items = candidates.map {
+            Item(id: UUID(), candidate: $0, source: sources[$0.id] ?? .imageRecognition,
+                 selected: $0.shouldSelectByDefault)
+        }
+    }
+
+    var selectedCount: Int { items.filter(\.selected).count }
+
+    mutating func setSelected(_ selected: Bool, id: UUID) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        // A truncated token isn't a usable code until the user replaces it.
+        guard !selected || (items[index].candidate.reviewIssue != .truncated && !items[index].candidate.locationRequiresConfirmation) else { return }
+        if selected, let group = items[index].candidate.alternativeGroup {
+            for other in items.indices where other != index && items[other].candidate.alternativeGroup == group {
+                items[other].selected = false
+            }
+        }
+        items[index].selected = selected
+        if selected { items[index].candidate.userConfirmed = true }
+    }
+
+    mutating func update(id: UUID, code: String, location: String) throws {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { throw PickupCandidateReviewError.missingItem }
+        let normalizedCode = PickupRecognitionCore.normalize(code).trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let normalizedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard PickupRecognitionCore.validCode(normalizedCode) else { throw PickupCandidateReviewError.invalidCode }
+        guard normalizedLocation.count <= 80,
+              normalizedLocation.rangeOfCharacter(from: .controlCharacters) == nil,
+              !PickupRecognitionCore.matches(#"\d{10,}|电话|手机|快递员"#, in: normalizedLocation) else {
+            throw PickupCandidateReviewError.invalidLocation
+        }
+        let original = items[index].candidate
+        let candidate = ImagePickupCandidate(
+            code: normalizedCode, location: normalizedLocation.isEmpty ? nil : normalizedLocation,
+            platform: original.platform, confidence: original.confidence, isLabelled: original.isLabelled,
+            unresolvedNotificationCount: original.unresolvedNotificationCount,
+            alternativeGroup: original.alternativeGroup, userConfirmed: true)
+        guard !items.contains(where: { $0.id != id && $0.selected && $0.candidate.id == candidate.id }) else {
+            throw PickupCandidateReviewError.duplicateSelection
+        }
+        // Commit only after all validation passes; a rejected edit keeps draft/original separate.
+        items[index].candidate = candidate
+        setSelected(true, id: id)
+    }
+
+    func validatedSelection() throws -> [Item] {
+        let selected = items.filter(\.selected)
+        try Self.validate(selected.map(\.candidate))
+        return selected
+    }
+
+    static func validate(_ candidates: [ImagePickupCandidate]) throws {
+        if !candidates.isEmpty {
+            _ = try PickupImageShareBatch(items: candidates.map {
+                .init(code: $0.code, location: $0.location, platform: $0.platform)
+            }).validated()
+        }
+        guard !candidates.contains(where: { $0.locationRequiresConfirmation || $0.reviewIssue == .truncated || ($0.reviewIssue != nil && !$0.userConfirmed) }) else {
+            throw PickupCandidateReviewError.confirmationRequired
+        }
+        guard Set(candidates.map(\.id)).count == candidates.count else {
+            throw PickupCandidateReviewError.duplicateSelection
+        }
+        let groups = candidates.compactMap(\.alternativeGroup)
+        guard Set(groups).count == groups.count else { throw PickupCandidateReviewError.alternativeSelection }
+    }
+}
+
+enum PickupCandidateReviewError: LocalizedError {
+    case missingItem, invalidCode, invalidLocation, duplicateSelection, alternativeSelection, confirmationRequired
+    var errorDescription: String? {
+        switch self {
+        case .missingItem: "这条取件信息已不存在，请重新识别"
+        case .invalidCode: "请填写完整取件码：4至24个字母、数字或短横线，至少包含一个数字；纯数字为4至8位"
+        case .invalidLocation: "地点请控制在80个字符以内，不填写电话或联系人信息"
+        case .duplicateSelection: "这条取件信息已在勾选列表中，请保留一条"
+        case .alternativeSelection: "备选码只能选择一个，请重新核对"
+        case .confirmationRequired: "有取件码需要核对或更正，请先确认再保存"
+        }
     }
 }
 
 struct ImagePickupBatchMerger: Sendable {
     func merge(_ candidateGroups: [[ImagePickupCandidate]]) -> [ImagePickupCandidate] {
-        var orderedCodes: [String] = []
-        var bestByCode: [String: ImagePickupCandidate] = [:]
+        var orderedIDs: [String] = []
+        var bestByIdentity: [String: ImagePickupCandidate] = [:]
 
         for candidate in candidateGroups.flatMap({ $0 }) {
-            if let existing = bestByCode[candidate.code] {
+            if let existing = bestByIdentity[candidate.id] {
                 if isBetter(candidate, than: existing) {
-                    bestByCode[candidate.code] = candidate
+                    bestByIdentity[candidate.id] = candidate
                 }
             } else {
-                orderedCodes.append(candidate.code)
-                bestByCode[candidate.code] = candidate
+                orderedIDs.append(candidate.id)
+                bestByIdentity[candidate.id] = candidate
             }
         }
 
-        return orderedCodes.compactMap { bestByCode[$0] }
+        let unresolved = candidateGroups.map { $0.map(\.unresolvedNotificationCount).max() ?? 0 }.reduce(0, +)
+        return orderedIDs.compactMap { bestByIdentity[$0] }.map {
+            var candidate = $0
+            candidate.unresolvedNotificationCount = unresolved
+            return candidate
+        }
     }
 
     private func isBetter(
@@ -120,7 +241,9 @@ struct ImageTextRecognizer: Sendable {
                         text: candidate.string,
                         confidence: candidate.confidence,
                         minX: observation.boundingBox.minX,
-                        midY: observation.boundingBox.midY
+                        midY: observation.boundingBox.midY,
+                        width: observation.boundingBox.width,
+                        height: observation.boundingBox.height
                     )
                 }
                 .sorted { left, right in
@@ -140,267 +263,119 @@ struct ImageTextRecognizer: Sendable {
 
 struct ImagePickupExtractor: Sendable {
     func candidates(from lines: [RecognizedTextLine]) throws -> [ImagePickupCandidate] {
-        let normalizedLines = lines.map {
-            RecognizedTextLine(
-                text: normalizePunctuation(in: $0.text),
-                confidence: $0.confidence,
-                minX: $0.minX,
-                midY: $0.midY
-            )
-        }
-        let platform = detectPlatform(in: normalizedLines)
-        var labelled: [ImagePickupCandidate] = []
-
-        for (index, line) in normalizedLines.enumerated() {
-            let matches = PickupParser().extractLabelledCodes(
-                from: line.text.replacingOccurrences(of: #"\s*-\s*"#, with: "-", options: .regularExpression)
-            )
-            for match in matches {
-                guard let code = normalizedCode(match) else { continue }
-                labelled.append(
-                    makeCandidate(
-                        code: code,
-                        lineIndex: index,
-                        confidence: line.confidence,
-                        isLabelled: true,
-                        lines: normalizedLines,
-                        platform: platform
-                    )
-                )
+        guard !lines.isEmpty else { throw ImagePickupRecognitionError.noText }
+        let core = PickupRecognitionCore()
+        // Preserve real spatial gaps as hard boundaries. Zero-height test/legacy rows
+        // use semantic boundaries only; a fixed number of neighboring rows isn't evidence.
+        var groups: [[RecognizedTextLine]] = [[]]
+        for line in lines {
+            // A fresh courier/tracking header after a pickup code starts a new card.
+            if courierHeader(in: line.text) != nil,
+               groups.last?.contains(where: { PickupRecognitionCore.matches(PickupRecognitionCore.label, in: $0.text) }) == true {
+                groups.append([])
             }
-
-            guard containsPickupLabel(line.text), matches.isEmpty else { continue }
-            for neighborIndex in neighboringIndices(after: index, count: normalizedLines.count) {
-                guard let code = firstLikelyCode(in: normalizedLines[neighborIndex].text) else {
-                    continue
-                }
-                labelled.append(
-                    makeCandidate(
-                        code: code,
-                        lineIndex: index,
-                        confidence: min(line.confidence, normalizedLines[neighborIndex].confidence),
-                        isLabelled: true,
-                        lines: normalizedLines,
-                        platform: platform
-                    )
-                )
-                break
+            if let previous = groups.last?.last,
+               line.height > 0, previous.height > 0,
+               abs(previous.midY - line.midY) > max(previous.height, line.height) * 3 {
+                groups.append([])
             }
+            groups[groups.count - 1].append(line)
         }
-
-        let labelledResults = deduplicated(labelled)
-        if !labelledResults.isEmpty {
-            return labelledResults
-        }
-
-        var fallback: [ImagePickupCandidate] = []
-        for (index, line) in normalizedLines.enumerated() {
-            guard !containsExcludedNumberContext(line.text) else { continue }
-            for match in captures(
-                pattern: #"(?<![A-Za-z0-9])([A-Za-z]?\d{1,4}(?:\s*-\s*[A-Za-z0-9]{1,8}){1,4})(?![A-Za-z0-9])"#,
-                in: line.text
-            ) {
-                guard let code = normalizedCode(match) else { continue }
-                fallback.append(
-                    makeCandidate(
-                        code: code,
-                        lineIndex: index,
-                        confidence: line.confidence,
-                        isLabelled: false,
-                        lines: normalizedLines,
-                        platform: platform
-                    )
-                )
-            }
-        }
-
-        let fallbackResults = deduplicated(fallback)
-        guard !fallbackResults.isEmpty else {
-            throw ImagePickupRecognitionError.noPickupCode
-        }
-        return fallbackResults
-    }
-
-    private func makeCandidate(
-        code: String,
-        lineIndex: Int,
-        confidence: Float,
-        isLabelled: Bool,
-        lines: [RecognizedTextLine],
-        platform: String?
-    ) -> ImagePickupCandidate {
-        ImagePickupCandidate(
-            code: code,
-            location: extractLocation(near: lineIndex, from: lines),
-            platform: platform,
-            confidence: confidence,
-            isLabelled: isLabelled
-        )
-    }
-
-    private func extractLocation(
-        near codeLineIndex: Int,
-        from lines: [RecognizedTextLine]
-    ) -> String? {
-        guard !lines.isEmpty else { return nil }
-        let lowerBound = max(0, codeLineIndex - 9)
-        let upperBound = min(lines.count - 1, codeLineIndex + 2)
-        let keywords = ["驿站", "快递柜", "丰巢柜", "代收点", "快递超市", "服务站", "号楼店"]
-
-        let followingText = lines[codeLineIndex...upperBound]
-            .map(\.text)
-            .joined()
-        if let directedLocation = firstCapture(
-            pattern: #"(?:取件码|提货码|取货码|领取码|取件编号)\s*[:：为是]?\s*[A-Za-z0-9]+(?:\s*-\s*[A-Za-z0-9]+){0,4}\s*(?:至|到|前往)\s*([^，。；;\n]{2,42}?)(?:取件|领取|$)"#,
-            in: followingText
-        ) {
-            let cleaned = cleanLocation(directedLocation)
-            if cleaned.count >= 2,
-               cleaned.count <= 42,
-               !containsPrivateContact(cleaned) {
-                return cleaned
-            }
-        }
-
-        let ranked = (lowerBound...upperBound).compactMap { index -> (String, Int)? in
-            let cleaned = cleanLocation(lines[index].text)
-            guard cleaned.count >= 4,
-                  cleaned.count <= 42,
-                  !containsPickupLabel(cleaned),
-                  !containsPrivateContact(cleaned),
-                  keywords.contains(where: cleaned.contains)
-            else {
-                return nil
-            }
-
-            var score = keywords.reduce(0) { result, keyword in
-                result + (cleaned.contains(keyword) ? 4 : 0)
-            }
-            score -= abs(codeLineIndex - index)
-            if cleaned == "已放至代收点" || cleaned == "联系驿站" {
-                score -= 20
-            }
-            if cleaned.contains("地址") {
-                score += 2
-            }
-            return (cleaned, score)
-        }
-
-        if let location = ranked.max(by: { $0.1 < $1.1 })?.0 { return location }
-        // A complete SMS can occupy a single OCR line, including code and place.
-        if let parsed = try? PickupParser().parseAutomaticClipboard(lines[codeLineIndex].text),
-           let location = parsed.location,
-           location.count <= 80,
-           !containsPrivateContact(location) {
-            return location
-        }
-        return nil
-    }
-
-    private func cleanLocation(_ text: String) -> String {
-        text
-            .replacingOccurrences(
-                of: #"^(?:取件地址|领取地点|地址)\s*[:：]?\s*"#,
-                with: "",
-                options: .regularExpression
-            )
-            .replacingOccurrences(of: #"\s+"#, with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-    }
-
-    private func detectPlatform(in lines: [RecognizedTextLine]) -> String? {
-        let text = lines.map(\.text).joined(separator: "\n")
-        let platforms = [
-            "菜鸟", "丰巢", "京东", "淘宝", "天猫", "拼多多",
-            "顺丰", "邮政", "中通", "圆通", "申通", "韵达", "极兔", "德邦",
-        ]
-        return platforms.first(where: text.contains)
-    }
-
-    private func containsPickupLabel(_ text: String) -> Bool {
-        text.range(
-            of: #"(?:取件码|提货码|取货码|领取码|取件编号)"#,
-            options: .regularExpression
-        ) != nil
-    }
-
-    private func containsExcludedNumberContext(_ text: String) -> Bool {
-        ["运单", "物流", "电话", "手机", "距离", "时间", "单元", "地址"]
-            .contains(where: text.contains)
-    }
-
-    private func containsPrivateContact(_ text: String) -> Bool {
-        if ["快递员", "电话", "手机"].contains(where: text.contains) {
-            return true
-        }
-        return text.range(of: #"\d{10,}"#, options: .regularExpression) != nil
-    }
-
-    private func neighboringIndices(after index: Int, count: Int) -> [Int] {
-        guard index + 1 < count else { return [] }
-        return Array((index + 1)...min(index + 3, count - 1))
-    }
-
-    private func firstLikelyCode(in text: String) -> String? {
-        let patterns = [
-            #"(?<![A-Za-z0-9])([A-Za-z]?\d{1,4}(?:\s*-\s*[A-Za-z0-9]{1,8}){1,4})(?![A-Za-z0-9])"#,
-            #"(?<!\d)(\d{4,8})(?!\d)"#,
-        ]
-        for pattern in patterns {
-            for match in captures(pattern: pattern, in: text) {
-                if let code = normalizedCode(match) {
-                    return code
+        var candidates: [ImagePickupCandidate] = []
+        var unresolvedCount = 0
+        for group in groups {
+            let text = addressRows(in: pickupCardRows(in: group)).joined(separator: "\n")
+            guard text.utf8.count <= 64 * 1024 else { throw PickupImportError.tooLong }
+            let blocks = core.notifications(in: text)
+            unresolvedCount += blocks.filter(\.unresolved).count
+            for block in blocks {
+                let relevantLines = group.filter { block.text.contains(PickupRecognitionCore.normalize($0.text)) }
+                let confidence = (relevantLines.isEmpty ? group : relevantLines).map(\.confidence).min() ?? 0
+                for code in block.codes {
+                    candidates.append(ImagePickupCandidate(
+                        code: code.value, location: block.location,
+                        platform: block.roles.displayName,
+                        confidence: confidence, isLabelled: code.explicit,
+                        reviewIssue: code.reviewIssue, alternativeGroup: code.alternativeGroup,
+                        locationRequiresConfirmation: block.locationRequiresConfirmation
+                    ))
                 }
             }
         }
-        return nil
-    }
-
-    private func normalizedCode(_ value: String) -> String? {
-        let code = value
-            .replacingOccurrences(of: #"\s+"#, with: "", options: .regularExpression)
-            .uppercased()
-        guard code.count >= 4, code.count <= 24 else { return nil }
-        if code.allSatisfy(\.isNumber), code.count > 8 {
-            return nil
+        guard !candidates.isEmpty else { throw ImagePickupRecognitionError.noPickupCode }
+        return ImagePickupBatchMerger().merge([candidates]).map {
+            var candidate = $0
+            candidate.unresolvedNotificationCount = unresolvedCount
+            return candidate
         }
-        return code
     }
-
-    private func normalizePunctuation(in text: String) -> String {
-        text
-            .replacingOccurrences(of: "[‐‑‒–—﹣－]", with: "-", options: .regularExpression)
-            .replacingOccurrences(of: "：", with: ":")
-    }
-
-    private func captures(pattern: String, in text: String) -> [String] {
-        guard let expression = try? NSRegularExpression(
-            pattern: pattern,
-            options: [.caseInsensitive]
-        ) else {
-            return []
-        }
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        return expression.matches(in: text, range: range).compactMap { result in
-            guard result.numberOfRanges > 1,
-                  let captureRange = Range(result.range(at: 1), in: text)
-            else {
-                return nil
+    /// Screenshot cards may show an unlabelled shop title and detail above the code.
+    /// Require complete local geometry and an address-shaped detail, never a map/store name alone.
+    private func pickupCardRows(in lines: [RecognizedTextLine]) -> [RecognizedTextLine] {
+        var rows = lines
+        for index in lines.indices {
+            let row = lines[index]
+            // Vision sometimes reads a courier logo as one Latin glyph. A literal courier
+            // name plus a tracking number is evidence; a tracking prefix alone is not.
+            if let value = courierHeader(in: row.text) {
+                rows[index] = replacingText(of: row, with: value)
             }
-            return String(text[captureRange])
+            guard index >= 2, row.height > 0, row.width > 0,
+                  PickupRecognitionCore.matches(PickupRecognitionCore.label, in: row.text) else { continue }
+            let detail = lines[index - 1], title = lines[index - 2]
+            guard detail.height > 0, detail.width > 0, title.height > 0, title.width > 0,
+                  title.midY > detail.midY, detail.midY > row.midY,
+                  title.midY - row.midY <= max(row.height, title.height) * 4.5,
+                  abs(title.minX - row.minX) <= row.height,
+                  abs(detail.minX - title.minX) <= max(title.height, detail.height),
+                  PickupRecognitionCore.matches(#"^[\p{Han}A-Za-z0-9（）()·-]{4,60}(?:店|驿站|代收点|快递柜)$"#, in: title.text),
+                  PickupRecognitionCore.matches(#"(?:路|街|巷|村|小区|园|区|楼).*[0-9]"#, in: detail.text),
+                  !PickupRecognitionCore.matches(#"取件|取货|包裹|收件|收货|旗舰|商品|订单|电话|地址|物流"#, in: title.text + detail.text)
+            else { continue }
+            rows[index - 2] = replacingText(of: title, with: "取件地点：" + title.text)
         }
+        return rows
     }
 
-    private func firstCapture(pattern: String, in text: String) -> String? {
-        captures(pattern: pattern, in: text).first
+    private func courierHeader(in text: String) -> String? {
+        let names = PickupDirectory.couriers.flatMap(\.aliases).filter { $0.count >= 3 }
+            .map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")
+        let pattern = #"^[^\p{Han}\d]{0,8}((?:"# + names
+            + #")[ \t]+[A-Z]{0,6}[0-9]{8,24})(?:[ \t]*(?:复制|物流电话))*$"#
+        return PickupRecognitionCore.capture(pattern, in: text)
     }
 
-    private func deduplicated(
-        _ candidates: [ImagePickupCandidate]
-    ) -> [ImagePickupCandidate] {
-        var seen: Set<String> = []
-        return candidates.filter { seen.insert($0.code).inserted }
+    private func replacingText(of line: RecognizedTextLine, with text: String) -> RecognizedTextLine {
+        RecognizedTextLine(text: text, confidence: line.confidence, minX: line.minX,
+                           midY: line.midY, width: line.width, height: line.height)
     }
+
+    /// A two-column address can contain a shop title followed by its detailed address.
+    /// Only join rows in the value column when complete geometry supports the relation.
+    private func addressRows(in lines: [RecognizedTextLine]) -> [String] {
+        var rows = lines.map(\.text)
+        for (index, label) in lines.enumerated() {
+            guard ["地址", "取件地址", "领取地点"].contains(label.text.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  label.height > 0, label.width > 0 else { continue }
+            var values: [Int] = []
+            for next in (index + 1)..<lines.count {
+                let value = lines[next]
+                if PickupRecognitionCore.matches(PickupRecognitionCore.label, in: value.text) { break }
+                guard value.height > 0, value.width > 0,
+                      value.minX >= label.minX + label.width,
+                      abs(label.midY - value.midY) <= max(label.height, value.height) * 3 else { break }
+                if let first = values.first,
+                   abs(value.minX - lines[first].minX) > label.height { break }
+                values.append(next)
+            }
+            if let detail = values.last {
+                rows[index] = "取件地址：" + lines[detail].text
+                for value in values { rows[value] = "" }
+            }
+        }
+        return rows
+    }
+
 }
 
 private extension CGImagePropertyOrientation {
