@@ -97,12 +97,14 @@ enum PickupIdentity {
 }
 
 enum PickupReviewIssue: String, Equatable, Hashable, Sendable {
-    case alternatives, truncated
+    case alternatives, truncated, uncertainNumbers, phoneLike
 
     var message: String {
         switch self {
         case .alternatives: "存在备选码，请核对后只选择一个"
         case .truncated: "取件码可能被截断，请更正后保存"
+        case .uncertainNumbers: "有多个用途不明的数字，请核对取件码后选择"
+        case .phoneLike: "取件码格式与电话号码相似，请核对后选择"
         }
     }
 }
@@ -125,24 +127,40 @@ struct PickupRecognitionCore: Sendable {
         let roles: PickupDirectory.Roles
         var locationRequiresConfirmation = false
         var unresolved: Bool {
-            guard codes.isEmpty else { return false }
             let ns = text as NSString
-            return PickupRecognitionCore.regex(PickupRecognitionCore.label)
-                .matches(in: text, range: NSRange(location: 0, length: ns.length)).contains { label in
+            let labels = PickupRecognitionCore.regex(PickupRecognitionCore.label)
+                .matches(in: text, range: NSRange(location: 0, length: ns.length))
+            let unresolvedLabel = labels.enumerated().contains { index, label in
                     let before = ns.substring(to: label.range.location)
-                    let after = ns.substring(from: NSMaxRange(label.range))
+                    let end = index + 1 < labels.count ? labels[index + 1].range.location : ns.length
+                    let valueRange = NSRange(location: NSMaxRange(label.range), length: end - NSMaxRange(label.range))
+                    let after = ns.substring(with: valueRange)
+                    if codes.contains(where: { NSIntersectionRange($0.range, valueRange).length > 0 }) { return false }
+                    // A repeated known value and “凭码取件” refer to the same parcel.
+                    if !codes.isEmpty, ns.substring(with: label.range) == "凭码" { return false }
+                    if let value = PickupRecognitionCore.capture(#"^[\s:：为是「『“\"'〖【(（]*("# + PickupRecognitionCore.token + #")(?![A-Za-z0-9*-])"#, in: after),
+                       codes.contains(where: { $0.value == value.uppercased() }) { return false }
                     if PickupRecognitionCore.matches(#"(?:原|旧)$"#, in: before) { return false }
                     let obsolete = #"^[\s:：]*(?:"# + PickupRecognitionCore.token + #")?[\s]*(?:已)?(?:失效|作废|过期|停用)"#
                     return !PickupRecognitionCore.matches(obsolete, in: after)
                 }
+            let instructions = PickupRecognitionCore.regex(#"凭[^，,。；;]{0,40}(?:提货|提取包裹|取件|取货|取包裹|领取)"#)
+                .matches(in: text, range: NSRange(location: 0, length: ns.length))
+            let unresolvedInstruction = instructions.contains { instruction in
+                if !codes.isEmpty, ns.substring(with: instruction.range).hasPrefix("凭码") { return false }
+                return !codes.contains { NSIntersectionRange($0.range, instruction.range).length > 0 }
+            }
+            // An arrival notification with no usable number remains visible as an omission.
+            return unresolvedLabel || (PickupRecognitionCore.hasPickupContext(in: text)
+                && (unresolvedInstruction || (codes.isEmpty && PickupRecognitionCore.hasArrivalContext(in: text))))
         }
     }
-    static let label = #"(?:取件码|提货码|取货码|领取码|取件编号|凭码)"#
+    static let label = #"(?:取件码|提货码|取货码|领取码|提取码|取件密码|取件编号|凭码)"#
     static let token = #"[A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4}"#
     static let placeSuffix = #"(?:驿站|快递超市|快递柜|丰巢柜|代收点|服务站|便利店|超市|门卫室|自提柜)"#
 
     static func normalize(_ input: String) -> String {
-        String(String.UnicodeScalarView(input.unicodeScalars.map { scalar in
+        var text = String(String.UnicodeScalarView(input.unicodeScalars.map { scalar in
             // Normalize code characters, retaining original Chinese address punctuation.
             if (0xFF10...0xFF19).contains(scalar.value) || (0xFF21...0xFF3A).contains(scalar.value)
                 || (0xFF41...0xFF5A).contains(scalar.value) {
@@ -151,9 +169,12 @@ struct PickupRecognitionCore: Sendable {
             return scalar
         }))
             .replacingOccurrences(of: "[‐‑‒–—﹣－]", with: "-", options: .regularExpression)
-            .replacingOccurrences(of: #"取\s*件\s*码"#, with: "取件码", options: .regularExpression)
-            .replacingOccurrences(of: #"取\s*货\s*码"#, with: "取货码", options: .regularExpression)
             .replacingOccurrences(of: #"(?<=[A-Za-z0-9])\s*-\s*(?=[A-Za-z0-9])"#, with: "-", options: .regularExpression)
+        for label in ["取件码", "提货码", "取货码", "领取码", "提取码", "取件密码", "取件编号", "凭码"] {
+            let pattern = label.map { String($0) }.joined(separator: #"\s*"#)
+            text = text.replacingOccurrences(of: pattern, with: label, options: .regularExpression)
+        }
+        return text
     }
 
     func notifications(in input: String, allowBareCode: Bool = false) -> [Notification] {
@@ -239,12 +260,25 @@ struct PickupRecognitionCore: Sendable {
     func codes(in text: String, allowBareCode: Bool) -> [Code] {
         let ns = text as NSString
         var found: [(NSRange, Code)] = []
+        // Classify whole spans before extracting candidates so grouped phone numbers,
+        // tracking IDs and URLs cannot leak shorter fragments into pickup-code detection.
+        let numberRoles = numberRoleRanges(in: text)
+        let phones = phoneNumberRanges(in: text)
         func append(_ range: NSRange, explicit: Bool, rule: String) -> Bool {
             let value = ns.substring(with: range).uppercased()
-            guard Self.validCode(value), !excluded(range, in: text) else { return false }
+            guard Self.validCode(value),
+                  !numberRoles.contains(where: { NSIntersectionRange($0, range).length > 0 }),
+                  !excluded(range, in: text) else { return false }
+            let phoneLike = phones.contains { NSIntersectionRange($0, range).length > 0 }
+            // A labelled shelf code can have the same shape as a grouped phone number.
+            // Preserve that conflict for review rather than silently dropping a possible code.
+            guard !phoneLike || (explicit && value.contains("-")) else { return false }
             if !found.contains(where: { $0.0 == range }) {
                 let tail = ns.substring(from: NSMaxRange(range))
-                let issue: PickupReviewIssue? = Self.matches(#"^[ \t]*(?:…|\.\.\.|[•●□×])"#, in: tail) ? .truncated : nil
+                let maskedTail = Self.matches(#"^[ \t]*(?:…|\.\.\.|[•●□×])"#, in: tail)
+                // A continuation row may be the rest of this code. Never silently save its prefix.
+                let numericContinuation = Self.matches(#"^\s+[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*[ \t]*(?:\n|$|取件|取货|提货|领取)"#, in: tail)
+                let issue: PickupReviewIssue? = maskedTail || numericContinuation ? .truncated : phoneLike ? .phoneLike : nil
                 found.append((range, Code(value: value, explicit: explicit, rule: rule, range: range, reviewIssue: issue)))
             }
             return true
@@ -255,7 +289,7 @@ struct PickupRecognitionCore: Sendable {
             let remainderRange = NSRange(location: NSMaxRange(label.range), length: end - NSMaxRange(label.range))
             let remainder = ns.substring(with: remainderRange)
             // Direct label-value binding, allowing quotation marks and OCR line breaks.
-            let pattern = #"^[\s:：为是「『“\"'〖【(]*((?:"# + Self.token + #"))(?![A-Za-z0-9*-])"#
+            let pattern = #"^[\s:：为是「『“\"'〖【(（]*((?:"# + Self.token + #"))(?![A-Za-z0-9*-])"#
             if let match = Self.regex(pattern).firstMatch(in: remainder, range: NSRange(location: 0, length: (remainder as NSString).length)) {
                 let r = NSRange(location: remainderRange.location + match.range(at: 1).location, length: match.range(at: 1).length)
                 if append(r, explicit: true, rule: "label.direct") {
@@ -285,14 +319,34 @@ struct PickupRecognitionCore: Sendable {
         }
         // Implicit pickup instructions are also strong semantic evidence for text imports.
         let patterns = [
-            #"凭[\s「『“\"']*("# + Self.token + #")(?![A-Za-z0-9*-])(?=[」』”\"'\s]*(?:及时|尽快|来|到|至|前往|取|领))"#,
-            #"(?:领取|取件|取货)[ \t]+("# + Self.token + #")(?![A-Za-z0-9*-])"#,
+            #"凭[\s:：「『“\"']*("# + Self.token + #")(?![A-Za-z0-9*-])(?=[」』”\"'\s]*(?:及时|尽快|来|到|至|前往|取|领|提货|提取包裹))"#,
+            #"(?:领取|取件|取货|提货)[ \t]+("# + Self.token + #")(?![A-Za-z0-9*-])"#,
         ]
-        let hasPickupContext = Self.matches(#"(?:快递|包裹|快件|取件|取货|取包裹|提货|驿站|快递柜|自提柜|代收点|门卫室)"#, in: text)
-        if hasPickupContext {
+        if Self.hasPickupContext(in: text) {
             for pattern in patterns {
                 for match in Self.regex(pattern).matches(in: text, range: NSRange(location: 0, length: ns.length)) {
                     _ = append(match.range(at: 1), explicit: false, rule: "instruction.pickup")
+                }
+            }
+        }
+
+        // Unknown wording must not discard an otherwise clear pickup notification.
+        // Labels retain priority: fallback must never revive an obsolete or masked value.
+        if labels.isEmpty, found.isEmpty, Self.hasPickupContext(in: text), Self.hasArrivalContext(in: text) {
+            let candidates = Self.regex(#"(?<![A-Za-z0-9*×-])("# + Self.token + #")(?![A-Za-z0-9*×-])"#)
+                .matches(in: text, range: NSRange(location: 0, length: ns.length))
+            for candidate in candidates {
+                let range = candidate.range(at: 1)
+                let after = ns.substring(from: NSMaxRange(range))
+                let value = ns.substring(with: range)
+                // A labelled pickup value may resemble a date; an unlabelled one is uncertain.
+                guard !Self.matches(#"^\d{4}-\d{1,2}-\d{1,2}$"#, in: value),
+                      !Self.matches(#"^[ \t]*(?:包裹|快件|邮件|号|栋|楼|单元|室|米|公里|分钟|小时|天|年|月|日|点|分|秒|件|个|元|积分|红包|优惠券)"#, in: after) else { continue }
+                _ = append(range, explicit: false, rule: "context.candidate")
+            }
+            if found.count > 1 {
+                for index in found.indices where found[index].1.reviewIssue == nil {
+                    found[index].1.reviewIssue = .uncertainNumbers
                 }
             }
         }
@@ -349,12 +403,45 @@ struct PickupRecognitionCore: Sendable {
         return found.sorted { $0.0.location < $1.0.location }.map(\.1).filter { seen.insert($0.value).inserted }
     }
 
+    static func hasPickupContext(in text: String) -> Bool {
+        matches(#"(?:快递|包裹|快件|取件|取货|取包裹|提货|驿站|快递柜|自提柜|代收点|门卫室)"#, in: text)
+    }
+
+    static func hasArrivalContext(in text: String) -> Bool {
+        matches(#"已到|已送达|包裹到|快件到|已存|已放|送至|暂存|待取件|请.{0,8}(?:取件|取货|提货|领取)"#, in: text)
+    }
+
+    private func numberRoleRanges(in text: String) -> [NSRange] {
+        let courierNames = PickupDirectory.couriers.flatMap(\.aliases)
+            .map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")
+        let patterns = [
+            #"(?<![A-Za-z0-9])1[3-9][0-9][ \t-]*[*×Xx]{4}[ \t-]*[0-9]{4}(?![A-Za-z0-9])"#,
+            #"https?://[^\s，,。；;]+"#,
+            #"(?:^|\n)[ \t]*(?:"# + courierNames + #")[ \t]+[A-Za-z0-9]{8,24}(?![A-Za-z0-9])"#,
+            #"(?:^|\n)[ \t]*(?:收(?:件人|货人)?[ \t：:]|收货地址|收件地址)[^\n]*"#,
+            #"(?:手机(?:号(?:码)?|尾号)?|电话(?:号(?:码)?|尾号)?|客服(?:电话)?|运单(?:号|尾号)?|物流单号|订单号|验证码|校验码|房号)[ \t:：为是]*[A-Za-z0-9*×]+(?:[ \t-]+[A-Za-z0-9*×]+)*"#,
+            #"(?<![0-9])[0-9]{4}[/年.][0-9]{1,2}[/月.][0-9]{1,2}日?(?![0-9])"#,
+            #"(?<![0-9])[0-9]{1,2}[:：][0-9]{2}(?:[:：][0-9]{2})?(?![0-9])"#,
+        ]
+        return patterns.flatMap { Self.regex($0).matches(in: text, range: NSRange(text.startIndex..., in: text)).map(\.range) }
+    }
+
+    private func phoneNumberRanges(in text: String) -> [NSRange] {
+        let patterns = [
+            // Mainland mobile shape, not an operator-specific prefix allowlist.
+            #"(?<![A-Za-z0-9])(?:\+?86[ \t-]?)?1[3-9][0-9](?:[ \t-]?[0-9]){8}(?![A-Za-z0-9])"#,
+            #"(?<![A-Za-z0-9])0[0-9]{2,3}[ \t-]?[0-9]{7,8}(?![A-Za-z0-9])"#,
+            #"(?<![A-Za-z0-9])(?:400|800)[ \t-]?[0-9]{3}[ \t-]?[0-9]{4}(?![A-Za-z0-9])"#,
+        ]
+        return patterns.flatMap { Self.regex($0).matches(in: text, range: NSRange(text.startIndex..., in: text)).map(\.range) }
+    }
+
     private func excluded(_ range: NSRange, in text: String) -> Bool {
         let ns = text as NSString
         let start = max(0, range.location - 18)
         let before = ns.substring(with: NSRange(location: start, length: range.location - start))
         let after = ns.substring(from: NSMaxRange(range)).prefix(30)
-        if Self.matches(#"(?:原|旧)(?:取件码|提货码|取货码|领取码)[\s:：为是「『“\"']*$"#, in: before) { return true }
+        if Self.matches(#"(?:原|旧)"# + Self.label + #"[\s:：为是「『“\"']*$"#, in: before) { return true }
         if Self.matches(#"^[\s，,]*(?:已)?(?:失效|作废|过期|停用|不可用)"#, in: String(after)) { return true }
         if Self.matches(#"^[ \t]*(?:积分|红包|优惠券|元(?:红包|补贴|奖励)?)"#, in: String(after)) { return true }
         // Preserve whole tokens. Masks, URLs and address suffixes cannot be truncated into codes.
@@ -370,8 +457,8 @@ struct PickupRecognitionCore: Sendable {
         let joined = text.replacingOccurrences(of: "\n", with: "")
         let patterns = [
             #"(?:领取地点|取件地点|取件地址|(?<!收货)(?<!收件)地址)[ \t]*[:：]?[ \t]*([^\n，,。；;]{2,80})"#,
-            #"(?:取件码|提货码|取货码|领取码|取件编号)[\s:：为是「『“\"']*"# + Self.token + #"[」』”\"'\s]*(?:到|至|前往)\s*([^，,。；;\n]{2,80})"#,
-            #"凭[\s「『“\"']*"# + Self.token + #"[」』”\"'\s]*(?:到|至|前往)\s*([^，,。；;\n]{2,80})"#,
+            Self.label + #"[\s:：为是「『“\"']*"# + Self.token + #"[」』”\"'\s]*(?:到|至|前往)\s*([^，,。；;\n]{2,80})"#,
+            #"凭[\s:：「『“\"']*"# + Self.token + #"[」』”\"'\s]*(?:到|至|前往)\s*([^，,。；;\n]{2,80})"#,
             #"(?:已到达|已到|己到|送达|送至|存放在|存放于|存放至|已存放至|已存入|已放入|请到|包裹到|快件到|快递到)\s*([^，,。；;\n]{2,80})"#,
             #"(?:包裹|快件|快递)(?:已)?在\s*([^，,。；;\n]{2,80})"#,
         ]

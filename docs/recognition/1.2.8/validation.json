@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-17",
+  "version": "1.2.8",
+  "build": 24,
+  "host_tests": {
+    "tests": 153,
+    "failures": 0
+  },
+  "generic_simulator_debug_build": true,
+  "built_product_versions": [
+    {
+      "product": "收下.app",
+      "version": "1.2.8",
+      "build": "24"
+    },
+    {
+      "product": "ShouxiaShare.appex",
+      "version": "1.2.8",
+      "build": "24"
+    },
+    {
+      "product": "ShouxiaWidgets.appex",
+      "version": "1.2.8",
+      "build": "24"
+    }
+  ],
+  "ios_runtime_or_ui_tested": false,
+  "distributed": false,
+  "comparison_scope": "30 constructed development cases, not independent holdout or user accuracy estimate; image_lines is text replay, not OCR",
+  "comparison_manual": {
+    "legacy": {
+      "source": "96dcd6190342c060678ec94eb729bdc62f2c832d",
+      "manual_positive_exact": 14,
+      "manual_positive_total": 16,
+      "manual_negative_false_positive": 13,
+      "manual_negative_total": 14
+    },
+    "submitted": {
+      "source": "943138eec44099fc15b2f1bf6d6c8ce3e480df9f",
+      "manual_positive_exact": 7,
+      "manual_positive_total": 16,
+      "manual_negative_false_positive": 4,
+      "manual_negative_total": 14
+    },
+    "fixed": {
+      "source": "working tree; hashes below",
+      "manual_positive_exact": 16,
+      "manual_positive_total": 16,
+      "manual_negative_false_positive": 0,
+      "manual_negative_total": 14
+    }
+  },
+  "fixed_all_four_entrypoints_expected_normal_codes": true,
+  "review_candidates_may_be_offered_but_not_selected_by_default": true,
+  "existing_research_cases_unchanged": 43,
+  "existing_review_cases_unchanged": 7,
+  "user_image_probe": "macOS Vision URL handler plus current extractor returns full code and location; courier unknown because OCR reads 极免; not iOS UIKit validation",
+  "sha256": {
+    "Shared/PickupRecognitionCore.swift": "a6f444673ae8626e6d2bbec2c8e43c455bfc1fb6f7e28f60d62ddebd8c586517",
+    "Shouxia/Services/PickupParser.swift": "3757273e9c047cb9321781764bc110b2b5f14a9310745bfc696d6756a3ce20e6",
+    "Shouxia/Models/PickupRecord.swift": "a3a716471fa3ddf431affa9da5fee21e31b03536c943a2b5117e667e07dab8cf",
+    "ShouxiaTests/PickupParserTests.swift": "2f043b2dbf7021b672ba1bc5da702d29b09ab713a14faa022192f6e1d2b586c7",
+    "Shouxia.xcodeproj/project.pbxproj": "c0f9730768997a52dd879c6bbdb91c0d25092c20b1f2acc21ab31b91cc817d93"
+  },
+  "signed_release_archive": {
+    "status": "verified",
+    "source_files_match_snapshot": 51,
+    "signed_bundles": 3,
+    "min_os": "16.0",
+    "app_group_verified": true,
+    "dSYM_verified": true,
+    "upload_status": "accepted_processing"
+  },
+  "uploaded_to_app_store_connect": true,
+  "upload_receipt": {
+    "accepted_at": "2026-10-17T13:42:34+08:00",
+    "processing_complete": null,
+    "store_review_submitted": false,
+    "user_device_or_testflight_acceptance": false
+  }
+}

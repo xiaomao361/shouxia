@@ -204,7 +204,7 @@ enum PickupImportError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .ambiguousCode:
-            "取件码存在备选或截断，请核对后粘贴单独的完整取件码"
+            "取件码需要核对或更正，请粘贴单独的完整取件码"
         case .tooLong:
             "文字太长，请只选择取件通知再试"
         case .emptyText:

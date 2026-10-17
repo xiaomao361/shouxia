@@ -14,7 +14,7 @@ struct PickupParser: Sendable {
         guard !rawText.isEmpty else { throw PickupImportError.emptyText }
         guard rawText.utf8.count <= 64 * 1024 else { throw PickupImportError.tooLong }
         let blocks = PickupRecognitionCore().notifications(in: rawText, allowBareCode: !requiresLabel)
-        let unresolvedCount = blocks.filter { $0.unresolved || (!$0.codes.isEmpty && $0.codes.allSatisfy { $0.reviewIssue != nil }) }.count
+        let unresolvedCount = blocks.filter { $0.unresolved || $0.codes.contains { $0.reviewIssue != nil } }.count
         var results: [ParsedPickup] = []
         for block in blocks {
             for (index, code) in block.codes.enumerated() where code.reviewIssue == nil {

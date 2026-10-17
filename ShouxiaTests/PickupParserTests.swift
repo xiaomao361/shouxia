@@ -379,6 +379,195 @@ final class PickupParserTests: XCTestCase {
         }
     }
 
+    func testPickupInstructionsAcceptTiHuoAcrossEntrypoints() throws {
+        // Sanitized counterpart of the reported SMS: the parcel suffix is not the pickup code.
+        for instruction in ["凭11-4-7319提货", "凭11-4-7319尽快提货", "提货 11-4-7319",
+                            "凭11-4-7319提取包裹", "凭：11-4-7319取件", "取件密码11-4-7319", "提取码11-4-7319"] {
+            let text = "【极兔速递】7319包裹已到样例市春风家园快递站，" + instruction
+            for automatic in [false, true] {
+                let results = try parser.parseAll(text, requiresLabel: automatic)
+                XCTAssertEqual(results.map(\.code), ["11-4-7319"])
+                XCTAssertEqual(results.first?.location, "样例市春风家园快递站")
+                XCTAssertEqual(results.first?.platform, "极兔")
+            }
+            let shared = try PickupSharedTextParser().candidates(from: text)
+            XCTAssertEqual(shared.map(\.code), ["11-4-7319"])
+            XCTAssertEqual(shared.first?.location, "样例市春风家园快递站")
+            let image = try imageExtractor.candidates(from: [imageLine(text)])
+            XCTAssertEqual(image.map(\.code), ["11-4-7319"])
+            XCTAssertEqual(image.first?.location, "样例市春风家园快递站")
+        }
+        let wrapped = ["【极兔速递】7319包裹已到样", "例市春风家园快递站，凭", "11-4-7319提货"]
+        let image = try imageExtractor.candidates(from: wrapped.map { imageLine($0) })
+        XCTAssertEqual(image.map(\.code), ["11-4-7319"])
+        XCTAssertEqual(image.first?.location, "样例市春风家园快递站")
+        XCTAssertEqual(image.first?.platform, "极兔")
+    }
+
+    func testTiHuoInstructionsStillRejectNonCodesAcrossEntrypoints() {
+        for text in [
+            "【极兔速递】7319包裹已到北门快递站，请及时提货",
+            "【极兔速递】包裹已到北门快递站，凭13800138000提货",
+            "【极兔速递】包裹已到北门快递站，凭7319****提货",
+            "【极兔速递】包裹已到北门快递站，凭7319已作废，请勿提货",
+            "快递会员活动，提货 7319 元红包",
+        ] {
+            XCTAssertThrowsError(try parser.parseAll(text), text)
+            XCTAssertThrowsError(try parser.parseAll(text, requiresLabel: true), text)
+            XCTAssertThrowsError(try PickupSharedTextParser().candidates(from: text), text)
+            XCTAssertThrowsError(try imageExtractor.candidates(from: [imageLine(text)]), text)
+        }
+    }
+
+    func testNewPickupLabelsPreserveObsoleteAndNumberRoleExclusions() throws {
+        for label in ["取件密码", "提取码"] {
+            for text in ["旧\(label)7319", "\(label)7319已作废", "\(label)13800138000", "\(label)7319为手机尾号"] {
+                XCTAssertThrowsError(try parser.parseAll(text), text)
+                XCTAssertThrowsError(try PickupSharedTextParser().candidates(from: text), text)
+                XCTAssertThrowsError(try imageExtractor.candidates(from: [imageLine(text)]), text)
+            }
+        }
+    }
+
+    func testCodeContinuationRequiresReviewInsteadOfSavingPrefix() throws {
+        let text = "【极兔速递】包裹已到北门快递站，取件码11-4-73\n19"
+        for automatic in [false, true] {
+            XCTAssertThrowsError(try parser.parseAll(text, requiresLabel: automatic)) { error in
+                XCTAssertEqual(error as? PickupImportError, .ambiguousCode)
+            }
+        }
+        for candidates in [try PickupSharedTextParser().candidates(from: text),
+                           try imageExtractor.candidates(from: text.components(separatedBy: .newlines).map { imageLine($0) })] {
+            XCTAssertEqual(candidates.first?.reviewIssue, .truncated)
+            XCTAssertEqual(candidates.first?.shouldSelectByDefault, false)
+        }
+    }
+
+    func testUnrecognizedPickupInstructionPreservesPartialResultWarning() throws {
+        let text = "【极兔速递】取件码1234\n【圆通速递】包裹已到南门快递站，凭****提货"
+        for automatic in [false, true] {
+            let results = try parser.parseAll(text, requiresLabel: automatic)
+            XCTAssertEqual(results.map(\.code), ["1234"])
+            XCTAssertEqual(results.first?.unresolvedNotificationCount, 1)
+        }
+        for candidates in [try PickupSharedTextParser().candidates(from: text),
+                           try imageExtractor.candidates(from: text.components(separatedBy: .newlines).map { imageLine($0) })] {
+            XCTAssertEqual(candidates.map(\.code), ["1234"])
+            XCTAssertEqual(candidates.first?.unresolvedNotificationCount, 1)
+        }
+    }
+
+    func testContextualCandidatesSupportNumericShelfAndMixedCodesWithoutFixedSentence() throws {
+        for code in ["0012", "01234", "829146", "0829146", "12345678", "11-4-7319", "A1234"] {
+            let text = "【中通快递】您的包裹已到北门驿站，\(code)，请及时取件。"
+            for automatic in [false, true] {
+                XCTAssertEqual(try parser.parseAll(text, requiresLabel: automatic).map(\.code), [code], text)
+            }
+            XCTAssertEqual(try PickupSharedTextParser().candidates(from: text).map(\.code), [code], text)
+            XCTAssertEqual(try imageExtractor.candidates(from: [imageLine(text)]).map(\.code), [code], text)
+        }
+    }
+
+    func testContextualCandidatesExcludeCompleteNumberRolesBeforeChoosingCode() throws {
+        let text = "【中通快递】7319包裹已到北门驿站，829146，请及时取件。日期2026-10-17 12:50，手机+86 138 0013 8000，电话010-12345678，客服电话400-123-4567，运单号YT12345678，手机尾号2635，距离1200米，费用1234元，帮助https://example.invalid/5678\n中通快递 YT1234567890123\n收 样例小区3号楼1单元1503"
+        XCTAssertEqual(try parser.parseAll(text).map(\.code), ["829146"])
+        XCTAssertEqual(try parser.parseAll(text, requiresLabel: true).map(\.code), ["829146"])
+        XCTAssertEqual(try PickupSharedTextParser().candidates(from: text).map(\.code), ["829146"])
+        XCTAssertEqual(try imageExtractor.candidates(from: [imageLine(text)]).map(\.code), ["829146"])
+        for phone in ["13800138000", "+8613800138000", "138 0013 8000", "1380 0138 000", "138-0013-8000", "010-12345678", "400-123-4567"] {
+            let text = "【中通快递】包裹已到北门驿站，取件码\(phone)"
+            XCTAssertThrowsError(try parser.parseAll(text), text)
+            if phone.contains("-") {
+                for candidates in [try PickupSharedTextParser().candidates(from: text),
+                                   try imageExtractor.candidates(from: [imageLine(text)])] {
+                    XCTAssertEqual(candidates.first?.reviewIssue, .phoneLike)
+                    XCTAssertFalse(candidates.first?.shouldSelectByDefault ?? true)
+                }
+            } else {
+                XCTAssertThrowsError(try PickupSharedTextParser().candidates(from: text), text)
+                XCTAssertThrowsError(try imageExtractor.candidates(from: [imageLine(text)]), text)
+            }
+        }
+    }
+
+    func testContextualCandidatesDoNotInventCodesFromIncidentalNumbers() {
+        for text in [
+            "【中通快递】7319包裹已到北门驿站，请及时取件",
+            "【中通快递】包裹已到北门驿站，2026-10-17 12:50，手机138 0013 8000",
+            "【中通快递】包裹已到北门驿站，手机尾号2635，运单尾号829146",
+            "【中通快递】包裹已到北门驿站，订单号12345678，电话951966",
+            "【中通快递】包裹已到北门驿站，138 xxxx 8000，请及时取件",
+            "【中通快递】包裹已到北门驿站，距离1200米，地址1234号楼5678室",
+            "【中通快递】包裹已到北门驿站，https://example.invalid/829146",
+            "【中通快递】包裹已到北门驿站，829***，请及时取件",
+            "【中通快递】包裹已到北门驿站，****829146，请及时取件",
+            "快递会员活动，领取829146积分，奖励已到账",
+            "您的余额829146元已到账",
+        ] {
+            XCTAssertThrowsError(try parser.parseAll(text), text)
+            XCTAssertThrowsError(try parser.parseAll(text, requiresLabel: true), text)
+            XCTAssertThrowsError(try PickupSharedTextParser().candidates(from: text), text)
+            XCTAssertThrowsError(try imageExtractor.candidates(from: [imageLine(text)]), text)
+        }
+    }
+
+    func testUnlabelledMultipleNumbersRequireConfirmationRatherThanGuessing() throws {
+        let text = "【中通快递】包裹已到北门驿站，829146，2635，请及时取件"
+        XCTAssertThrowsError(try parser.parseAll(text))
+        XCTAssertThrowsError(try parser.parseAll(text, requiresLabel: true))
+        let candidates = try PickupSharedTextParser().candidates(from: text)
+        XCTAssertEqual(candidates.map(\.code), ["829146", "2635"])
+        XCTAssertTrue(candidates.allSatisfy { $0.reviewIssue != nil && !$0.shouldSelectByDefault })
+        var review = PickupCandidateReview(candidates: candidates)
+        let first = try XCTUnwrap(review.items.first)
+        review.setSelected(true, id: first.id)
+        XCTAssertEqual(try review.validatedSelection().map { $0.candidate.code }, ["829146"])
+    }
+
+    func testSameNotificationRetainsMissingCodeWarningAlongsideValidCode() throws {
+        for suffix in ["取件码****", "凭****提货"] {
+            let text = "【中通快递】取件码1234，" + suffix
+            XCTAssertEqual(try parser.parse(text).code, "1234")
+            XCTAssertEqual(try parser.parse(text).unresolvedNotificationCount, 1)
+            XCTAssertEqual(try PickupSharedTextParser().candidates(from: text).first?.unresolvedNotificationCount, 1)
+            XCTAssertEqual(try imageExtractor.candidates(from: [imageLine(text)]).first?.unresolvedNotificationCount, 1)
+        }
+        for text in ["取件码1234，请凭码取件", "取件码1234，取件码1234", "原取件码5678已作废，新取件码1234"] {
+            XCTAssertEqual(try parser.parse(text).unresolvedNotificationCount, 0, text)
+        }
+        for suffix in ["取件码8291…", "取件码829146或2635"] {
+            let text = "取件码1234，" + suffix
+            XCTAssertEqual(try parser.parseAll(text).map(\.code), ["1234"])
+            XCTAssertEqual(try parser.parse(text).unresolvedNotificationCount, 1)
+        }
+    }
+
+    func testSpacedLabelsAndParenthesesPreserveNumericCodes() throws {
+        for label in ["取 件 码", "提 货 码", "领 取 码", "提 取 码", "取 件 密 码"] {
+            let text = "【中通】包裹已到北门驿站，\(label)（001234）"
+            XCTAssertEqual(try parser.parse(text).code, "001234", text)
+            XCTAssertEqual(try PickupSharedTextParser().candidates(from: text).first?.code, "001234", text)
+            XCTAssertEqual(try imageExtractor.candidates(from: [imageLine(text)]).first?.code, "001234", text)
+        }
+    }
+
+    func testLongLabelledMixedCodeIsNotExcludedAsTrackingByLengthAlone() throws {
+        for code in ["A123456789", "A13800138000", "A01012345678", "13800138000A", "01012345678A"] {
+            let text = "【中通】包裹已到北门驿站，取件码" + code
+            XCTAssertEqual(try parser.parse(text).code, code)
+            XCTAssertEqual(try PickupSharedTextParser().candidates(from: text).first?.code, code)
+            XCTAssertEqual(try imageExtractor.candidates(from: [imageLine(text)]).first?.code, code)
+        }
+    }
+
+    func testNumericCodeWithInternalSpaceCannotSilentlySavePrefix() throws {
+        let text = "【中通】包裹已到北门驿站，取件码1234 56"
+        XCTAssertThrowsError(try parser.parse(text))
+        let candidate = try XCTUnwrap(PickupSharedTextParser().candidates(from: text).first)
+        XCTAssertEqual(candidate.reviewIssue, .truncated)
+        XCTAssertFalse(candidate.shouldSelectByDefault)
+    }
+
     func testAllEntrypointsNormalizeFullWidthQuotesAndOCRWraps() throws {
         for text in ["【丰巢】取件码８２９１４６，已到北门丰巢柜", "【丰巢】凭取件码「829146」至北门丰巢柜取件"] {
             XCTAssertEqual(try parser.parse(text).code, "829146")

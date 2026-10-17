@@ -1,0 +1,30 @@
+{"id": "no-label-0012", "text": "【中通快递】您的包裹已到北门驿站，0012，请及时取件。", "expected": ["0012"], "representation": "synthetic"}
+{"id": "no-label-01234", "text": "【中通快递】您的包裹已到北门驿站，01234，请及时取件。", "expected": ["01234"], "representation": "synthetic"}
+{"id": "no-label-829146", "text": "【中通快递】您的包裹已到北门驿站，829146，请及时取件。", "expected": ["829146"], "representation": "synthetic"}
+{"id": "no-label-0829146", "text": "【中通快递】您的包裹已到北门驿站，0829146，请及时取件。", "expected": ["0829146"], "representation": "synthetic"}
+{"id": "no-label-12345678", "text": "【中通快递】您的包裹已到北门驿站，12345678，请及时取件。", "expected": ["12345678"], "representation": "synthetic"}
+{"id": "no-label-11-4-7319", "text": "【中通快递】您的包裹已到北门驿站，11-4-7319，请及时取件。", "expected": ["11-4-7319"], "representation": "synthetic"}
+{"id": "no-label-A1234", "text": "【中通快递】您的包裹已到北门驿站，A1234，请及时取件。", "expected": ["A1234"], "representation": "synthetic"}
+{"id": "label-0012", "text": "【中通快递】您的包裹已到北门驿站，取件码0012", "expected": ["0012"], "representation": "synthetic"}
+{"id": "label-01234", "text": "【中通快递】您的包裹已到北门驿站，取件码01234", "expected": ["01234"], "representation": "synthetic"}
+{"id": "label-829146", "text": "【中通快递】您的包裹已到北门驿站，取件码829146", "expected": ["829146"], "representation": "synthetic"}
+{"id": "label-0829146", "text": "【中通快递】您的包裹已到北门驿站，取件码0829146", "expected": ["0829146"], "representation": "synthetic"}
+{"id": "label-12345678", "text": "【中通快递】您的包裹已到北门驿站，取件码12345678", "expected": ["12345678"], "representation": "synthetic"}
+{"id": "label-11-4-7319", "text": "【中通快递】您的包裹已到北门驿站，取件码11-4-7319", "expected": ["11-4-7319"], "representation": "synthetic"}
+{"id": "label-A1234", "text": "【中通快递】您的包裹已到北门驿站，取件码A1234", "expected": ["A1234"], "representation": "synthetic"}
+{"id": "tihuo", "text": "【极兔速递】7319包裹已到样例市春风家园快递站，凭11-4-7319提货", "expected": ["11-4-7319"], "representation": "synthetic"}
+{"id": "negative-tail", "text": "手机尾号2635，快递已到东门驿站，咨询13000000000", "expected": [], "representation": "synthetic"}
+{"id": "negative-date", "text": "2026-10-15 18:30，包裹到了，请到南门门卫室领取。", "expected": [], "representation": "synthetic"}
+{"id": "negative-room", "text": "快递暂存星河苑3-2-4012室，请联系门卫。", "expected": [], "representation": "synthetic"}
+{"id": "negative-url", "text": "包裹已到北门驿站，https://example.invalid/829146", "expected": [], "representation": "synthetic"}
+{"id": "negative-parcel", "text": "7319包裹已到北门驿站，请及时取件", "expected": [], "representation": "synthetic"}
+{"id": "negative-masked", "text": "【丰巢】取件码829***，已到北门丰巢柜", "expected": [], "representation": "synthetic"}
+{"id": "negative-expired", "text": "旧取件码829146已作废", "expected": [], "representation": "synthetic"}
+{"id": "phone-22", "text": "【中通快递】包裹已到北门驿站，取件码13800138000", "expected": [], "representation": "synthetic"}
+{"id": "phone-23", "text": "【中通快递】包裹已到北门驿站，取件码+8613800138000", "expected": [], "representation": "synthetic"}
+{"id": "phone-24", "text": "【中通快递】包裹已到北门驿站，取件码138 0013 8000", "expected": [], "representation": "synthetic"}
+{"id": "phone-25", "text": "【中通快递】包裹已到北门驿站，取件码1380 0138 000", "expected": [], "representation": "synthetic"}
+{"id": "phone-26", "text": "【中通快递】包裹已到北门驿站，取件码138-0013-8000", "expected": [], "representation": "synthetic"}
+{"id": "phone-27", "text": "【中通快递】包裹已到北门驿站，取件码010-12345678", "expected": [], "representation": "synthetic"}
+{"id": "phone-28", "text": "【中通快递】包裹已到北门驿站，取件码400-123-4567", "expected": [], "representation": "synthetic"}
+{"id": "multi", "text": "【中通】已到北门驿站，取件码001234\n【圆通】包裹已到南门便利店，0829146，请及时取件", "expected": ["001234", "0829146"], "representation": "synthetic"}
