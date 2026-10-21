@@ -39,6 +39,23 @@ for line in input.split(separator: "\n") {
     let sample = try JSONSerialization.jsonObject(with: Data(line.utf8)) as! [String: Any]
     guard let text = sample["text"] as? String else { continue }
     var result: [String: Any] = ["id": sample["id"]!, "inputRepresentation": sample["representation"]!]
+    // Development evidence only; these observations are not persisted by the app.
+    result["analysis_manual"] = PickupRecognitionCore().notifications(in: text, allowBareCode: true).map { block in
+        ["unresolved": block.unresolved, "requiresReview": block.requiresReview,
+         "issues": block.analysis.issues.map(\.rawValue),
+         "observations": block.analysis.observations.map { code -> [String: Any] in
+             let state: String
+             let reason: String?
+             switch code.decision {
+             case .accepted: state = "accepted"; reason = nil
+             case let .requiresReview(issue): state = "review"; reason = issue.rawValue
+             case let .excluded(exclusion): state = "excluded"; reason = exclusion.rawValue
+             }
+             return ["code": code.value, "rule": code.rule, "state": state,
+                     "reason": reason as Any? ?? NSNull(),
+                     "normalizedUTF16Range": [code.range.location, code.range.length]]
+         }] as [String: Any]
+    }
     result["manual"] = run { try PickupParser().parseAll(text).map(item) }
     if sample["representation"] as? String != "format_only" {
         result["automatic"] = run { try PickupParser().parseAll(text, requiresLabel: true).map(item) }

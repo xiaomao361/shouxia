@@ -1,6 +1,82 @@
 import XCTest
 @testable import Shouxia
 
+final class PickupRecognitionContractTests: XCTestCase {
+    func testMissingListItemRemainsVisibleWithoutSwallowingLaterCodes() throws {
+        let text = "【中通】取件码1234、56****、9012，已到北门驿站"
+        let analysis = PickupRecognitionCore().notifications(in: text)[0].analysis
+        XCTAssertEqual(analysis.candidates.map(\.value), ["1234", "9012"])
+        XCTAssertTrue(analysis.hasUnresolved)
+        XCTAssertEqual(analysis.observations.first { $0.value == "56****" }?.decision, .excluded(.unreadable))
+        for automatic in [false, true] {
+            let items = try PickupParser().parseAll(text, requiresLabel: automatic)
+            XCTAssertEqual(items.map(\.code), ["1234", "9012"])
+            XCTAssertEqual(items.first?.unresolvedNotificationCount, 1)
+        }
+    }
+
+    func testUnreadableCorrectionCannotRevivePreviousCode() throws {
+        for marker in ["更正为", "更新为", "改为", "换为"] {
+            for value in ["56****", "＊＊＊＊", "（****）", ""] {
+                let text = "取件码1234，" + marker + value
+                let notification = PickupRecognitionCore().notifications(in: text)[0]
+                XCTAssertTrue(notification.codes.isEmpty, text)
+                XCTAssertTrue(notification.unresolved, text)
+                XCTAssertEqual(notification.analysis.observations.first?.decision, .excluded(.superseded), text)
+                XCTAssertThrowsError(try PickupParser().parseAll(text), text)
+            }
+        }
+        for text in ["取件码12****，更正为5678", "旧取件码12****，新取件码5678"] {
+            let result = try PickupParser().parseAll(text)
+            XCTAssertEqual(result.map(\.code), ["5678"])
+            XCTAssertEqual(result.first?.unresolvedNotificationCount, 0, text)
+        }
+    }
+
+    func testCodeDecisionDistinguishesReviewFromMissingInformation() throws {
+        let notification = PickupRecognitionCore().notifications(in: "取件码8291…")[0]
+        XCTAssertTrue(notification.requiresReview)
+        XCTAssertFalse(notification.analysis.hasUnresolved)
+        XCTAssertEqual(notification.codes.first?.decision, .requiresReview(.truncated))
+        // The review screen already shows this candidate. Correcting it must not leave
+        // an unrelated missing-notification warning attached to the saved code.
+        let candidates = try PickupSharedTextParser().candidates(from: "取件码8291…")
+        var review = PickupCandidateReview(candidates: candidates)
+        try review.update(id: review.items[0].id, code: "829146", location: "北门驿站")
+        let corrected = try review.validatedSelection()[0].candidate
+        XCTAssertEqual(corrected.unresolvedNotificationCount, 0)
+        XCTAssertNil(corrected.reviewIssue)
+    }
+
+    func testContextNumbersRetainTheirExclusionReason() {
+        let text = "【菜鸟】尾号1234的包裹已到北门驿站，请及时取件"
+        let analysis = PickupRecognitionCore().notifications(in: text)[0].analysis
+        XCTAssertEqual(analysis.observations.first { $0.value == "1234" }?.decision, .excluded(.otherNumberRole))
+        XCTAssertTrue(analysis.candidates.isEmpty)
+    }
+
+    func testUnsafeAutomaticInputsNeverCreateStoredRecords() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("records.json")
+        let repository = PickupRepository(fileURL: file)
+        for text in ["【菜鸟】尾号1234的包裹已到北门驿站，请及时取件",
+                     "取件码1234，更正为56****", "取件码1234＊＊＊＊"] {
+            do {
+                _ = try await repository.importText(text, source: .smsAutomation)
+                XCTFail("Unsafe input saved: " + text)
+            } catch is PickupImportError { }
+        }
+        let records = try await repository.records()
+        XCTAssertTrue(records.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path))
+        let result = try await repository.importText("取件码1234、56****、9012", source: .smsAutomation)
+        XCTAssertEqual(result.addedRecords.map(\.code), ["1234", "9012"])
+        XCTAssertEqual(result.unresolvedCount, 1)
+        XCTAssertNotNil(result.partialMessage)
+    }
+}
+
 final class PickupParserTests: XCTestCase {
     private let parser = PickupParser()
     private let imageExtractor = ImagePickupExtractor()

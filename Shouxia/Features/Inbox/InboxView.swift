@@ -6,6 +6,7 @@ struct InboxView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
     @AppStorage("automationSetupAutoHideHandled") private var automationSetupAutoHideHandled = false
     @AppStorage("automaticClipboardImportEnabled") private var automaticClipboardImportEnabled = false
@@ -168,6 +169,7 @@ struct InboxView: View {
                 )
             }
             .task {
+                syncActivityAppearance()
                 await store.load()
                 await store.receiveSharedImages(defaultLocation: commonPickupLocation)
                 hideAutomationSetupAfterSMSImport()
@@ -190,12 +192,17 @@ struct InboxView: View {
             }
             .onChange(of: scenePhase) { phase in
                 guard phase == .active else { return }
+                syncActivityAppearance()
                 Task {
                     await store.load()
                     await store.receiveSharedImages(defaultLocation: commonPickupLocation)
                     hideAutomationSetupAfterSMSImport()
                     clipboardCheckRequestID &+= 1
                 }
+            }
+            .onChange(of: colorScheme) { _ in
+                guard scenePhase == .active else { return }
+                syncActivityAppearance()
             }
             .onOpenURL { url in
                 if url.scheme == "shouxia", url.host == "pickup" {
@@ -219,6 +226,10 @@ struct InboxView: View {
         }
         .tint(ShouxiaPalette.mutedInk)
         .shouxiaRoundedFont()
+    }
+
+    private func syncActivityAppearance() {
+        PickupLiveActivityController.shared.setAppearance(colorScheme == .dark ? .dark : .light)
     }
 
     private enum PresentedSheet: Identifiable {

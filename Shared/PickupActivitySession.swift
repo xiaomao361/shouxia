@@ -1,5 +1,10 @@
 import Foundation
 
+enum PickupActivityAppearance: String, Codable, Sendable {
+    case light
+    case dark
+}
+
 /// System activity lifetime only; the persistent preference owns user intent.
 /// No pickup-mode selection, fixed membership or privacy mode is stored here.
 struct PickupActivitySession: Codable, Equatable, Sendable {
@@ -24,12 +29,15 @@ struct PickupActivityContent: Codable, Hashable, Sendable {
     let usesCommonLocation: Bool
     let remainingCount: Int
     let ended: Bool
+    // Missing in older activity payloads; keep unknown distinct from light/dark.
+    var appearance: PickupActivityAppearance? = nil
 
-    static func make(records: [PickupRecord]) -> Self? {
+    static func make(records: [PickupRecord], appearance: PickupActivityAppearance? = nil) -> Self? {
         let pending = PickupSurfaceSnapshot.make(records: records).items
         guard let first = pending.first else { return nil }
         return Self(recordID: first.id, code: first.code, location: first.location,
-                    usesCommonLocation: first.usesCommonLocation, remainingCount: pending.count, ended: false)
+                    usesCommonLocation: first.usesCommonLocation, remainingCount: pending.count, ended: false,
+                    appearance: appearance)
     }
 
     static let finished = Self(recordID: nil, code: nil, location: "待取展示已结束",

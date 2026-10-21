@@ -14,10 +14,10 @@ struct PickupParser: Sendable {
         guard !rawText.isEmpty else { throw PickupImportError.emptyText }
         guard rawText.utf8.count <= 64 * 1024 else { throw PickupImportError.tooLong }
         let blocks = PickupRecognitionCore().notifications(in: rawText, allowBareCode: !requiresLabel)
-        let unresolvedCount = blocks.filter { $0.unresolved || $0.codes.contains { $0.reviewIssue != nil } }.count
+        let unresolvedCount = blocks.filter { $0.unresolved || $0.requiresReview }.count
         var results: [ParsedPickup] = []
         for block in blocks {
-            for (index, code) in block.codes.enumerated() where code.reviewIssue == nil {
+            for (index, code) in block.codes.enumerated() where code.decision == .accepted {
                 let identityText = blocks.count == 1 ? rawText : block.text
                 results.append(ParsedPickup(
                     rawText: blocks.count == 1 ? rawText : block.text, code: code.value, location: block.location,
@@ -38,7 +38,7 @@ struct PickupParser: Sendable {
 
     func extractLabelledCodes(from text: String) -> [String] {
         PickupRecognitionCore().notifications(in: text).flatMap(\.codes)
-            .filter { $0.explicit && $0.reviewIssue == nil }.map(\.value)
+            .filter { $0.explicit && $0.decision == .accepted }.map(\.value)
     }
 
     func fingerprint(for text: String) -> String {

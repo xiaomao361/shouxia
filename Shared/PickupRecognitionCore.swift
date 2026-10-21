@@ -111,6 +111,27 @@ enum PickupReviewIssue: String, Equatable, Hashable, Sendable {
 
 /// Shared by paste, SMS automation, shared text and OCR. No online service required.
 struct PickupRecognitionCore: Sendable {
+    enum Exclusion: String, Equatable, Sendable {
+        case otherNumberRole, invalidFormat, unreadable, notPickup, superseded
+    }
+    enum Decision: Equatable, Sendable {
+        case accepted, requiresReview(PickupReviewIssue), excluded(Exclusion)
+    }
+    enum AnalysisIssue: String, Sendable { case missingReplacement }
+    struct CodeAnalysis: Sendable {
+        let observations: [Code]
+        let issues: [AnalysisIssue]
+        var candidates: [Code] {
+            var seen = Set<String>()
+            return observations.filter { $0.exclusion == nil && seen.insert($0.value).inserted }
+        }
+        var requiresReview: Bool { candidates.contains { $0.reviewIssue != nil } }
+        var hasUnresolved: Bool {
+            !issues.isEmpty || observations.contains {
+                $0.exclusion == .unreadable || ($0.explicit && $0.exclusion == .invalidFormat)
+            }
+        }
+    }
     struct Code: Equatable, Sendable {
         let value: String
         let explicit: Bool
@@ -119,14 +140,23 @@ struct PickupRecognitionCore: Sendable {
         let range: NSRange
         var reviewIssue: PickupReviewIssue? = nil
         var alternativeGroup: String? = nil
+        var exclusion: Exclusion? = nil
+        var decision: Decision {
+            if let exclusion { return .excluded(exclusion) }
+            if let reviewIssue { return .requiresReview(reviewIssue) }
+            return .accepted
+        }
     }
     struct Notification: Sendable {
         let text: String
-        let codes: [Code]
+        let analysis: CodeAnalysis
+        var codes: [Code] { analysis.candidates }
         let location: String?
         let roles: PickupDirectory.Roles
         var locationRequiresConfirmation = false
+        var requiresReview: Bool { analysis.requiresReview }
         var unresolved: Bool {
+            if analysis.hasUnresolved { return true }
             let ns = text as NSString
             let labels = PickupRecognitionCore.regex(PickupRecognitionCore.label)
                 .matches(in: text, range: NSRange(location: 0, length: ns.length))
@@ -156,12 +186,14 @@ struct PickupRecognitionCore: Sendable {
         }
     }
     static let label = #"(?:取件码|提货码|取货码|领取码|提取码|取件密码|取件编号|凭码)"#
+    static let observedToken = #"[A-Za-z0-9*×]+(?:-[A-Za-z0-9*×]+){0,4}"#
     static let token = #"[A-Za-z0-9]+(?:-[A-Za-z0-9]+){0,4}"#
     static let placeSuffix = #"(?:驿站|快递超市|快递柜|丰巢柜|代收点|服务站|便利店|超市|门卫室|自提柜)"#
 
     static func normalize(_ input: String) -> String {
         var text = String(String.UnicodeScalarView(input.unicodeScalars.map { scalar in
             // Normalize code characters, retaining original Chinese address punctuation.
+            if scalar.value == 0xFF0A { return UnicodeScalar(0x2A)! }
             if (0xFF10...0xFF19).contains(scalar.value) || (0xFF21...0xFF3A).contains(scalar.value)
                 || (0xFF41...0xFF5A).contains(scalar.value) {
                 return UnicodeScalar(scalar.value - 0xFEE0)!
@@ -193,7 +225,7 @@ struct PickupRecognitionCore: Sendable {
         return blocks(in: text).map { block in
             let resolution = resolveLocation(in: block)
             let betweenCodes = ambiguousPlaces.contains { block.components(separatedBy: .newlines).contains($0) }
-            return Notification(text: block, codes: codes(in: block, allowBareCode: allowBareCode),
+            return Notification(text: block, analysis: analyzeCodes(in: block, allowBareCode: allowBareCode),
                                 location: betweenCodes ? nil : resolution.value,
                                 roles: PickupDirectory.roles(in: block),
                                 locationRequiresConfirmation: betweenCodes || resolution.ambiguous)
@@ -206,8 +238,19 @@ struct PickupRecognitionCore: Sendable {
         let separated = text.replacingOccurrences(
             of: #"(?<=[。；;])\s*(?=(?:您的?|你的?|包裹|快件|快递)?(?:已到|已存|已放|送至|请到|请凭))"#,
             with: "\n", options: .regularExpression)
-        let signed = separated.replacingOccurrences(of: #"(?=[【\[〖][^】\]〗\n]{1,24}[】\]〗])"#,
-                                               with: "\n\u{001E}", options: .regularExpression)
+        // A quoted code is part of its label, not a sender signature.
+        let signature = Self.regex(#"[【\[〖]([^】\]〗\n]{1,24})[】\]〗]"#)
+        var signed = separated
+        let original = separated as NSString
+        for match in signature.matches(in: separated, range: NSRange(location: 0, length: original.length)).reversed() {
+            let value = original.substring(with: match.range(at: 1))
+            let prefix = original.substring(to: match.range.location)
+            let quotedValue = Self.matches(#"^[A-Za-z0-9*×-]+$"#, in: value)
+                && (value.contains(where: \.isNumber) || value.contains("*") || value.contains("×"))
+            guard !quotedValue, !Self.matches(Self.label + #"[\s:：为是]*$"#, in: prefix),
+                  let range = Range(match.range, in: signed) else { continue }
+            signed.insert(contentsOf: "\n\u{001E}", at: range.lowerBound)
+        }
         var result: [String] = []
         for section in signed.components(separatedBy: "\u{001E}") {
             var current: [String] = []
@@ -257,150 +300,193 @@ struct PickupRecognitionCore: Sendable {
         return !value.allSatisfy(\.isNumber) || value.count <= 8
     }
 
-    func codes(in text: String, allowBareCode: Bool) -> [Code] {
+    /// Extraction preserves observations. Classification and relation resolution decide
+    /// usability afterward; adapters never recreate a code from a rejected fragment.
+    func analyzeCodes(in text: String, allowBareCode: Bool) -> CodeAnalysis {
         let ns = text as NSString
-        var found: [(NSRange, Code)] = []
-        // Classify whole spans before extracting candidates so grouped phone numbers,
-        // tracking IDs and URLs cannot leak shorter fragments into pickup-code detection.
-        let numberRoles = numberRoleRanges(in: text)
-        let phones = phoneNumberRanges(in: text)
-        func append(_ range: NSRange, explicit: Bool, rule: String) -> Bool {
-            let value = ns.substring(with: range).uppercased()
-            guard Self.validCode(value),
-                  !numberRoles.contains(where: { NSIntersectionRange($0, range).length > 0 }),
-                  !excluded(range, in: text) else { return false }
-            let phoneLike = phones.contains { NSIntersectionRange($0, range).length > 0 }
-            // A labelled shelf code can have the same shape as a grouped phone number.
-            // Preserve that conflict for review rather than silently dropping a possible code.
-            guard !phoneLike || (explicit && value.contains("-")) else { return false }
-            if !found.contains(where: { $0.0 == range }) {
-                let tail = ns.substring(from: NSMaxRange(range))
-                let maskedTail = Self.matches(#"^[ \t]*(?:…|\.\.\.|[•●□×])"#, in: tail)
-                // A continuation row may be the rest of this code. Never silently save its prefix.
-                let numericContinuation = Self.matches(#"^\s+[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*[ \t]*(?:\n|$|取件|取货|提货|领取)"#, in: tail)
-                let issue: PickupReviewIssue? = maskedTail || numericContinuation ? .truncated : phoneLike ? .phoneLike : nil
-                found.append((range, Code(value: value, explicit: explicit, rule: rule, range: range, reviewIssue: issue)))
-            }
-            return true
+        var observations: [Code] = []
+        var issues: [AnalysisIssue] = []
+        let rawToken = Self.observedToken
+        let context = ClassificationContext(numberRoles: numberRoleRanges(in: text), phones: phoneNumberRanges(in: text))
+        func offer(_ range: NSRange, explicit: Bool, rule: String) {
+            guard !observations.contains(where: { $0.range == range }) else { return }
+            observations.append(Code(value: ns.substring(with: range).uppercased(),
+                                     explicit: explicit, rule: rule, range: range))
         }
         let labels = Self.regex(Self.label).matches(in: text, range: NSRange(location: 0, length: ns.length))
         for (index, label) in labels.enumerated() {
             let end = index + 1 < labels.count ? labels[index + 1].range.location : ns.length
             let remainderRange = NSRange(location: NSMaxRange(label.range), length: end - NSMaxRange(label.range))
             let remainder = ns.substring(with: remainderRange)
-            // Direct label-value binding, allowing quotation marks and OCR line breaks.
-            let pattern = #"^[\s:：为是「『“\"'〖【(（]*((?:"# + Self.token + #"))(?![A-Za-z0-9*-])"#
+            let pattern = #"^[\s:：为是「『“\"'〖【\[(（]*("# + rawToken + #")(?![A-Za-z0-9*×-])"#
             if let match = Self.regex(pattern).firstMatch(in: remainder, range: NSRange(location: 0, length: (remainder as NSString).length)) {
-                let r = NSRange(location: remainderRange.location + match.range(at: 1).location, length: match.range(at: 1).length)
-                if append(r, explicit: true, rule: "label.direct") {
-                    // Every list continuation has its own role check, including explanations after the value.
-                    var cursor = NSMaxRange(r)
-                    while cursor < end {
-                        let tail = ns.substring(with: NSRange(location: cursor, length: end - cursor))
-                        guard let next = Self.regex(#"^[ \t]*[、，,][ \t]*("# + Self.token + #")(?![A-Za-z0-9*-])"#)
-                            .firstMatch(in: tail, range: NSRange(location: 0, length: (tail as NSString).length)) else { break }
-                        let nextRange = NSRange(location: cursor + next.range(at: 1).location, length: next.range(at: 1).length)
-                        guard append(nextRange, explicit: true, rule: "label.list") else { break }
-                        cursor += next.range.length
-                    }
+                let range = NSRange(location: remainderRange.location + match.range(at: 1).location, length: match.range(at: 1).length)
+                offer(range, explicit: true, rule: "label.direct")
+                var cursor = NSMaxRange(range)
+                // A bad item is still an item. Advance past it and keep scanning the list.
+                while cursor < end {
+                    let tail = ns.substring(with: NSRange(location: cursor, length: end - cursor))
+                    let list = #"^[ \t]*(?:…|\.\.\.|[•●□]+)?[ \t]*[、，,][ \t]*("# + rawToken + #")(?![A-Za-z0-9*×-])"#
+                    guard let next = Self.regex(list).firstMatch(in: tail, range: NSRange(location: 0, length: (tail as NSString).length)) else { break }
+                    offer(NSRange(location: cursor + next.range(at: 1).location, length: next.range(at: 1).length),
+                          explicit: true, rule: "label.list")
+                    cursor += next.range.length
                 }
             } else if remainder.trimmingCharacters(in: .whitespaces).hasPrefix("\n") {
-                // Separate label/value rows: skip clearly identified non-code rows, never cross a block.
                 var offset = remainderRange.location
                 for line in remainder.components(separatedBy: "\n").prefix(5) {
                     let lineNS = line as NSString
-                    if let match = Self.regex(#"^\s*("# + Self.token + #")\s*$"#)
-                        .firstMatch(in: line, range: NSRange(location: 0, length: lineNS.length)),
-                       append(NSRange(location: offset + match.range(at: 1).location, length: match.range(at: 1).length),
-                              explicit: true, rule: "label.row") { break }
+                    if let match = Self.regex(#"^\s*("# + rawToken + #")\s*$"#)
+                        .firstMatch(in: line, range: NSRange(location: 0, length: lineNS.length)) {
+                        let range = NSRange(location: offset + match.range(at: 1).location, length: match.range(at: 1).length)
+                        let observation = Code(value: ns.substring(with: range).uppercased(), explicit: true,
+                                               rule: "label.row", range: range)
+                        // Identified phone/address rows do not bind to a preceding code label.
+                        if classify(observation, in: text, context: context).exclusion != .otherNumberRole {
+                            offer(range, explicit: true, rule: "label.row")
+                            break
+                        }
+                    }
                     offset += lineNS.length + 1
                 }
             }
         }
-        // Implicit pickup instructions are also strong semantic evidence for text imports.
-        let patterns = [
-            #"凭[\s:：「『“\"']*("# + Self.token + #")(?![A-Za-z0-9*-])(?=[」』”\"'\s]*(?:及时|尽快|来|到|至|前往|取|领|提货|提取包裹))"#,
-            #"(?:领取|取件|取货|提货)[ \t]+("# + Self.token + #")(?![A-Za-z0-9*-])"#,
-        ]
         if Self.hasPickupContext(in: text) {
-            for pattern in patterns {
+            for pattern in [
+                #"凭[\s:：「『“\"']*("# + rawToken + #")(?![A-Za-z0-9*×-])(?=[」』”\"'\s]*(?:及时|尽快|来|到|至|前往|取|领|提货|提取包裹))"#,
+                #"(?:领取|取件|取货|提货)[ \t]+("# + rawToken + #")(?![A-Za-z0-9*×-])"#,
+            ] {
                 for match in Self.regex(pattern).matches(in: text, range: NSRange(location: 0, length: ns.length)) {
-                    _ = append(match.range(at: 1), explicit: false, rule: "instruction.pickup")
+                    offer(match.range(at: 1), explicit: false, rule: "instruction.pickup")
+                }
+            }
+        }
+        let usesContextFallback = labels.isEmpty && observations.isEmpty
+            && Self.hasPickupContext(in: text) && Self.hasArrivalContext(in: text)
+        if usesContextFallback {
+            for match in Self.regex(#"(?<![A-Za-z0-9*×-])("# + rawToken + #")(?![A-Za-z0-9*×-])"#)
+                .matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                offer(match.range(at: 1), explicit: false, rule: "context.candidate")
+            }
+        }
+        // One classifier owns role, whole-token and truncation decisions for every rule.
+        observations = observations.map { classify($0, in: text, context: context) }
+        if usesContextFallback {
+            let usable = observations.indices.filter { observations[$0].exclusion == nil }
+            if usable.count > 1 {
+                for index in usable where observations[index].reviewIssue == nil {
+                    observations[index].reviewIssue = .uncertainNumbers
                 }
             }
         }
 
-        // Unknown wording must not discard an otherwise clear pickup notification.
-        // Labels retain priority: fallback must never revive an obsolete or masked value.
-        if labels.isEmpty, found.isEmpty, Self.hasPickupContext(in: text), Self.hasArrivalContext(in: text) {
-            let candidates = Self.regex(#"(?<![A-Za-z0-9*×-])("# + Self.token + #")(?![A-Za-z0-9*×-])"#)
+        if !labels.isEmpty || !observations.isEmpty {
+            // Invalidate the previous code when a correction is stated, even if the
+            // replacement is absent/masked. An unreadable replacement cannot revive it.
+            let markers = Self.regex(#"(?:更正为|更新为|改为|换为)"#)
                 .matches(in: text, range: NSRange(location: 0, length: ns.length))
-            for candidate in candidates {
-                let range = candidate.range(at: 1)
-                let after = ns.substring(from: NSMaxRange(range))
-                let value = ns.substring(with: range)
-                // A labelled pickup value may resemble a date; an unlabelled one is uncertain.
-                guard !Self.matches(#"^\d{4}-\d{1,2}-\d{1,2}$"#, in: value),
-                      !Self.matches(#"^[ \t]*(?:包裹|快件|邮件|号|栋|楼|单元|室|米|公里|分钟|小时|天|年|月|日|点|分|秒|件|个|元|积分|红包|优惠券)"#, in: after) else { continue }
-                _ = append(range, explicit: false, rule: "context.candidate")
-            }
-            if found.count > 1 {
-                for index in found.indices where found[index].1.reviewIssue == nil {
-                    found[index].1.reviewIssue = .uncertainNumbers
-                }
-            }
-        }
-
-        if !labels.isEmpty || !found.isEmpty {
-            // A correction refers to the nearest previous candidate in this block.
-            let replacement = #"(?:更正为|更新为|改为|换为)[\s:：「『“\"']*("# + Self.token + #")(?![A-Za-z0-9*-])"#
-            for match in Self.regex(replacement).matches(in: text, range: NSRange(location: 0, length: ns.length)) {
-                let range = match.range(at: 1)
-                let old = found.filter { NSMaxRange($0.0) <= match.range.location }.max { $0.0.location < $1.0.location }
-                let prefix = ns.substring(to: match.range.location)
+            for marker in markers {
+                let old = observations.indices.filter {
+                    NSMaxRange(observations[$0].range) <= marker.range.location
+                        && observations[$0].exclusion != .otherNumberRole
+                        && observations[$0].exclusion != .superseded
+                        && observations[$0].exclusion != .notPickup
+                }.max { observations[$0].range.location < observations[$1].range.location }
+                let prefix = ns.substring(to: marker.range.location)
                     .components(separatedBy: CharacterSet(charactersIn: "，,。；;\n")).last ?? ""
+                // A field's own correction must not invalidate an earlier pickup code.
+                // Require a code cue or an otherwise neutral correction clause.
+                let codeCorrection = Self.matches(Self.label, in: prefix)
+                    || Self.matches(#"^\s*(?:现|现已|已)?\s*$"#, in: prefix)
                 guard !Self.matches(#"地址|地点|手机|电话|金额|数量|运单"#, in: prefix),
-                      old != nil || Self.matches(Self.label, in: prefix) else { continue }
-                if append(range, explicit: true, rule: "label.replacement"), let old {
-                    found.removeAll { $0.0 == old.0 }
+                      codeCorrection, old != nil || Self.matches(Self.label, in: prefix) else { continue }
+                if let old { observations[old].exclusion = .superseded }
+                let tail = ns.substring(from: NSMaxRange(marker.range))
+                let replacement = #"^[\s:：「『“\"'〖【\[(（]*(?:"# + Self.label + #")?[\s:：为是「『“\"'〖【\[(（]*("# + rawToken + #")(?![A-Za-z0-9*×-])"#
+                if let match = Self.regex(replacement).firstMatch(in: tail, range: NSRange(location: 0, length: (tail as NSString).length)) {
+                    let range = NSRange(location: NSMaxRange(marker.range) + match.range(at: 1).location,
+                                        length: match.range(at: 1).length)
+                    if !observations.contains(where: { $0.range == range }) {
+                        observations.append(classify(Code(value: ns.substring(with: range).uppercased(), explicit: true,
+                                                          rule: "label.replacement", range: range), in: text, context: context))
+                    }
+                } else { issues.append(.missingReplacement) }
+            }
+            let alternative = #"(?:或(?:者)?|/)[\s]*(?:使用|凭)?(?:"# + Self.label + #")?[\s:：为是「『“\"']*("# + rawToken + #")(?![A-Za-z0-9*×-])"#
+            for match in Self.regex(alternative).matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                guard let previous = observations.filter({ $0.exclusion == nil && NSMaxRange($0.range) <= match.range.location })
+                    .max(by: { $0.range.location < $1.range.location }) else { continue }
+                let between = ns.substring(with: NSRange(location: NSMaxRange(previous.range),
+                    length: match.range.location - NSMaxRange(previous.range)))
+                guard Self.matches(#"^[\s，,」』”\"']*$"#, in: between) else { continue }
+                let range = match.range(at: 1)
+                if !observations.contains(where: { $0.range == range }) {
+                    observations.append(classify(Code(value: ns.substring(with: range).uppercased(), explicit: false,
+                                                      rule: "choice.value", range: range), in: text, context: context))
                 }
             }
-            // The value following “or” may repeat its label or omit it entirely.
-            let alternative = #"(?:或(?:者)?|/)[\s]*(?:使用|凭)?(?:"# + Self.label + #")?[\s:：为是「『“\"']*("# + Self.token + #")(?![A-Za-z0-9*-])"#
-            for match in Self.regex(alternative).matches(in: text, range: NSRange(location: 0, length: ns.length)) {
-                guard let previous = found.filter({ NSMaxRange($0.0) <= match.range.location })
-                    .max(by: { $0.0.location < $1.0.location }) else { continue }
-                let between = ns.substring(with: NSRange(location: NSMaxRange(previous.0),
-                    length: match.range.location - NSMaxRange(previous.0)))
-                guard Self.matches(#"^[\s，,」』”\"']*$"#, in: between) else { continue }
-                _ = append(match.range(at: 1), explicit: false, rule: "choice.value")
-            }
-            found.sort { $0.0.location < $1.0.location }
-            // Keep each connected choice group separate from independent parcel lists.
+            observations.sort { $0.range.location < $1.range.location }
+            let choices = observations.indices.filter { observations[$0].exclusion == nil || observations[$0].exclusion == .unreadable }
             var choiceStart: Int? = nil
-            for index in found.indices {
-                guard index > 0 else { continue }
-                let previousEnd = NSMaxRange(found[index - 1].0)
-                let between = ns.substring(with: NSRange(location: previousEnd, length: found[index].0.location - previousEnd))
+            for pair in zip(choices, choices.dropFirst()) {
+                let previousEnd = NSMaxRange(observations[pair.0].range)
+                let between = ns.substring(with: NSRange(location: previousEnd, length: observations[pair.1].range.location - previousEnd))
                 let connector = #"^[\s，,]*(?:或(?:者)?|/)[\s]*(?:使用|凭)?(?:"# + Self.label + #")?[\s:：为是「『“”」』\"']*$"#
                 if Self.matches(connector, in: between) {
-                    let first = choiceStart ?? (index - 1)
+                    let first = choiceStart ?? pair.0
                     choiceStart = first
-                    let group = PickupIdentity.key(code: "choice-\(found[first].0.location)", location: text, platform: nil)
-                    for choice in [index - 1, index] {
-                        if found[choice].1.reviewIssue != .truncated { found[choice].1.reviewIssue = .alternatives }
-                        found[choice].1.alternativeGroup = group
+                    let group = PickupIdentity.key(code: "choice-\(observations[first].range.location)", location: text, platform: nil)
+                    for index in [pair.0, pair.1] {
+                        if observations[index].reviewIssue != .truncated { observations[index].reviewIssue = .alternatives }
+                        observations[index].alternativeGroup = group
                     }
                 } else { choiceStart = nil }
             }
         }
         let bare = text.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        if found.isEmpty, allowBareCode, Self.validCode(bare),
+        if observations.isEmpty, allowBareCode, Self.validCode(bare),
            !Self.matches(#"^\d{4}-\d{1,2}-\d{1,2}$"#, in: bare) {
-            found.append((NSRange(location: 0, length: ns.length), Code(value: bare, explicit: false, rule: "manual.bare", range: NSRange(location: 0, length: ns.length))))
+            observations.append(Code(value: bare, explicit: false, rule: "manual.bare", range: NSRange(location: 0, length: ns.length)))
         }
-        var seen = Set<String>()
-        return found.sorted { $0.0.location < $1.0.location }.map(\.1).filter { seen.insert($0.value).inserted }
+        return CodeAnalysis(observations: observations.sorted { $0.range.location < $1.range.location }, issues: issues)
+    }
+
+    func codes(in text: String, allowBareCode: Bool) -> [Code] {
+        analyzeCodes(in: text, allowBareCode: allowBareCode).candidates
+    }
+
+    private struct ClassificationContext {
+        let numberRoles: [NSRange]
+        let phones: [NSRange]
+    }
+
+    private func classify(_ observation: Code, in text: String, context: ClassificationContext) -> Code {
+        var code = observation
+        let ns = text as NSString
+        let after = ns.substring(from: NSMaxRange(code.range))
+        if context.numberRoles.contains(where: { NSIntersectionRange($0, code.range).length > 0 }) {
+            code.exclusion = .otherNumberRole
+        } else if excluded(code.range, in: text) {
+            code.exclusion = .notPickup
+        } else if code.value.contains("*") || code.value.contains("×") {
+            code.exclusion = .unreadable
+        } else if context.phones.contains(where: { NSIntersectionRange($0, code.range).length > 0 }) {
+            if code.explicit && code.value.contains("-") { code.reviewIssue = .phoneLike }
+            else { code.exclusion = .otherNumberRole }
+        } else if !Self.validCode(code.value) {
+            code.exclusion = .invalidFormat
+        }
+        if code.rule == "context.candidate", code.exclusion == nil,
+           Self.matches(#"^\d{4}-\d{1,2}-\d{1,2}$"#, in: code.value)
+            || Self.matches(#"^[ \t]*(?:包裹|快件|邮件|号|栋|楼|单元|室|米|公里|分钟|小时|天|年|月|日|点|分|秒|件|个|元|积分|红包|优惠券)"#, in: after) {
+            code.exclusion = .otherNumberRole
+        }
+        if code.exclusion == nil {
+            let maskedTail = Self.matches(#"^[ \t]*(?:…|\.\.\.|[•●□×])"#, in: after)
+            let continuation = Self.matches(#"^\s+[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*[ \t]*(?:\n|$|取件|取货|提货|领取)"#, in: after)
+            if maskedTail || continuation { code.reviewIssue = .truncated }
+        }
+        return code
     }
 
     static func hasPickupContext(in text: String) -> Bool {
@@ -418,12 +504,23 @@ struct PickupRecognitionCore: Sendable {
             #"(?<![A-Za-z0-9])1[3-9][0-9][ \t-]*[*×Xx]{4}[ \t-]*[0-9]{4}(?![A-Za-z0-9])"#,
             #"https?://[^\s，,。；;]+"#,
             #"(?:^|\n)[ \t]*(?:"# + courierNames + #")[ \t]+[A-Za-z0-9]{8,24}(?![A-Za-z0-9])"#,
-            #"(?:^|\n)[ \t]*(?:收(?:件人|货人)?[ \t：:]|收货地址|收件地址)[^\n]*"#,
-            #"(?:手机(?:号(?:码)?|尾号)?|电话(?:号(?:码)?|尾号)?|客服(?:电话)?|运单(?:号|尾号)?|物流单号|订单号|验证码|校验码|房号)[ \t:：为是]*[A-Za-z0-9*×]+(?:[ \t-]+[A-Za-z0-9*×]+)*"#,
+            #"(?:^|\n)[ \t]*(?:收(?:件人|货人)?[ \t：:]|收货地址|收件地址)(?:(?!"# + Self.label + #")[^，,。；;\n])*"#,
+            #"(?:手机(?:号(?:码)?|尾号)?|电话(?:号(?:码)?|尾号)?|客服(?:电话)?|运单(?:号|尾号)?|物流单号|订单(?:号|尾号)|包裹尾号|快件尾号|邮件尾号|尾号|分机(?:号)?|验证码|校验码|房号)[ \t:：为是]*[A-Za-z0-9*×]+(?:[ \t-]+[A-Za-z0-9*×]+)*"#,
+            #"(?:于|截止|截至|日期|时间)[ \t:：]*(?:20[0-9]{6})(?:前|之前|日|$)"#,
+            #"[0-9]{4}[ \t]*(?:为|是|系)?(?:包裹|快件|邮件|订单)尾号"#,
             #"(?<![0-9])[0-9]{4}[/年.][0-9]{1,2}[/月.][0-9]{1,2}日?(?![0-9])"#,
             #"(?<![0-9])[0-9]{1,2}[:：][0-9]{2}(?:[:：][0-9]{2})?(?![0-9])"#,
         ]
-        return patterns.flatMap { Self.regex($0).matches(in: text, range: NSRange(text.startIndex..., in: text)).map(\.range) }
+        var ranges = patterns.flatMap { Self.regex($0).matches(in: text, range: NSRange(text.startIndex..., in: text)).map(\.range) }
+        let ns = text as NSString
+        for phone in phoneNumberRanges(in: text) {
+            let tail = ns.substring(from: NSMaxRange(phone))
+            if let extra = Self.regex(#"^[ \t]*(?:转|分机(?:号)?)[ \t:：]*[0-9]{3,8}"#)
+                .firstMatch(in: tail, range: NSRange(location: 0, length: (tail as NSString).length)) {
+                ranges.append(NSRange(location: NSMaxRange(phone), length: extra.range.length))
+            }
+        }
+        return ranges
     }
 
     private func phoneNumberRanges(in text: String) -> [NSRange] {

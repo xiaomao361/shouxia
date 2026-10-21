@@ -5,6 +5,9 @@ struct AutomationSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @AppStorage("automationSetupCardHidden") private var automationSetupCardHidden = false
+    @State private var selectedTutorial: AutomationTutorial?
+    @StateObject private var triggerPlayback = AutomationTutorialPlayback(tutorial: .smsTrigger)
+    @StateObject private var manualPlayback = AutomationTutorialPlayback(tutorial: .manualCreation)
 
     private let shortcutURL = URL(
         string: "https://www.icloud.com/shortcuts/cd785f47a8244d32b1cf3c7c6f4dad8a"
@@ -12,6 +15,9 @@ struct AutomationSetupView: View {
 
     private let flow = SMSAutomationFlow.current
     private var usesInlineAutomation: Bool { flow == .inlineAutomation }
+    private var showsVideoTutorials: Bool {
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 27
+    }
     private var introduction: String { flow.introduction }
 
     private var troubleshooting: String {
@@ -85,6 +91,8 @@ struct AutomationSetupView: View {
                             AutomationSetupSection(
                                 eyebrow: "第二步",
                                 title: "设置收到短信时运行",
+                                tutorial: showsVideoTutorials ? .smsTrigger : nil,
+                                playTutorial: { selectedTutorial = .smsTrigger },
                                 steps: [
                                     AutomationSetupStepContent(
                                         title: "添加“信息”触发器",
@@ -144,6 +152,13 @@ struct AutomationSetupView: View {
                         }
 
                         DisclosureGroup("链接打不开？手动创建") {
+                            if showsVideoTutorials {
+                                AutomationTutorialCard(tutorial: .manualCreation) {
+                                    selectedTutorial = .manualCreation
+                                }
+                                .padding(.top, 12)
+                                .padding(.bottom, 8)
+                            }
                             AutomationSetupSection(
                                 eyebrow: "链接打不开时",
                                 title: "也可以手动创建",
@@ -213,6 +228,12 @@ struct AutomationSetupView: View {
         }
         .tint(ShouxiaPalette.mutedInk)
         .shouxiaRoundedFont()
+        .fullScreenCover(item: $selectedTutorial) { tutorial in
+            AutomationTutorialPlayerView(
+                tutorial: tutorial,
+                playback: tutorial == .smsTrigger ? triggerPlayback : manualPlayback
+            )
+        }
     }
 }
 
@@ -224,6 +245,8 @@ private struct AutomationSetupStepContent {
 private struct AutomationSetupSection: View {
     let eyebrow: String
     let title: String
+    var tutorial: AutomationTutorial? = nil
+    var playTutorial: () -> Void = {}
     var startingNumber = 1
     let steps: [AutomationSetupStepContent]
 
@@ -240,6 +263,12 @@ private struct AutomationSetupSection: View {
             .padding(.horizontal, 16)
             .padding(.top, 17)
             .padding(.bottom, 8)
+
+            if let tutorial {
+                AutomationTutorialCard(tutorial: tutorial, play: playTutorial)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
 
             ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
                 if index > 0 {

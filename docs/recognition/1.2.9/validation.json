@@ -1,0 +1,187 @@
+{
+  "date": "2026-10-19",
+  "version": "1.2.9",
+  "build": 25,
+  "host_tests": {
+    "tests": 158,
+    "failures": 0,
+    "scope": "macOS host; excludes UIKit theme and two real OCR fixture tests"
+  },
+  "recognition_gate": {
+    "cases": 240,
+    "entry_calls": 957,
+    "assertions": 1968,
+    "failures": [],
+    "source_sets": {
+      "research": 42,
+      "hotfix": 30,
+      "review": 7,
+      "stability": 26,
+      "variation": 135
+    },
+    "checks_by_field": {
+      "accepted": {
+        "checked": 64,
+        "failed": 0
+      },
+      "codes": {
+        "checked": 889,
+        "failed": 0
+      },
+      "error": {
+        "checked": 5,
+        "failed": 0
+      },
+      "locations": {
+        "checked": 141,
+        "failed": 0
+      },
+      "outcome": {
+        "checked": 124,
+        "failed": 0
+      },
+      "platforms": {
+        "checked": 125,
+        "failed": 0
+      },
+      "review_only": {
+        "checked": 28,
+        "failed": 0
+      },
+      "unresolved": {
+        "checked": 592,
+        "failed": 0
+      }
+    },
+    "source_sha256": {
+      "Shared/PickupRecognitionCore.swift": "76d836af5d38d69e2636b9537be8f05ca6737dc4f2b91bab678ebe06bc0f7a2e",
+      "Shouxia/Services/PickupParser.swift": "a4bc6c96b8e19a0263268045c7c927f76fb975cd2293c645f685e10f57841239",
+      "Shouxia/Services/ImagePickupRecognizer.swift": "617fdd2c6faaf49f452710192c6642e1af73e373510a164d13d93985c65626c4",
+      "Shared/PickupSharedTextParser.swift": "9009b65e82c3cdd6711a4a7f48a004ffa623c13731fb32e2efa7b48403b3ae33",
+      "Shared/PickupImageShareQueue.swift": "bb6582dd832eaf13af89374e70cfef07140e70cbf37c15d77e25e8db8d1f2ed2",
+      "Shouxia/Models/PickupRecord.swift": "a3a716471fa3ddf431affa9da5fee21e31b03536c943a2b5117e667e07dab8cf"
+    },
+    "scope": "Historical labelled development inputs plus constructed variations; not independent accuracy or real OCR."
+  },
+  "baseline_control": {
+    "cases": 240,
+    "entry_calls": 957,
+    "assertions": 1968,
+    "source_sets": {
+      "research": 42,
+      "hotfix": 30,
+      "review": 7,
+      "stability": 26,
+      "variation": 135
+    },
+    "checks_by_field": {
+      "accepted": {
+        "checked": 64,
+        "failed": 0
+      },
+      "codes": {
+        "checked": 889,
+        "failed": 300
+      },
+      "error": {
+        "checked": 5,
+        "failed": 0
+      },
+      "locations": {
+        "checked": 141,
+        "failed": 0
+      },
+      "outcome": {
+        "checked": 124,
+        "failed": 48
+      },
+      "platforms": {
+        "checked": 125,
+        "failed": 0
+      },
+      "review_only": {
+        "checked": 28,
+        "failed": 0
+      },
+      "unresolved": {
+        "checked": 592,
+        "failed": 236
+      }
+    },
+    "source_sha256": {
+      "Shared/PickupRecognitionCore.swift": "a6f444673ae8626e6d2bbec2c8e43c455bfc1fb6f7e28f60d62ddebd8c586517",
+      "Shouxia/Services/PickupParser.swift": "3757273e9c047cb9321781764bc110b2b5f14a9310745bfc696d6756a3ce20e6",
+      "Shouxia/Services/ImagePickupRecognizer.swift": "617fdd2c6faaf49f452710192c6642e1af73e373510a164d13d93985c65626c4",
+      "Shared/PickupSharedTextParser.swift": "9009b65e82c3cdd6711a4a7f48a004ffa623c13731fb32e2efa7b48403b3ae33",
+      "Shared/PickupImageShareQueue.swift": "bb6582dd832eaf13af89374e70cfef07140e70cbf37c15d77e25e8db8d1f2ed2",
+      "Shouxia/Models/PickupRecord.swift": "a3a716471fa3ddf431affa9da5fee21e31b03536c943a2b5117e667e07dab8cf"
+    },
+    "scope": "Historical labelled development inputs plus constructed variations; not independent accuracy or real OCR.",
+    "failure_count": 584
+  },
+  "generic_simulator_build_for_testing": true,
+  "built_product_versions": [
+    {
+      "product": "收下.app",
+      "version": "1.2.9",
+      "build": "25"
+    },
+    {
+      "product": "ShouxiaShare.appex",
+      "version": "1.2.9",
+      "build": "25"
+    },
+    {
+      "product": "ShouxiaWidgets.appex",
+      "version": "1.2.9",
+      "build": "25"
+    }
+  ],
+  "ios_runtime_or_ui_tested": false,
+  "independent_real_template_validation": "pending; no complete unused real-template truth set obtained",
+  "archive_or_upload_performed": true,
+  "offline_policy": "Bundled recognition rules only; no remote rule requests, new network dependency, or notification upload.",
+  "gate_sources_sha256": {
+    "scripts/check_pickup_recognition.py": "2056f67cd43c0a358d65eb9ca9414f4a63efaa813926506f7962454c16dfe401",
+    "scripts/check_recognition.sh": "5c9dc0a50ba00b213a2f8fa99b5e3ca6cdff5fcd63738f4d8d9e2486b2609a92",
+    "scripts/replay_pickup_samples.sh": "65b22f25d1427a99dbc1476bb7cf08c5a7ad7a4c0034836502b616dda4d354f1",
+    "docs/recognition/1.2.9/contracts.jsonl": "69b5e18e44ed5292997814c12d17bb24700d23d4310835892b2f5a70a27d281c"
+  },
+  "device_install": {
+    "date": "2026-10-19",
+    "device": "iPhone 14 Pro",
+    "status": "installed",
+    "version": "1.2.9",
+    "build": "25",
+    "install_receipt": ".private/releases/1.2.9-25/device-install-20261019.json",
+    "installed_version_receipt": ".private/releases/1.2.9-25/device-installed-app-20261019.json",
+    "signed_bundle_validation": ".private/releases/1.2.9-25/device-build-validation-20261019.json",
+    "source_manifest": ".private/releases/1.2.9-25/device-source-manifest-20261019.json",
+    "source_files_match": 44,
+    "app_opened_or_ui_operated": false,
+    "uninstall_or_data_clear_performed": false,
+    "business_acceptance": "pending user testing"
+  },
+  "user_trial_feedback": {
+    "date": "2026-10-19",
+    "feedback": "看起来好像没啥事",
+    "scope": "General trial of the installed development build; not exhaustive entry, template or OS acceptance",
+    "testflight_upload_authorized": true
+  },
+  "release_archive": {
+    "path": ".private/releases/1.2.9-25/Shouxia-1.2.9-25.xcarchive",
+    "validation": ".private/releases/1.2.9-25/archive-validation.json",
+    "status": "verified",
+    "source_files_match": 51,
+    "xcode": "27.1 / 27A9275"
+  },
+  "testflight_upload": {
+    "status": "accepted_processing",
+    "accepted_by_apple": true,
+    "uploaded_at": "2026-10-19T11:13:18.292000+08:00",
+    "processing_complete": null,
+    "test_group_visibility_verified": false,
+    "receipt": ".private/releases/1.2.9-25/upload-receipt.json",
+    "source_files_match_after_upload": 51
+  }
+}

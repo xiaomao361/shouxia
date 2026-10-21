@@ -115,6 +115,8 @@ final class PickupLiveActivityController: ObservableObject {
     private let now: () -> Date
     private let persistenceKey = "pickupLiveActivitySession.v2"
     private let enabledKey = "pickupLiveActivityEnabled"
+    private let appearanceKey = "pickupLiveActivityAppearance.v1"
+    private var appearance: PickupActivityAppearance?
     private var revision = 0
     private var worker: Task<Void, Never>?
 
@@ -125,6 +127,7 @@ final class PickupLiveActivityController: ObservableObject {
         self.defaults = defaults
         self.now = now
         isEnabled = defaults.bool(forKey: enabledKey)
+        appearance = defaults.string(forKey: appearanceKey).flatMap(PickupActivityAppearance.init(rawValue:))
         if let data = defaults.data(forKey: persistenceKey) {
             do { session = try JSONDecoder().decode(PickupActivitySession.self, from: data) }
             catch { message = "展示将在下次打开收下时恢复" }
@@ -139,6 +142,14 @@ final class PickupLiveActivityController: ObservableObject {
     }
 
     func refresh() { enqueue() }
+    /// The app's foreground appearance is authoritative; the Lock Screen host may differ.
+    func setAppearance(_ appearance: PickupActivityAppearance) {
+        guard self.appearance != appearance else { return }
+        self.appearance = appearance
+        defaults.set(appearance.rawValue, forKey: appearanceKey)
+        if isEnabled { enqueue() }
+    }
+
     func refreshAndWait() async { enqueue(); await worker?.value }
     func waitUntilIdle() async { await worker?.value }
 
@@ -192,7 +203,7 @@ final class PickupLiveActivityController: ObservableObject {
                 do {
                     let records = try await repository.records()
                     if currentRevision != revision { continue }
-                    if let state = PickupActivityContent.make(records: records) {
+                    if let state = PickupActivityContent.make(records: records, appearance: appearance) {
                         if let current = session, current.expiresAt > now(),
                            client.activeSessionIDs == [current.id] {
                             phase = "refreshFailed"

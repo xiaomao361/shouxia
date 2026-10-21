@@ -4,22 +4,14 @@ import WidgetKit
 
 @available(iOSApplicationExtension 16.1, *)
 struct PickupLiveActivity: Widget {
-    private let cream = ShouxiaPalette.warmPaper
-    private let ink = ShouxiaPalette.ink
-
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: PickupActivityAttributes.self) { context in
-            PickupActivityView(context: context, onLockScreen: true)
-                .padding(16)
-                .background(LinearGradient(colors: [cream, ShouxiaPalette.paper],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing))
-                .activityBackgroundTint(cream)
-                .activitySystemActionForegroundColor(ink)
+            PickupLockScreenActivityView(context: context)
                 .widgetURL(PickupSurfaceLink.url(id: context.state.recordID))
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.center) {
-                    PickupActivityView(context: context, onLockScreen: false)
+                    PickupActivityView(context: context)
                 }
             } compactLeading: {
                 if context.pickupIsStale || context.state.ended {
@@ -43,17 +35,46 @@ struct PickupLiveActivity: Widget {
                 Image(systemName: context.pickupIsStale ? "clock" : context.state.ended ? "checkmark" : "shippingbox.fill")
             }
             .widgetURL(PickupSurfaceLink.url(id: context.state.recordID))
-            .keylineTint(Color(red: 0.95, green: 0.63, blue: 0.49))
         }
+    }
+}
+
+@available(iOSApplicationExtension 16.1, *)
+private struct PickupLockScreenActivityView: View {
+    let context: ActivityViewContext<PickupActivityAttributes>
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
+
+    private var usesDarkAppearance: Bool {
+        if isLuminanceReduced { return true }
+        if let appearance = context.state.appearance { return appearance == .dark }
+        return colorScheme == .dark
+    }
+
+    // Use concrete colors: dynamic colors can resolve against the host's wallpaper theme.
+    private var background: Color {
+        usesDarkAppearance
+            ? Color(red: 0.10, green: 0.14, blue: 0.16)
+            : Color(red: 0.96, green: 0.97, blue: 0.98)
+    }
+    private var ink: Color {
+        usesDarkAppearance ? .white : Color(red: 0.149, green: 0.216, blue: 0.275)
+    }
+
+    var body: some View {
+        PickupActivityView(context: context, ink: ink, secondaryInk: ink.opacity(0.72))
+            .padding(16)
+            .background(background)
+            .activityBackgroundTint(background)
+            .activitySystemActionForegroundColor(ink)
     }
 }
 
 @available(iOSApplicationExtension 16.1, *)
 private struct PickupActivityView: View {
     let context: ActivityViewContext<PickupActivityAttributes>
-    let onLockScreen: Bool
-    private var ink: Color { onLockScreen ? ShouxiaPalette.ink : .white }
-    private var secondaryInk: Color { onLockScreen ? ShouxiaPalette.supportingInk : .white.opacity(0.75) }
+    var ink: Color = .white
+    var secondaryInk: Color = .white.opacity(0.75)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {

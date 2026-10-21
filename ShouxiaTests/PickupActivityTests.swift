@@ -3,6 +3,64 @@ import XCTest
 @testable import Shouxia
 
 final class PickupActivityTests: XCTestCase {
+    func testLegacyActivityPayloadKeepsAppearanceUnknown() throws {
+        let legacy = Data(#"{"code":"0012","location":"北门","usesCommonLocation":false,"remainingCount":2,"ended":false}"#.utf8)
+        let state = try JSONDecoder().decode(PickupActivityContent.self, from: legacy)
+        XCTAssertNil(state.appearance)
+        XCTAssertEqual(state.code, "0012")
+        XCTAssertEqual(state.remainingCount, 2)
+        let invalid = Data(#"{"code":"0012","location":"北门","usesCommonLocation":false,"remainingCount":2,"ended":false,"appearance":"invalid"}"#.utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(PickupActivityContent.self, from: invalid))
+    }
+
+    @MainActor
+    func testAppearanceChangesUpdateExistingActivityWithoutChangingPickupState() async throws {
+        let c = try await makeContext(); defer { c.cleanup() }
+        c.controller.setAppearance(.light)
+        c.controller.setEnabled(true)
+        await c.controller.waitUntilIdle()
+        let session = c.controller.session?.id
+        let before = try XCTUnwrap(c.client.lastState)
+        XCTAssertEqual(before.appearance, .light)
+
+        c.controller.setAppearance(.dark)
+        await c.controller.waitUntilIdle()
+        var expected = before
+        expected.appearance = .dark
+        XCTAssertEqual(c.client.lastState, expected)
+        XCTAssertEqual(c.controller.session?.id, session)
+        XCTAssertEqual(c.client.starts, 1)
+        let records = try await c.repository.records()
+        XCTAssertFalse(records[0].isCompleted)
+    }
+
+    @MainActor
+    func testBackgroundRefreshAndRelaunchRetainLastObservedAppAppearance() async throws {
+        let c = try await makeContext(); defer { c.cleanup() }
+        c.controller.setAppearance(.light)
+        c.controller.setEnabled(true)
+        await c.controller.waitUntilIdle()
+        c.client.canStart = false
+        _ = try await c.repository.importText("取件码 5678", source: .smsAutomation)
+        c.controller.refresh()
+        await c.controller.waitUntilIdle()
+        XCTAssertEqual(c.client.lastState?.appearance, .light)
+        XCTAssertEqual(c.client.lastState?.remainingCount, 2)
+        let restored = PickupLiveActivityController(client: c.client, repository: c.repository, defaults: c.defaults)
+        restored.refresh()
+        await restored.waitUntilIdle()
+        XCTAssertEqual(c.client.lastState?.appearance, .light)
+        XCTAssertEqual(c.client.starts, 1)
+    }
+
+    @MainActor
+    func testActivityWithoutObservedAppAppearanceDoesNotAssumeLight() async throws {
+        let c = try await makeContext(); defer { c.cleanup() }
+        c.controller.setEnabled(true)
+        await c.controller.waitUntilIdle()
+        XCTAssertNil(c.client.lastState?.appearance)
+    }
+
     @MainActor
     func testUnsupportedSystemIsDistinctFromPermissionDeniedAndDoesNotStart() async throws {
         let c = try await makeContext(); defer { c.cleanup() }

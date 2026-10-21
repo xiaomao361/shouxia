@@ -1,6 +1,6 @@
 # App Review Notes
 
-Current local review notes: **1.2.8 (24)**, a recognition hotfix uploaded on October 17, 2026 at 13:42 +0800 and accepted for processing. Processing completion and the live store version have not been independently checked. No iPhone or TestFlight test was performed for this build; the user authorized upload and will handle review submission and release. It restores candidates from clear pickup notifications without requiring a fixed sentence, keeps numeric-only codes, distinguishes whole phone numbers and other numeric roles, and preserves ambiguous or incomplete results for review. On October 17, 2026, the user reported approval of the preceding 1.2.7 version; the live store version has not been independently checked. These local notes have not been synchronized to App Store Connect. Prior build records below remain historical.
+Current local review notes: **1.3.0 (33)**, October 21, 2026. This candidate keeps the app implementation and bundled media from the locally installed 1.2.12 (32), which the user accepted in general functionality and appearance. It adds offline iOS 27 setup demonstrations and carries forward the existing local recognition and Live Activity appearance improvements. Version 33 has not been uploaded to TestFlight or submitted for App Review. The latest upload receipt is for 1.2.12 (30) on October 20; its current processing and availability have not been checked. The user reported 1.2.8 as released on October 19; the live store state has not been independently checked. These notes are a local draft and have not been synchronized to App Store Connect. See [candidate record](RELEASE_1.3.0_33.md) for validation and remaining acceptance boundaries.
 
 ## English
 
@@ -13,6 +13,8 @@ The app has four import paths:
 3. Photo recognition: the user may select up to five logistics screenshots with the system photo picker. Apple Vision performs OCR entirely on device. Candidates are merged into one review and deduplicated by code, location and courier/pickup-service context across images. A single clearly labelled, high-confidence code with a known location from one image may be added directly; other results go through review. Ordinary candidates are selected by default and can be deselected. Truncated codes and conflicting locations require correction; alternative codes and candidates with ambiguous numeric roles require confirmation. Codes and locations can be corrected on the review page before saving. The original images and unrelated OCR text are not stored.
 
 4. Text and image sharing: from the system share sheet of an app that exposes text or image sharing, the user can send pickup text or up to five screenshots to Shouxia. The Share extension parses text or performs OCR on device and asks the user to select and confirm pickup codes. Only selected minimum pickup fields are queued locally in the App Group; images and OCR text are not stored. On the next app launch or foreground activation, the app imports the queue using its existing duplicate protection and then refreshes widgets and Live Activities. The extension does not force-open the app, and saving in the share sheet does not imply an immediate widget refresh.
+
+On iOS 27, Settings → Import Settings → Messages automation setup includes a bundled, roughly 10-second demonstration for configuring the Message trigger after importing the template. The expanded manual-creation section includes a roughly 28-second walkthrough. The silent H.264 videos and covers play locally with pause, seek and replay controls; no external video service is used. Other supported iOS versions retain their matching text guides. Watching a video does not mark the automation as configured or prove that an SMS was imported.
 
 Import Settings also allows one optional common pickup point. It is used only as a fallback for future imports whose source contains no location, and records visibly distinguish this default from a recognized or user-corrected location. Records imported in the same photo batch can still be collected continuously when no location is available.
 
@@ -50,6 +52,8 @@ All message text and parsed records remain on device. The app contains no advert
 系统分享菜单也可接收取件文字或最多五张截图，核对保存后在下次打开App时加入待取。系统照片选择器支持一次选择最多五张物流截图；图片只在本机 OCR，随后按取件码、地点及快递信息跨图去重；单图单个高置信且地点明确的结果可直接添加，其余结果进入核对页，支持保存前更正，原图和无关全文不会保存。可选的“常用取件点”只补全以后导入且原文缺少地点的记录，并会显示来源标记；同批图片即使没有地点也可连续取件。
 
 短信自动导入先把“快捷指令输入”转换成文本并连接到“保存取件短信”的“短信内容”。iOS 27 将“信息”触发器放在同一个快捷指令内；iOS 17、18、26由独立的“信息”个人自动化运行该快捷指令。App 无法替用户创建或查询个人自动化，也不会读取短信历史或其他 App 的通知。
+
+iOS27可在“设置 → 导入设置 → 设置短信自动收码”观看内置离线演示：正常模板路径约10秒，“链接打不开？手动创建”展开区约28秒。视频与封面随安装包分发，可暂停、拖动、重播，切后台时暂停，无需访问第三方视频网站；其他系统继续使用对应文字引导。观看视频不会自动标记配置完成，仍需用户完成系统设置并用真实短信验证。
 
 App 内“添加‘收下自动收码’”按钮会打开 Apple iCloud 快捷指令分享页：
 
