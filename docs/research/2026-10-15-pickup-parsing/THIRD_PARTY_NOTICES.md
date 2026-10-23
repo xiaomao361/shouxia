@@ -26,6 +26,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-O03/O04取自zixij644-elaborate/pickup-code-app的短语料，GPL-3.0许可；其来源与固定提交见sources.json。C06/C22为本轮构造用例，仅参照其公开问题结构。S14多卡片源仅作结构佐证，没有复制解析代码。相关第三方语料保持原许可，不宣称本项目或研究者原创。
+O03/O04取自zixij644-elaborate/pickup-code-app的短语料，GPL-3.0许可；其来源与固定提交见sources.json。C06/C22为人工构造用例，仅参照其公开问题结构。S14多卡片源仅作结构佐证，没有复制解析代码。相关第三方语料保持原许可，不宣称本项目或研究者原创。
 
 [GPL-3.0许可原文](https://github.com/zixij644-elaborate/pickup-code-app/blob/f5075d3e4d2f4ffe4da259c699f472a790ec7013/LICENSE)

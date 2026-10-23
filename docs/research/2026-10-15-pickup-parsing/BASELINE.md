@@ -1,6 +1,8 @@
-# 当前行为回放
+# 历史基线回放
 
-运行层：macOS Swift原生执行当前PickupParser、PickupSharedTextParser、ImagePickupExtractor纯逻辑；不是正则移植模拟。没有启动App或修改源码。图片路径输入的是标注行（置信度统一0.92），不是实际OCR结果。另见ocr-probe.jsonl的独立本机OCR观察。
+实验日期：2026-10-15。对应源码哈希见 [环境记录](baseline-environment.json)，不描述当前源码行为。
+
+运行层：macOS Swift原生执行基线版本PickupParser、PickupSharedTextParser、ImagePickupExtractor纯逻辑；不是正则移植模拟。没有启动App或修改源码。图片路径输入的是标注行（置信度统一0.92），不是实际OCR结果。另见ocr-probe.jsonl的独立本机OCR观察。
 
 43条可执行输入：42条×4入口 + T06仅手动入口 = 169次调用。T05只有结构，未运行。无真实用户分布与独立留出集，不报告产品准确率。`platform`是现有混合字段，不自动当承运商。
 
@@ -64,5 +66,5 @@
 - C08三条能产生结果的路径均按码合并，仅剩一个地点，未触及队列/存储端就已经丢失身份；队列还要求所有code唯一。
 - C21图片第二条缺地点却沿用上一条并标高置信度。C23有标签结果使另一通知隐式码被忽略。
 - O03/C10标签断行，C11码断行，C12/C13全角，C15引号，暴露不同入口规范化不一致。
-- C14无原图无法标正确码；isHighConfidence=true只证明当前逻辑接受该候选，不能证明O/0实际误识别。本轮不据此修改字符。
+- C14无原图无法标正确码；isHighConfidence=true只证明当前逻辑接受该候选，不能证明O/0实际误识别。该实验不据此修改字符。
 - R05正文无取件码、R07/T03码被掩码，拒绝可用码是合理结果；缺码不应通过抓别的数字“修复”。

@@ -1,24 +1,13 @@
-# 收下整体介绍素材 · 设计候选
+# 产品介绍图
 
-2026-10-08 用户要求补齐整体介绍和多截图拼版。使用内置 image_gen，参考品牌图标和已脱敏界面素材制作。
+本目录保存基于品牌图标与脱敏界面制作的 AI 合成素材，用于产品介绍与视觉参考。
 
-- 01-product-header：产品页面标题横幅，突出“取件码，放在一起”。
-- 02-search-results：搜索结果设计，首页与大字取件组合。
-- 03-website-overview：官网概览，添加、查看、帮取三列。
+| 文件 | 用途 | 尺寸 |
+| --- | --- | --- |
+| `01-product-header.png` | 产品标题横幅 | 1916 × 821 |
+| `02-search-results.png` | 搜索结果设计参考 | 1536 × 1024 |
+| `03-website-overview.png` | 官网功能概览 | 1672 × 941 |
 
-这是第一版视觉素材，03 已用于本轮官网概览；01、02 保留为商店设计候选，均未提交商店。AI合成不是原始截图；详细界面可能有重绘，不替代实际截图证明。原始素材、上一轮九张脱敏图均保留。
+`03-website-overview.png` 由官网引用。以上图片包含生成或重绘内容，不是原始应用截图，也不能证明对应功能已通过设备验收。
 
-当前实际尺寸：
-01-product-header: 1916x821
-02-search-results: 1536x1024
-03-website-overview: 1672x941
-
-## 官方规格和后续检查
-
-[创意素材规范](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications)：产品页面标题图3840x1646；搜索结果图3:2，1920x1280至3840x2560；通用PNG5244x2950。不能包含alpha或透明度。
-
-[素材设计说明](https://developer.apple.com/app-store/asset-best-practices/)：创意素材负责品牌和整体价值；截屏展示实际使用，App预览指视频。标题与搜索创意素材用于iOS27及以后，不能替代旧系统可见的截图组。
-
-当前工具未按提示词目标尺寸输出，01和02尚未满足上述上传分辨率；不能直接提交。确认视觉方向后仍需完成指定规格导出、清晰度及安全区域检查。03 用于本轮官网概览，页面配有功能文字及独立界面示意。
-
-此前sanitized-1.2.5竖图为852x1846、两张组件图为局部裁图，同样不能作为最终商店截图直接上传。保持实际功能准确，后续七张截图按最终画布排版并检查。
+商店使用前需依据 [Apple 素材规范](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications)检查尺寸、清晰度、安全区域和透明通道。当前文件不作为可直接提交的商店成品。界面素材来源见[脱敏界面说明](../screenshots/sanitized-1.2.5/README.md)。

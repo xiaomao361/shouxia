@@ -1,121 +1,53 @@
-# 数据约定与复现方法
+# 数据约定与复现
 
-## 数据解释
+## 标注结构
 
-`samples.jsonl`每行一条研究样本。稳定ID不复用；纠错保留ID和修改说明。字段：
+`samples.jsonl` 每行一条样本。ID 稳定且不复用，纠错时保留标识并补充说明。
 
-- `source_id/source_url/retrieved_at/source_type`：出处与读取日。人工构造的source_url为null，不伪造网页来源。
-- `representation`：脱敏文本、短摘录重建、仅结构、仅码格式或人工构造；不能因为source_type是public_real就认为回放的是原始短信。
-- `source_excerpt`：必要的短摘录；可为空，不把推断写进引文。
-- `text/ocr_lines/layout`：回放输入。没有ocr_lines时按文本换行。C22保留公开fixture的布局参考，纯逻辑回放不执行Vision排序或证实该布局真实。
-- `expected_groups`：每条通知/包裹对应的码、地点、承运商、服务。每字段含value、state、evidence、原文跨度及可选note。跨度使用Unicode code point；将来Swift实现需显式转换成String.Index/UTF-16，不能把它当NSRange直接用。
-- `known/not_stated/partial/masked/placeholder/ambiguous`：有依据、未说明、部分信息、遮挡、占位、歧义。null与空数组不是同义：无组的负例与组内缺字段分开。
-- `template_family/duplicate_of/derived_from`：初步家族与派生链；来源同模板换数字不独立计数。本轮没有复制完全重复行，duplicate_of均为空；关系写在family、derived_from和注释中。
-- `interference/ambiguities/annotation_note`：数字角色与标注限制；例如R04四位数字具体角色未知。
-- `split=development_observed`：全部已参与研究，不能称为盲测留出。标注由本轮研究者完成，尚无独立人工复核。
+| 字段 | 含义 |
+| --- | --- |
+| `source_id` / `source_url` / `retrieved_at` / `source_type` | 来源、采集日期及类型；构造样本无网页 URL |
+| `representation` | 脱敏文本、短摘录重建、结构摘要、码格式或人工构造 |
+| `source_excerpt` | 必要短摘录，不包含推断 |
+| `text` / `ocr_lines` / `layout` | 文本与可选 OCR 行、布局输入 |
+| `expected_groups` | 各通知的码、地点、承运商与服务，以及字段状态、证据和原文跨度 |
+| `template_family` / `duplicate_of` / `derived_from` | 模板家族与派生关系 |
+| `interference` / `ambiguities` / `annotation_note` | 干扰角色、歧义及标注限制 |
+| `split` | `development_observed`，表示已参与研究与开发 |
 
-`baseline-results.jsonl`保留每入口returned/error及原始返回字段；没有吞掉异常。42条四入口、1条仅手动入口，共169次。`isHighConfidence`仅为现有规则的布尔值，不是人工标签。当前混合platform没有强行映射为carrier。
+字段状态包括 `known`、`not_stated`、`partial`、`masked`、`placeholder` 和 `ambiguous`。无组的负例与组内缺字段不同，`null` 与空数组不等同。跨度按 Unicode code point 计数，使用 Swift `NSRange` 前需要转换为 UTF-16 范围。
 
-## 复现规则回放
+C22 的布局来自公开 fixture 参考，纯逻辑回放不执行 Vision 排序，也不证明原始版式。来源是公开通知不表示当前文本为逐字原件，应同时查看 `representation`。
 
-以下命令从当前工作树只读复制代码至临时目录，不改项目文件、不运行App。应先比对baseline-environment.json中的哈希；若代码已变化，输出属于新版本，不覆盖本轮证据。临时编译ImagePure只移除UIKit/Vision图像加载器和方向转换，保留其余类型与算法原样。Shared/PickupImageShareQueue.swift有既有未提交变更，记录的是当时工作树哈希，不单靠HEAD认版本。
+## 当前源码回放
 
-在仓库根目录：
-
-```sh
-research_tmp=$(mktemp -d)
-export SHOUXIA_RESEARCH_TMP="$research_tmp"
-python3 - <<'PYCOPY'
-from pathlib import Path
-import os, shutil
-p=Path(os.environ['SHOUXIA_RESEARCH_TMP'])
-for f in ['Shouxia/Services/PickupParser.swift','Shouxia/Models/PickupRecord.swift','Shared/PickupSharedTextParser.swift','Shared/PickupImageShareQueue.swift']:
-    shutil.copyfile(f,p/Path(f).name)
-s=Path('Shouxia/Services/ImagePickupRecognizer.swift').read_text()
-selected='import Foundation\n'+s[s.index('struct RecognizedTextLine'):s.index('struct ImageTextRecognizer')]+s[s.index('struct ImagePickupExtractor'):s.index('private extension CGImagePropertyOrientation')]
-(p/'ImagePure.swift').write_text(selected)
-PYCOPY
-```
-
-将以下内容保存到临时目录的`main.swift`：
-
-```swift
-import Foundation
-func item(_ p: ParsedPickup) -> [String:Any] { ["code":p.code,"location":p.location as Any? ?? NSNull(),"platform":p.platform as Any? ?? NSNull()] }
-func item(_ p: ImagePickupCandidate) -> [String:Any] { ["code":p.code,"location":p.location as Any? ?? NSNull(),"platform":p.platform as Any? ?? NSNull(),"isLabelled":p.isLabelled,"isHighConfidence":p.isHighConfidence,"ocrConfidence":p.confidence] }
-func run(_ action: () throws -> [[String:Any]]) -> [String:Any] {
- do { return ["outcome":"returned","items":try action()] }
- catch {return ["outcome":"error","error":String(describing:error),"items":[]]}
-}
-let input=try String(contentsOfFile: CommandLine.arguments[1],encoding:.utf8)
-for line in input.split(separator:"\n") {
- let s=try JSONSerialization.jsonObject(with:Data(line.utf8)) as! [String:Any]
- guard let text=s["text"] as? String else {continue}
- var result:[String:Any]=["id":s["id"]!,"inputRepresentation":s["representation"]!]
- result["manual"]=run {try PickupParser().parseAll(text).map(item)}
- if s["representation"] as? String != "format_only" {
-  result["automatic"]=run {try PickupParser().parseAll(text, requiresLabel:true).map(item)}
-  result["shared_text"]=run {try PickupSharedTextParser().candidates(from:text).map(item)}
-  let strings=(s["ocr_lines"] as? [String]) ?? text.components(separatedBy:.newlines)
-  let layout=s["layout"] as? [String:Any], boxes=layout?["boxes"] as? [[Double]]
-  let lines=strings.enumerated().map { i,t in RecognizedTextLine(text:t,confidence:0.92,minX:boxes?[i][0] ?? 0,midY:boxes == nil ? Double(strings.count-i)*0.04 : 1-(boxes![i][1]+boxes![i][3]/2)/2400) }
-  result["image_lines"]=run {try ImagePickupExtractor().candidates(from:lines).map(item)}
- }
- let data=try JSONSerialization.data(withJSONObject:result,options:[.sortedKeys,.withoutEscapingSlashes]);print(String(decoding:data,as:UTF8.self))
-}
-
-```
-
-编译和运行（结果写临时目录，避免覆盖研究证据）：
+在仓库根目录执行：
 
 ```sh
-xcrun swiftc "$research_tmp/PickupParser.swift" "$research_tmp/PickupRecord.swift" "$research_tmp/PickupSharedTextParser.swift" "$research_tmp/PickupImageShareQueue.swift" "$research_tmp/ImagePure.swift" "$research_tmp/main.swift" -o "$research_tmp/baseline"
-"$research_tmp/baseline" docs/research/2026-10-15-pickup-parsing/samples.jsonl > "$research_tmp/baseline-results.jsonl"
+bash scripts/replay_pickup_samples.sh docs/research/2026-10-15-pickup-parsing/samples.jsonl
+python3 scripts/check_pickup_recognition.py --output /tmp/shouxia-recognition-check
 ```
 
-C22盒子以左上原点像素记录，runner只投影为当前模型的minX/midY；当前extractor实际按传入行顺序关联，不能从这个回放宣称二维布局算法已通过。其余行给统一0.92，不能用于OCR置信度阈值校准。
+脚本只读复制实际 Swift 源码至临时目录，编译后执行。图片入口使用标注行，不运行真实 OCR。第一条命令输出诊断，第二条执行固定预期断言；完整主机测试入口见[开发指南](../../DEVELOPMENT.md)。
 
-## OCR探针
+使用当前源码得到的是新回放，不应覆盖历史基线文件。需要对隔离的源码快照运行断言时，可使用 `check_pickup_recognition.py --source-root` 参数；源码集合须完整且与目标版本匹配。
 
-原图从S02的三个公开配图URL读取，只留在临时目录；没有添加到项目或分享给外部模型API。Vision读取原图，使用当前配置（accurate、中文优先、usesLanguageCorrection=false、top1），按当前排序规则生成RecognizedTextLine，再调用ImagePickupExtractor。使用的是macOS Vision URL handler，不是UIKit图片入口。只持久化码匹配与否、长度、地点是否存在及错误，不保存原始OCR全文或图片中的联系电话残片。
+## 历史基线
 
-此探针得到R02成功、R03/R04 e5rt引擎错误；没有自动转成noPickupCode，也没有更换OCR模型掩盖错误。不能从样本名R03/R04推导它们已通过真实OCR。下列代码保存了该探针的完整实验方法；历史码在本轮仅用于内存内比对；为避免把截图码再次持久化，下列复现代码用占位字符串，复现者应从原图目视填入本地临时文件。不调用任何查询/取件服务。
+`baseline-environment.json` 记录 2026-10-15 的 Git HEAD 与实际工作树文件哈希。该实验包含当时未提交的文件，因此只检出记录的提交不能证明已还原全部实验源码。
 
-```swift
-import Foundation
-import Vision
-import ImageIO
-let originals=["<从R02原图本地填入>","<从R03原图本地填入>","<从R04原图本地填入>"]
-let root=CommandLine.arguments[1]
-for i in 0..<3 {
- let u=URL(fileURLWithPath:root+"/public-\(i).jpg")
- let req=VNRecognizeTextRequest();req.recognitionLevel = .accurate;req.recognitionLanguages=["zh-Hans","en-US"];req.usesLanguageCorrection=false
- var row:[String:Any]=["sampleId":["R02","R03","R04"][i],"host":"macOS command-line Vision; not iOS UIKit pipeline","revision":req.revision,"languages":req.recognitionLanguages,"languageCorrection":req.usesLanguageCorrection,"topCandidates":1]
- do {
-  row["supportedLanguages"]=try req.supportedRecognitionLanguages()
-  try VNImageRequestHandler(url:u,options:[:]).perform([req])
-  let observations=req.results ?? []
-  let lines=observations.compactMap { o -> RecognizedTextLine? in
-   guard let c=o.topCandidates(1).first else{return nil};return RecognizedTextLine(text:c.string,confidence:c.confidence,minX:o.boundingBox.minX,midY:o.boundingBox.midY)
-  }.sorted { a,b in abs(a.midY-b.midY)>0.018 ? a.midY>b.midY : a.minX<b.minX }
-  row["lineCount"]=lines.count
-  let joined=lines.map(\.text).joined();row["historicalCodePresentInOCR"]=joined.contains(originals[i])
-  do {
-   let candidates=try ImagePickupExtractor().candidates(from:lines)
-   row["extractorOutcome"]="returned";row["candidateCount"]=candidates.count
-   row["historicalCodeExtracted"]=candidates.contains { $0.code==originals[i] }
-   row["candidates"]=candidates.map { c -> [String:Any] in
-    ["codeMatchesHistorical":c.code==originals[i],"codeLength":c.code.count,"locationPresent":c.location != nil,"locationLength":c.location?.count ?? 0,"platform":c.platform as Any? ?? NSNull(),"isLabelled":c.isLabelled,"isHighConfidence":c.isHighConfidence]
-   }
-  }catch{row["extractorOutcome"]="error";row["error"]=String(describing:error)}
- }catch {row["ocrOutcome"]="error";row["error"]=String(describing:error)}
- let d=try JSONSerialization.data(withJSONObject:row,options:[.sortedKeys]);print(String(decoding:d,as:UTF8.self))
-}
+`baseline-results.jsonl` 保存 42 条四入口与 1 条仅手动入口的结果，共 169 次调用；T05 仅有结构，不执行。结果区分 `returned` 与 `error`，保留错误类型。`isHighConfidence` 是实现输出，不是人工真值；历史 `platform` 不强行转换成承运商。
 
-```
+与基线比较前先核对文件哈希；缺少匹配源码时只能检查历史产物，不能声称精确重跑。现有脚本的结果结构可能随实现演进，应与其版本一并记录。
 
-将S02三个配图依次保存为临时目录public-0.jpg、public-1.jpg、public-2.jpg，替换临时main.swift为上述探针，使用PickupParser.swift、PickupRecord.swift、ImagePure.swift和main.swift编译（无需shared-text文件），传临时目录参数执行。重新运行的OS/设备/错误可能不同，应保存为新的实验记录。
+## OCR 探针范围
 
-## 研究验证边界
+[ocr-probe.jsonl](ocr-probe.jsonl) 保存三张公开图片的 macOS Vision 观察。配置为 accurate、`zh-Hans/en-US`、关闭语言纠正和 top1，输入使用 URL handler，与 iOS UIKit 加载链不同。
 
-见validation.json：JSON结构/引用/证据跨度检查、169个入口结果数量、当前源哈希和本轮开始时所有既有未提交文件哈希对照。它证明研究产物结构可读与工作树边界，不证明研究标注已经双人验收、不证明新算法改善，也不证明真实iOS用户体验。
+探针保存匹配结果、长度、地点是否存在及具体错误，不保存原图、OCR 全文或联系电话片段。R02 成功，R03/R04 为计算引擎错误；失败不转换为无取件码。
+
+重新采集时应记录宿主、系统、Vision revision、支持语言、请求配置、输入来源与代码哈希。新结果写入独立文件；不同宿主的结果不能覆盖原实验或直接解释为 iPhone 缺陷。
+
+## 结果限制
+
+[validation.json](validation.json) 记录历史数据结构、引用、证据跨度、结果数量与源码哈希检查。它不证明标注已独立复核、算法对未知模板有效或真实设备体验通过。
